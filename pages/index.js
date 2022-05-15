@@ -8,6 +8,7 @@ import Link from 'next/link';
 export default function Home() {
  
   return (
+  
     <Link href="/AppHome">
     <div  className = {styles.lockscreen}>
 
@@ -31,5 +32,6 @@ export default function Home() {
           </div>
           </div>
           </Link>
+      
   )
 }

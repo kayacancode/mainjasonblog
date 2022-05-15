@@ -11,10 +11,14 @@
   "dependencies": {
     "firebase": "^9.6.11",
     "framer-motion": "^6.2.8",
+    "howler": "^2.2.3",
     "next": "12.1.4",
     "react": "^17.0.0",
     "react-audio-player": "^0.17.0",
-    "react-dom": "^17.0.0"
+    "react-dom": "^17.0.0",
+    "react-icons": "^4.3.1",
+    "react-router-dom": "^6.3.0",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.4",

@@ -4,11 +4,25 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 
 import { auth, db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
+import {addDoc,collection} from "firebase/firestore";
+import {getDocs,deleteDoc} from "firebase/firestore"
+
 import Image from 'next/image'
 import Navbar from "../components/Navbar";
 import Post from '../components/Post'
+import Smallpostcard from '../components/Smallpostcard'
 
 export default function admindashboard() {
+  const [postsLists,setPostList] = useState([]);
+  const postsCollectionRef = collection(db,"posts");
+  useEffect(() => {
+    const getPosts = async () => {
+      const data = await getDocs(postsCollectionRef)
+      setPostList(data.docs.map((doc) => ({...doc.data(), id:doc.id})))
+    };
+
+    getPosts();
+  })
   const router = useRouter();
 
   const [user, setUser] = useState(null);
@@ -45,6 +59,11 @@ export default function admindashboard() {
       });
   }
 
+  const deletePost = async(id) => {
+    const postDoc = doc(db,"posts",id)
+    await deleteDoc(postDoc)
+  }
+
   return (
     <div class = "h-screen bg-black">
         <Navbar />
@@ -56,7 +75,24 @@ export default function admindashboard() {
       <button style={{ background: "red" }} onClick={signOutUser}>
         SignOut
       </button>
-      <Post title = "Edit"/>
+      <div className="grid-cols-3 p-16 space-y-2 md:space-y-0 sm:grid sm:gap-3 sm:grid-rows-3">
+    
+    {postsLists.map((post) => {
+  return (
+  <div>
+  
+  <Smallpostcard key ={post.id} title = {post.title} />
+  <div className="deletePost"> 
+    <button onClick = {() => {
+      deletePost(post.id);
+    }}>
+      {" "}
+      &#128465;</button>
+  </div>
+  </div>
+  )
+})}
+  </div>
     </div>
   );
 }
