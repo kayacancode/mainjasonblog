@@ -34,7 +34,7 @@ const AppDock = () => {
           </div>
 
           <div className=" content-center text-center">
-            <Link href="https://www.instagram.com/insuavewetrust/">
+            <Link href="">
               <Image
                 className="cursor-pointer"
                 src="/photos.png"

@@ -51,7 +51,7 @@ const blog = (post) => {
       <div className=" text-center text-black bg-[#ffffff] p-5  top-0 w-full 2/4 flex items-center	 ">
         <div className="flex grid justify-items-start ">
           <div className="justify-items-start">
-            <div className="grid grid-cols-2">
+            <div className="grid grid-cols-3">
               <Link href="/AppHome">
                 <Image
                   src="/arrow.png"

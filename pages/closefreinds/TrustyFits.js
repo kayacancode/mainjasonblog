@@ -12,12 +12,7 @@ const TrustyFits = () => {
         email = "jason.sekyere@insuavetrust.com"
         instaLink = "https://www.instagram.com/trustyfits/"
         insta ="trustyfits"
-        twitterLink ="https://twitter.com/kayacancode"
-        twitter= "kayacancode"
-        tiktokLink = ""
-        tiktok = "Coming Soon "
-        yt = "Coming Soon"
-        ytlink = ""
+
         
         />
     </div>

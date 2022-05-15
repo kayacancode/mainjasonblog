@@ -50,7 +50,7 @@ const Smallpostcard = (bloginfo) => {
           <div class="absolute left-0 bottom-0 ">
             <p class="mx-4 my-2 leading-normal font-black	text-3xl text-gray-100">
               {bloginfo.title} <br />
-              March 12, 2022
+             
             </p>
           </div>
         </div>

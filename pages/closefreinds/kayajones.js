@@ -14,10 +14,7 @@ const kayajones = () => {
         insta ="kayacancode"
         twitterLink ="https://twitter.com/kayacancode"
         twitter= "kayacancode"
-        tiktokLink = ""
-        tiktok = "Coming Soon "
-        yt = "Coming Soon"
-        ytlink = ""
+     
         
         />
     </div>
