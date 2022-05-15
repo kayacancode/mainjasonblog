@@ -103,7 +103,8 @@ const Createpost = () => {
   }, []);
 
   return (
-    <div class="h-screen bg-black">
+    <body className="bg-black">
+    <div class="h-screen bg-black bg-[#000000] bg-cover">
       <div class="flex items-center flex-shrink-0 text-white mr-6">
         <Link href= "/AppHome">
         <Image src="/tlogo.png" width="184px" height="150px" />
@@ -111,7 +112,7 @@ const Createpost = () => {
       </div>
       <div className="text-[#F2EA6D] mx-10">
         <div className="flex justify-center">
-          <h1 className="	 font-black	 text-4xl	border-b-2 border-[#F2EA6D] px-20 py-2 	">
+          <h1 className="	 mb-10 font-black	 text-4xl	border-b-2 border-[#F2EA6D] px-20 py-2 	">
             Create Post
           </h1>
         </div>
@@ -174,6 +175,7 @@ const Createpost = () => {
   })} */}
       </div>
     </div>
+    </body>
   );
 };
 

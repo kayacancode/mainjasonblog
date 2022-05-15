@@ -28,7 +28,9 @@ const blog = (post) => {
   console.log("postsLists", postsLists);
 
   return (
-    <div className=" bg-[#FFFFFF] md:h-screen bg-black lg:h-screen bg-black ">
+    <body className="bg-black">
+
+    <div className="  md:h-screen bg-black lg:h-screen bg-black ">
       
       <Head>
       {/* Coded by: Kaya Jones
@@ -46,10 +48,10 @@ const blog = (post) => {
         <meta property="og:site_name" content="In Suave We Trust"/>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className=" text-center text-white bg-[#000000] p-5  top-0 w-full 2/4 flex items-center	 ">
+      <div className=" text-center text-black bg-[#ffffff] p-5  top-0 w-full 2/4 flex items-center	 ">
         <div className="flex grid justify-items-start ">
           <div className="justify-items-start">
-            <div className="grid grid-cols-3">
+            <div className="grid grid-cols-2">
               <Link href="/AppHome">
                 <Image
                   src="/arrow.png"
@@ -68,6 +70,7 @@ const blog = (post) => {
             </div>
           </div>
         </div>
+        
         <div className="  w-full">
           <h1 className="font-bold text-5xl"> CATEGORY: ALBUM REVIEWS
  </h1>
@@ -100,6 +103,7 @@ const blog = (post) => {
         })}
       </div>
     </div>
+    </body>
   );
 };
 export default blog;
