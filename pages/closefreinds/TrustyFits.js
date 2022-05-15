@@ -5,13 +5,13 @@ const TrustyFits = () => {
   return (
     <div>
         <ContactCard 
-        name = "Kaya Jones" 
-        websitelink = "https://kayacancode.com/" 
-        websitename = "https://kayacancode.com/"
-        emailLink = "mailto:kayacancode@gmail.com" 
-        email = "kayacancode@gmail.com"
-        instaLink = "https://www.instagram.com/kayaj0nes/"
-        insta ="kayacancode"
+        name = "Trusty Fits (TyBo and Keanu)" 
+        websitelink = "insuavewetrust.com" 
+        websitename = "insuavewetrust.com"
+        emailLink = "mailto:jason.sekyere@insuavetrust.com" 
+        email = "jason.sekyere@insuavetrust.com"
+        instaLink = "https://www.instagram.com/trustyfits/"
+        insta ="trustyfits"
         twitterLink ="https://twitter.com/kayacancode"
         twitter= "kayacancode"
         tiktokLink = ""

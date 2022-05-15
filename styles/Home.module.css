@@ -96,7 +96,9 @@
 }
 
 
-
+.text:hover{
+    cursor: pointer;
+}
 .dock{
     bottom:0px;
     background-color: rgb(0 0 0 / 5%);

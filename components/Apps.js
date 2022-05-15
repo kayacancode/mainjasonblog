@@ -10,8 +10,8 @@ const Apps = () => {
     <div className = "  mt-8 grid grid-cols-4 gap-4  content-center  ">
 
       <div className = " content-center text-center">
-    <Link href ="">
-    <Image src= "/applemusic.png" width={65} height={65} />
+    <Link href ="https://music.apple.com/profile/auxplugsuave">
+    <Image src= "/applemusic.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Apple Music</div>
@@ -19,24 +19,24 @@ const Apps = () => {
 
 
     <div className = "  content-center text-center">
-    <Link href ="">
-    <Image src= "/spotify.png" width={65} height={65} />
+    <Link href ="https://open.spotify.com/user/suavemontana">
+    <Image src= "/spotify.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Spotify</div>
     </div>
     
     <div className = " content-center text-center">
-    <Link href ="">
-    <Image src= "/tiktok.png" width={65} height={65} />
+    <Link href ="https://vm.tiktok.com/TTPdBsn3ML/">
+    <Image src= "/tiktok.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Tiktok</div>
     </div>
     
     <div className = " content-center text-center">
-    <Link href ="">
-    <Image src= "/facebook.png" width={65} height={65} />
+    <Link href ="https://www.facebook.com/InSuaveWeTrust/">
+    <Image src= "/facebook.png"  className="cursor-pointer"width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Facebook</div>
@@ -44,37 +44,37 @@ const Apps = () => {
     
     <div className = " content-center text-center">
     <Link href ="">
-    <Image src= "/calendar.png" width={65} height={65} />
+    <Image src= "/calendar.png"  className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Calendar</div>
     </div>
     
     <div className = " content-center text-center">
-    <Link href ="">
-    <Image src= "/anchor.png" width={65} height={65} />
+    <Link href ="https://anchor.fm/insuavewetrust">
+    <Image src= "/anchor.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Anchor</div>
     </div>
     <div className = " content-center text-center">
     <Link href ="https://beams.fm/insuavewetrust">
-    <Image src= "/beamsfm.png" width={65} height={65} />
+    <Image src= "/beamsfm.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Beams</div>
     </div>
     <div className = " content-center text-center">
-    <Link href ="">
-    <Image src= "/yt.png" width={65} height={65} />
+    <Link href ="https://www.youtube.com/channel/UC_9_5ERNVJIBBKjd0izfG8g">
+    <Image src= "/yt.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Youtube</div>
     </div>
 
     <div className = " content-center text-center">
-    <Link href ="">
-    <Image src= "/trustyfits.png" width={65} height={65} />
+    <Link href ="insuavewetrust.com">
+    <Image src= "/trustyfits.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Trusty Fits</div>
@@ -83,7 +83,7 @@ const Apps = () => {
 
     <div className = " content-center text-center">
     <Link href ="/blog">
-    <Image src= "/blog.png" width={65} height={65} />
+    <Image src= "/blog.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Blog </div>
@@ -91,8 +91,8 @@ const Apps = () => {
 
 
     <div className = " content-center text-center">
-    <Link href ="">
-    <Image src= "/insta.png" width={65} height={65} />
+    <Link href ="https://www.instagram.com/insuavewetrust/">
+    <Image src= "/insta.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Instagram </div>
@@ -100,8 +100,8 @@ const Apps = () => {
     
    
     <div className = " content-center text-center">
-    <Link href ="">
-    <Image src= "/twitter.png" width={65} height={65} />
+    <Link href ="https://twitter.com/INSUAVEWETRUSTx">
+    <Image src= "/twitter.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Twitter</div>
@@ -109,8 +109,8 @@ const Apps = () => {
 
 
     <div className = " content-center text-center">
-    <Link href ="">
-    <Image src= "/jammy.png" width={65} height={65} />
+    <Link href ="https://thejammybrand.com/">
+    <Image src= "/jammy.png"  className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}>Jammy</div>

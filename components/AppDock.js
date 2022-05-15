@@ -9,7 +9,8 @@ const AppDock = () => {
       <div className={styles.dock}>
         <div className=" flex w-full justify-around	">
           <div className="">
-            <Link href="">
+            <Link href="mailto:jason.sekyere@insuavetrust.com">
+             
               <Image
                 className="cursor-pointer"
                 src="/mail.png"
@@ -17,7 +18,7 @@ const AppDock = () => {
                 height={65}
               />
             </Link>
-            <div className={styles.text}> Contact </div>
+            <div className={styles.text}>Contact</div>
           </div>
 
           <div className=" content-center text-center">
@@ -33,7 +34,7 @@ const AppDock = () => {
           </div>
 
           <div className=" content-center text-center">
-            <Link href="">
+            <Link href="https://www.instagram.com/insuavewetrust/">
               <Image
                 className="cursor-pointer"
                 src="/photos.png"

@@ -17,12 +17,13 @@ export default function admindashboard() {
   const postsCollectionRef = collection(db,"posts");
   useEffect(() => {
     const getPosts = async () => {
-      const data = await getDocs(postsCollectionRef)
-      setPostList(data.docs.map((doc) => ({...doc.data(), id:doc.id})))
+      const data = await getDocs(postsCollectionRef);
+      setPostList(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
     };
 
     getPosts();
-  })
+  }, []);
+
   const router = useRouter();
 
   const [user, setUser] = useState(null);
@@ -65,7 +66,7 @@ export default function admindashboard() {
   }
 
   return (
-    <div class = "h-screen bg-black">
+    <div class = "bg-[#000000]">
         <Navbar />
          <div>
         </div>
@@ -81,10 +82,15 @@ export default function admindashboard() {
   return (
   <div>
   
-  <Smallpostcard key ={post.id} title = {post.title} />
+  <Smallpostcard 
+  key ={post.id} 
+  title = {post.title} 
+  image={post?.imageUrl}
+  />
   <div className="deletePost"> 
     <button onClick = {() => {
       deletePost(post.id);
+      
     }}>
       {" "}
       &#128465;</button>

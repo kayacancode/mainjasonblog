@@ -1,17 +1,17 @@
 import React from 'react'
 import ContactCard from '../../components/ContactCard'
 
-const NateJoel = () => {
+const Jammy = () => {
   return (
     <div>
         <ContactCard 
-        name = "Nate Joël" 
-        websitelink = "https://kayacancode.com/" 
-        websitename = "https://kayacancode.com/"
+        name = "Jammy" 
+        websitelink = "https://thejammybrand.com/" 
+        websitename = "https://thejammybrand.com/"
         emailLink = "mailto:kayacancode@gmail.com" 
         email = "kayacancode@gmail.com"
-        instaLink = "https://www.instagram.com/natejoel95/"
-        insta ="natejoel95"
+        instaLink = "https://www.instagram.com/thejammybrand//"
+        insta ="the jammy brand"
         twitterLink ="https://twitter.com/kayacancode"
         twitter= "kayacancode"
         tiktokLink = ""
@@ -24,4 +24,4 @@ const NateJoel = () => {
   )
 }
 
-export default NateJoel
+export default Jammy

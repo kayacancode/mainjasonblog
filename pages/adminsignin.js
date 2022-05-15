@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/router";
 import Image from 'next/image'
-
+import Link from 'next/link'
 import { auth } from "../firebase";
 
 const adminsignin = () => {
@@ -13,7 +13,6 @@ const adminsignin = () => {
     const [passError, setPassError] = useState(false);
     const [authError, setAuthError] = useState(false);
   
-    // UNCOMMENT THIS WHEN DONE WITH THE SIGIN PAGE
     useEffect(() => {
       onAuthStateChanged(auth, async (user) => {
         if (user) {
@@ -68,7 +67,9 @@ const adminsignin = () => {
   return (
     <div class= " h-screen bg-black">
     <div>
+      <Link href= "/AppHome">
         <Image src = "/tlogo.png" width="303px" height="297px" />
+        </Link>
         </div>
 
         <div class = "gird grid-cols-3 gap-4">

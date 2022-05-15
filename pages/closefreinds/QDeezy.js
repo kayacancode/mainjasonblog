@@ -5,9 +5,9 @@ const QDeezy = () => {
   return (
     <div>
         <ContactCard 
-        name = "Kaya Jones" 
-        websitelink = "https://kayacancode.com/" 
-        websitename = "https://kayacancode.com/"
+        name = "Q Deezy @ Ratings Game" 
+        websitelink = "https://ratingsgamemusic.com/" 
+        websitename = "https://ratingsgamemusic.com/"
         emailLink = "mailto:kayacancode@gmail.com" 
         email = "kayacancode@gmail.com"
         instaLink = "https://www.instagram.com/kayaj0nes/"

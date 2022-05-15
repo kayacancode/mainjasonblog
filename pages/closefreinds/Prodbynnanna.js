@@ -5,12 +5,12 @@ const Prodbynnanna = () => {
   return (
     <div>
         <ContactCard 
-        name = "Kaya Jones" 
+        name = "prodbynnanna" 
         websitelink = "https://kayacancode.com/" 
         websitename = "https://kayacancode.com/"
         emailLink = "mailto:kayacancode@gmail.com" 
         email = "kayacancode@gmail.com"
-        instaLink = "https://www.instagram.com/kayaj0nes/"
+        instaLink = "https://www.instagram.com/prodbynnanna/"
         insta ="kayacancode"
         twitterLink ="https://twitter.com/kayacancode"
         twitter= "kayacancode"
