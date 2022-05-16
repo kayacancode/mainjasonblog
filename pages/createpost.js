@@ -8,7 +8,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import firebase from "../firebase";
 import { async } from "@firebase/util";
 import { storage } from "../firebase";
-import Link from 'next/Link'
+import Link from 'next/link'
 import { ref, uploadBytes, listAll, getDownloadURL } from "firebase/storage";
 import { v4 } from "uuid";
 import { GrGallery } from "react-icons/gr";

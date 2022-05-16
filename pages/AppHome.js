@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import AppDock from "../components/Appdock";
+import AppDock from "../components/AppDock";
 import Apps from "../components/Apps";
 // import audio from '/20min.mp3'
 import styles from "../styles/Home.module.css";
