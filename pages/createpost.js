@@ -15,10 +15,10 @@ import { GrGallery } from "react-icons/gr";
 import { BiHappyAlt } from "react-icons/bi";
 const Createpost = () => {
   const router = useRouter();
-  const [imageUpload, setImageUpload] = useState(null);
-  const [imageList, setImageList] = useState([]);
+  const [imgUpload, setimgUpload] = useState(null);
+  const [imgList, setimgList] = useState([]);
 
-  const imageListRef = ref(storage, "images/");
+  const imgListRef = ref(storage, "imgs/");
 
   const [title, setTitle] = useState("");
   const [postText, setPostText] = useState("");
@@ -63,7 +63,7 @@ const Createpost = () => {
     setLoading(true);
     try {
       let url = "";
-      url = await uploadImage();
+      url = await uploadimg();
       console.log("url===", url);
       await addDoc(postCollectionRef, {
         title,
@@ -72,7 +72,7 @@ const Createpost = () => {
           name: auth?.currentUser?.displayName || "",
           id: auth?.currentUser?.uid || "",
         },
-        imageUrl: url || "",
+        imgUrl: url || "",
       });
       setLoading(false);
       router.push("/blog");
@@ -82,20 +82,20 @@ const Createpost = () => {
     }
   };
 
-  const uploadImage = async () => {
-    if (imageUpload == null) return;
-    const imageRef = ref(storage, `images/${imageUpload.name + v4()}`);
+  const uploadimg = async () => {
+    if (imgUpload == null) return;
+    const imgRef = ref(storage, `imgs/${imgUpload.name + v4()}`);
 
-    const snapshot = await uploadBytes(imageRef, imageUpload);
+    const snapshot = await uploadBytes(imgRef, imgUpload);
     const url = await getDownloadURL(snapshot.ref);
     return url;
   };
 
   useEffect(() => {
-    listAll(imageListRef).then((response) => {
+    listAll(imgListRef).then((response) => {
       response.items.forEach((item) => {
         getDownloadURL(item).then((url) => {
-          setImageList((prev) => [...prev, url]);
+          setimgList((prev) => [...prev, url]);
         });
       });
       console.log(response);
@@ -107,7 +107,7 @@ const Createpost = () => {
     <div class="h-screen bg-black bg-[#000000] bg-cover">
       <div class="flex items-center flex-shrink-0 text-white mr-6">
         <Link href= "/AppHome">
-        <Image src="/tlogo.png" width="184px" height="150px" />
+        <img src="/tlogo.png" width="184px" height="150px" />
         </Link>
       </div>
       <div className="text-[#F2EA6D] mx-10">
@@ -143,7 +143,7 @@ const Createpost = () => {
                 <input
                   type="file"
                   onChange={(event) => {
-                    setImageUpload(event.target.files[0]);
+                    setimgUpload(event.target.files[0]);
                   }}
                   class="block w-full text-sm text-slate-500
                   file:mr-4 file:py-2 file:px-4
@@ -155,8 +155,8 @@ const Createpost = () => {
                 />
               </label>
 
-              {/* <button onClick={uploadImage} class="text-black">
-                Upload Image
+              {/* <button onClick={uploadimg} class="text-black">
+                Upload img
               </button> */}
             </div>
           </div>
@@ -170,7 +170,7 @@ const Createpost = () => {
       </div>
 
       <div className="flex">
-        {/* {imageList.map((url) => {
+        {/* {imgList.map((url) => {
     return <img  key ={url.id} src = {url} width={300} height={300}/>;
   })} */}
       </div>

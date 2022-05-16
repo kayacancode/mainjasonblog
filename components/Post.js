@@ -1,5 +1,5 @@
 
-import Image from 'next/image'
+import img from 'next/image'
 import styles from '../styles/Home.module.css'
 import React, { useState, useEffect } from "react";
 import Link from 'next/link';
@@ -25,7 +25,7 @@ const Post = (bloginfo) => {
           <div className="grid-cols-3 p-16 space-y-2 md:space-y-0 sm:grid sm:gap-3 sm:grid-rows-3">
            
      {/* <div className="rounded-md w-72  transition-all text-white text-center cursor-pointer ">
-               <img src= "../frankoceanpost.png" alt= "Cover Image" />
+               <img src= "../frankoceanpost.png" alt= "Cover img" />
                <div className = "mt-2 p-2">
                  <h2 className = "font-semibold text-xl">
                    {bloginfo.title}

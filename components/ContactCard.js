@@ -1,5 +1,5 @@
 import Head from 'next/head'
-import Image from 'next/image'
+import img from 'next/image'
 import styles from '../styles/Home.module.css'
 import React from "react";
 import Link from 'next/link';
@@ -11,7 +11,7 @@ const ContactCard = (info) => {
         <div class = "flex grid justify-items-start ">
                     <div class ="grid grid-cols-2 pt-5 ">
                         <Link href ="/Closefreinds">
-                    <Image src= "/arrow.png" class = "realitve float-left cursor-pointer "width="100%" height="100%" layout="responsive" objectFit="contain" />
+                    <img src= "/arrow.png" class = "realitve float-left cursor-pointer "width="100%" height="100%" layout="responsive" objectFit="contain" />
                     
                     </Link>
                     <Link href= "/Closefreinds">
@@ -20,7 +20,7 @@ const ContactCard = (info) => {
                </div>
                </div>
                <div class = "pt-5 pb-24">
-                <Image src= "/contactpic.png" width="85px" height="85px"  />
+                <img src= "/contactpic.png" width="85px" height="85px"  />
                 <h1 class = "font-bold  text-2xl">{info.name}</h1>
                 </div>
     </div>

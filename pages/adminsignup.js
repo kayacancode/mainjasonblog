@@ -8,7 +8,7 @@ import {
   signInWithEmailAndPassword,
 } from "firebase/auth";
 import { auth, db } from "../firebase";
-import Image from 'next/image'
+import img from 'next/image'
 
 const adminsignup = () => {
     const router = useRouter();
@@ -79,7 +79,7 @@ const adminsignup = () => {
   return (
     <div class= "h-screen  bg-black">
         <div>
-            <Image src = "/tlogo.png" width="303px" height="297px" />
+            <img src = "/tlogo.png" width="303px" height="297px" />
             </div>
 
             <div class = "gird grid-cols-3 gap-4">

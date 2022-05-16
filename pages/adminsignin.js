@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/router";
-import Image from 'next/image'
+import img from 'next/image'
 import Link from 'next/link'
 import { auth } from "../firebase";
 
@@ -68,7 +68,7 @@ const adminsignin = () => {
     <div class= " h-screen bg-black">
     <div>
       <Link href= "/AppHome">
-        <Image src = "/tlogo.png" width="303px" height="297px" />
+        <img src = "/tlogo.png" width="303px" height="297px" />
         </Link>
         </div>
 

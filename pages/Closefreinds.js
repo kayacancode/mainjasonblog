@@ -1,5 +1,5 @@
 import Head from 'next/head'
-import Image from 'next/image'
+import img from 'next/image'
 import styles from '../styles/Home.module.css'
 import React from "react";
 import Link from 'next/link';
@@ -26,7 +26,7 @@ const Closefreinds = () => {
                 <div class = "flex grid justify-items-start ">
                     <div class ="grid grid-cols-2 pt-5">
                         <Link href ="/AppHome">
-                    <Image src= "/arrow.png" class = "realitve float-left cursor-pointer "width="100%" height="100%" layout="responsive" objectFit="contain" />
+                    <img src= "/arrow.png" class = "realitve float-left cursor-pointer "width="100%" height="100%" layout="responsive" objectFit="contain" />
                     
                     </Link>
                     <Link href= "/AppHome">
