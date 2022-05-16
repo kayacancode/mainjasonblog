@@ -1,7 +1,7 @@
 
 .lockscreen{
     background:url(../public/wallpaper.png);
-    background-image:url(../public/wallpaper.png);
+    background-img:url(../public/wallpaper.png);
     background-position-x: 50%;
     background-position-y: 50%;
     background-size: auto 55%;
@@ -34,7 +34,7 @@
 
 .lockscreen2{
     background:url(../public/newwallpaper.png);
-    background-image:url(../public/lockscreen.JPG);
+    background-img:url(../public/lockscreen.JPG);
     background-position-x: 50%;
     background-position-y: 50%;
     background-size: auto 55%;
@@ -52,7 +52,7 @@
 
 .homelockscreen{
     background:url(../public/lockscreen.JPG);
-    background-image:url(../public/newwallpaper.png);
+    background-img:url(../public/newwallpaper.png);
     background-position-x: 50%;
     background-position-y: 50%;
     background-size: auto 105%;
@@ -107,7 +107,7 @@
     
 }
 
-.blogimages{
+.blogimgs{
     width: 100%;
     height: 100%!important;
     object-fit: cover;

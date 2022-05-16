@@ -7,7 +7,7 @@ import { doc, getDoc } from "firebase/firestore";
 import {addDoc,collection} from "firebase/firestore";
 import {getDocs,deleteDoc} from "firebase/firestore"
 
-import Image from 'next/image'
+import Image from "next/image";
 import Navbar from "../components/Navbar";
 import Post from '../components/Post'
 import Smallpostcard from '../components/Smallpostcard'
@@ -85,7 +85,7 @@ export default function admindashboard() {
   <Smallpostcard 
   key ={post.id} 
   title = {post.title} 
-  image={post?.imageUrl}
+  img={post?.imgUrl}
   />
   <div className="deletePost"> 
     <button onClick = {() => {

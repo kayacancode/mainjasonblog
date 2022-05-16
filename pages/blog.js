@@ -53,7 +53,7 @@ const blog = (post) => {
           <div className="justify-items-start">
             <div className="grid grid-cols-3">
               <Link href="/AppHome">
-                <Image
+                <img
                   src="/arrow.png"
                   className="realitve float-left cursor-pointer "
                   width="100%"
@@ -83,7 +83,7 @@ const blog = (post) => {
         </div>
         <div className="px-16">
           <Link href="/adminsignin">
-            <Image src="/adminprofile.png" width="50px" height="50px" />
+            <img src="/adminprofile.png" width="50px" height="50px" />
           </Link>
         </div>
       </div>
@@ -93,7 +93,7 @@ const blog = (post) => {
             <div>
               {/* <Post key ={post.id} title = {post.title}/>  */}
               <Smallpostcard
-                image={post?.imageUrl}
+                img={post?.imgUrl}
                 key={post.id}
                 title={post.title}
                 click={() => router.push("/view-post?id=" + post.id)}

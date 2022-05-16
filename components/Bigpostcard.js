@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import img from 'next/image'
 import styles from '../styles/Home.module.css'
 import React, { useState, useEffect } from "react";
 import Link from 'next/link';

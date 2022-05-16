@@ -44,7 +44,7 @@ const ViewPost = (bloginfo) => {
           <div className="justify-items-start">
             <div className="grid grid-cols-3">
               <Link href="/AppHome">
-                <Image
+                <img
                   src="/arrow.png"
                   className="realitve float-left cursor-pointer "
                   width="100%"
@@ -75,10 +75,10 @@ const ViewPost = (bloginfo) => {
         </div>
       </div>
       <div class="relative w-full h-full overflow-hidden pt-20">
-        {/* // image from uploadimage function goes here however it isn't working at the moment */}
+        {/* // img from uploadimg function goes here however it isn't working at the moment */}
         <img
           src={
-            data?.imageUrl ||
+            data?.imgUrl ||
             `https://ui-avatars.com/api/?name=${encodeURI(data?.title)}`
           }
           class="opacity-25 	w-full h-full overflow-hidden "

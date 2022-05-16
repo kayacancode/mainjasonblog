@@ -23,7 +23,7 @@ const Smallpostcard = (bloginfo) => {
   useEffect(() => {
     const func = async () => {
       const storage = getStorage();
-      const imageListRef = ref(storage, "images/");
+      const imgListRef = ref(storage, "imgs/");
       // await getDownloadURL(reference).then((x) => {
       //   setUrl(x);
       // })
@@ -40,7 +40,7 @@ const Smallpostcard = (bloginfo) => {
         >
           <img
             src={
-              bloginfo?.image ||
+              bloginfo?.img ||
               `https://ui-avatars.com/api/?name=${encodeURI(bloginfo?.title)}`
             }
             class="opacity-25 w-full h-full overflow-hidden "
