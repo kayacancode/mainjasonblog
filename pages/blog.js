@@ -62,17 +62,17 @@ const blog = (post) => {
                   objectFit="contain"
                 />
               </Link>
-              <Link href="/AppHome">
+              {/* <Link href="/AppHome">
                 <a href="" class="relative text-[#007aff] ">
                   Back
                 </a>
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>
         
         <div className="  w-full">
-          <h1 className="font-bold text-5xl"> CATEGORY: ALBUM REVIEWS
+          <h1 className="font-bold text-3xl pr-5"> CATEGORY: ALBUM REVIEWS
  </h1>
         </div>
       </div>

@@ -24,18 +24,18 @@ const Closefreinds = () => {
       </Head>
             <div class = "text-center bg-[#F5F5F5]  top-0 w-full 2/4  border-b-4 ">
                 <div class = "flex grid justify-items-start ">
-                    <div class ="grid grid-cols-2 pt-5">
+                    <div class ="grid grid-cols-2 pt-5 pl-3">
                         <Link href ="/AppHome">
                     <img src= "/arrow.png" class = "realitve float-left cursor-pointer "width="100%" height="100%" layout="responsive" objectFit="contain" />
                     
                     </Link>
-                    <Link href= "/AppHome">
+                    {/* <Link href= "/AppHome">
                     <a href = "" class= "relative text-[#007aff] ">Back</a>
-                    </Link>
+                    </Link> */}
                </div>
                </div>
                <div class = "justify-items-center pb-5">
-                <h1 class ="font-bold">  Contacts</h1>
+                <h1 class ="font-bold text-3xl">  Contacts</h1>
                 
                 </div>
                 

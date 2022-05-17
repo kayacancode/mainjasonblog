@@ -43,7 +43,7 @@ const ViewPost = (bloginfo) => {
         <div className="flex grid justify-items-start ">
           <div className="justify-items-start">
             <div className="grid grid-cols-3">
-              <Link href="/AppHome">
+              <Link href="/blog">
                 <img
                   src="/arrow.png"
                   className="realitve float-left cursor-pointer "
@@ -53,22 +53,22 @@ const ViewPost = (bloginfo) => {
                   objectFit="contain"
                 />
               </Link>
-              <Link href="/blog">
+              {/* <Link href="/blog">
                 <a href="" class="relative text-[#007aff] ">
                   Back
                 </a>
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>
         <div className="  w-full">
-          <h1 className="font-bold text-white text-5xl"> In Suave We Trust </h1>
+          <h1 className="font-bold text-white text-3xl text-center pr-8 "> In Suave We Trust </h1>
         </div>
       </div>
       <div className="text-center">
         <div> </div>
         <div>
-          <h1 className="text-white text-4xl border-b-4 border-[#FFD800] pb-2 ">
+          <h1 className="text-white text-4xl border-b-4 border-[#FFD800] pb-2 italic">
           {data?.title}
           {data?.date}
           </h1>
