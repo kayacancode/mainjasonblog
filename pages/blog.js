@@ -30,7 +30,7 @@ const blog = (post) => {
   return (
     <body className="bg-black">
 
-    <div className="  md:h-screen bg-black lg:h-screen bg-black ">
+    <div className="  bg-black ">
       
       <Head>
       {/* Coded by: Kaya Jones

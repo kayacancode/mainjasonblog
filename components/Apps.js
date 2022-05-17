@@ -7,7 +7,7 @@ const Apps = () => {
   return (
     <div>
     {/* <div className = "flex "> */}
-    <div className = "  mt-8 grid grid-cols-4 gap-4  content-center  ">
+    <div className = "  mt-8 mx-5 grid grid-cols-4 gap-4  content-center  ">
 
       <div className = " content-center text-center">
     <Link href ="https://music.apple.com/profile/auxplugsuave">
