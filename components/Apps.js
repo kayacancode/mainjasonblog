@@ -73,7 +73,7 @@ const Apps = () => {
     </div>
 
     <div className = " content-center text-center">
-    <Link href ="insuavewetrust.com">
+    <Link href ="https://instagram.com/trustyfits?igshid=YmMyMTA2M2Y=">
     <Image src= "/trustyfits.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
