@@ -33,7 +33,7 @@
 }
 
 .lockscreen2{
-    background:url(../public/newwallpaper.png);
+    background:url(../public/newwallpaper.jpeg);
     background-position-x: 50%;
     background-position-y: 50%;
     background-size: auto 55%;
@@ -50,7 +50,7 @@
 }
 
 .homelockscreen{
-    background:url(../public/newwallpaper.png);
+    background:url(../public/newwallpaper.jpeg);
     background-position-x: 50%;
     background-position-y: 50%;
     background-size: auto 105%;
