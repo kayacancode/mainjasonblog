@@ -10,7 +10,7 @@ const Apps = () => {
     <div className = "  mt-8 mx-5 grid grid-cols-4 gap-4  content-center  ">
 
       <div className = " content-center text-center">
-    <Link href ="https://music.apple.com/profile/auxplugsuave">
+    <Link href ="https://music.apple.com/profile/insuavewetrust">
     <Image src= "/applemusic.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
@@ -43,7 +43,7 @@ const Apps = () => {
     </div>
     
     <div className = " content-center text-center">
-    <Link href ="">
+    <Link href ="https://calendar.google.com/calendar/u/1?cid=amFzb24uc2VreWVyZUBpbnN1YXZld2V0cnVzdC5jb20">
     <Image src= "/calendar.png"  className="cursor-pointer" width={65} height={65} />
     
     </Link>
