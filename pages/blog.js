@@ -25,12 +25,12 @@ const blog = (post) => {
     getPosts();
   }, []);
 
-  console.log("postsLists", postsLists);
+  // console.log("postsLists", postsLists);
 
   return (
-    <body className="bg-black">
+    <body className=" min-h-screen bg-black">
 
-    <div className="  bg-black ">
+    <div className="  min-h-screen bg-black ">
       
       <Head>
       {/* Coded by: Kaya Jones
