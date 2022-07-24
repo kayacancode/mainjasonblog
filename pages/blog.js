@@ -96,8 +96,12 @@ const blog = (post) => {
                 img={post?.imgUrl}
                 key={post.id}
                 title={post.title}
-                click={() => router.push("/view-post?id=" + post.id)}
-              />
+                // click={() => router.push("/" + post.title.toLowerCase().replace(/\s/g, ""))}
+                // click={() => router.push("/view-post?title="+ post.title.toLowerCase().replace(/\s/g, ""))}
+                // click={() => router.push("/view-post?id="+ post.id + "&title="+ post.title.toLowerCase().replace(/\s/g, ""))}
+                click={() => router.push("/view-post?id="+ post.id + "&title="+ post.title.toLowerCase().replace(/\s/g, ""))}
+
+              /> 
             </div>
           );
         })}
