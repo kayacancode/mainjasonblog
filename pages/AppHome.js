@@ -5,6 +5,7 @@ import Apps from "../components/Apps";
 import styles from "../styles/Home.module.css";
 import { Howl, Howler } from "howler";
 import Head from 'next/head'
+import Popup from "../components/Popup";
 
 const AppHome = () => {
   const audioRef = useRef(null);
@@ -36,7 +37,7 @@ const AppHome = () => {
         </audio>
         <Apps />
         <AppDock />
-
+        <Popup/>
         <div className={styles.pagecontainer}>
           <div className={styles.page1}></div>
           <div className={styles.page2}></div>
