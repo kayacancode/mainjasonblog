@@ -110,3 +110,46 @@
     height: 100%!important;
     object-fit: cover;
 }
+.react-responsive-modal-modal{
+    padding: 10px;
+}
+.modalInputContainer{
+    margin: 20px 0px 10px 0px
+}
+.modalInput{
+    padding: 6px;
+    border: 1px solid gray;
+    border-radius: 5px;
+    width: 300px;
+}
+.modalButton{
+    background-color: black;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 5px;
+    margin-left: 5px;
+}
+.successHeading{
+    font-size: 24px;
+    color: green;
+    font-weight: 500;
+}
+.loader {
+    animation: spin 2s linear infinite;
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    vertical-align: -0.125em;
+    border: 0.15em solid #fff;
+    border-right-color: transparent;
+    border-radius: 50%;
+}
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
