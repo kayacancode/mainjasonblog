@@ -30,7 +30,7 @@ const AppDock = () => {
                 height={65}
               />
             </Link>
-            <div className={styles.text}> Close Friends</div>
+            <div className={styles.text}> Close Freinds</div>
           </div>
 
           <div className=" content-center text-center">
