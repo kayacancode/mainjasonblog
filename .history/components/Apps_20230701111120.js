@@ -33,14 +33,14 @@ const Apps = () => {
     </Link>
     <div className = {styles.text}> Tiktok</div>
     </div>
-{/*     
+    
     <div className = " content-center text-center">
     <Link href ="https://www.facebook.com/InSuaveWeTrust/">
     <Image src= "/facebook.png"  className="cursor-pointer"width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Facebook</div>
-    </div> */}
+    </div>
     
     <div className = " content-center text-center">
     <Link href ="https://calendar.google.com/calendar/u/1?cid=amFzb24uc2VreWVyZUBpbnN1YXZld2V0cnVzdC5jb20">
@@ -57,13 +57,13 @@ const Apps = () => {
     </Link>
     <div className = {styles.text}> Anchor</div>
     </div>
-    {/* <div className = " content-center text-center">
+    <div className = " content-center text-center">
     <Link href ="https://beams.fm/insuavewetrust">
     <Image src= "/beamsfm.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Beams</div>
-    </div> */}
+    </div>
     <div className = " content-center text-center">
     <Link href ="https://www.youtube.com/channel/UC_9_5ERNVJIBBKjd0izfG8g">
     <Image src= "/yt.png" className="cursor-pointer" width={65} height={65} />
@@ -100,7 +100,7 @@ const Apps = () => {
     
    
     <div className = " content-center text-center">
-    <Link href ="https://twitter.com/SuaveMontana">
+    <Link href ="https://twitter.com/INSUAVEWETRUSTx">
     <Image src= "/twitter.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>

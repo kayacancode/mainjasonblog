@@ -100,7 +100,7 @@ const Apps = () => {
     
    
     <div className = " content-center text-center">
-    <Link href ="https://twitter.com/SuaveMontana">
+    <Link href ="https://twitter.com/INSUAVEWETRUSTx">
     <Image src= "/twitter.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>

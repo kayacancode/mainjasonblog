@@ -72,7 +72,7 @@ const blog = (post) => {
         </div>
         
         <div className="  w-full">
-          <h1 className="font-bold text-3xl pr-5"> Post
+          <h1 className="font-bold text-3xl pr-5"> CATEGORY: ALBUM REVIEWS
  </h1>
         </div>
       </div>
