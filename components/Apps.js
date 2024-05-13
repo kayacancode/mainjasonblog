@@ -82,7 +82,7 @@ const Apps = () => {
 
 
     <div className = " content-center text-center">
-    <Link href ="https://insuavewetrust.wpcomstaging.com/category/music/album-reviews/">
+    <Link href ="https://insuavewetrust.wordpress.com/category/music/album-reviews/">
     <Image src= "/blog.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
