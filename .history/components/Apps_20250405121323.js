@@ -35,7 +35,7 @@ const Apps = () => {
     </div>
 
     <div className = " content-center text-center">
-    <Link href ="https://www.youtube.com/@Sochaspace">
+    <Link href ="https://www.youtube.com/channel/UC_9_5ERNVJIBBKjd0izfG8g">
     <Image src= "/yt.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
@@ -67,14 +67,6 @@ const Apps = () => {
     </Link>
     <div className = {styles.text}> X </div>
     </div>
-    <div className = "content-center text-center">
-    <Link href ="https://sochaspace.com/">
-    <Image src= "/sochalogo.png" className=" bg-white cursor-pointer rounded-xl" width={65} height={65} />
-    
-    </Link>
-    <div className = {styles.text}> Socha </div>
-    </div>
-
     </div>
 
     

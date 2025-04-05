@@ -35,12 +35,21 @@ const Apps = () => {
     </div>
 
     <div className = " content-center text-center">
-    <Link href ="https://www.youtube.com/@Sochaspace">
+    <Link href ="https://www.youtube.com/channel/UC_9_5ERNVJIBBKjd0izfG8g">
     <Image src= "/yt.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
     <div className = {styles.text}> Youtube</div>
     </div>
+
+    <div className = " content-center text-center">
+    <Link href ="https://instagram.com/trustyfits?igshid=YmMyMTA2M2Y=">
+    <Image src= "/trustyfits.png" className="cursor-pointer" width={65} height={65} />
+    
+    </Link>
+    <div className = {styles.text}> Trusty Fits</div>
+    </div>
+
 
     <div className = " content-center text-center">
     <Link href ="https://insuavewetrust.wordpress.com/category/music/album-reviews/">
@@ -60,20 +69,24 @@ const Apps = () => {
     </div>
     
    
-    <div className = "content-center text-center">
+    <div className = " content-center text-center">
     <Link href ="https://twitter.com/SuaveMontana">
-    <Image src= "/x.jpg" className="cursor-pointer rounded-xl" width={65} height={65} />
+    <Image src= "/twitter.png" className="cursor-pointer" width={65} height={65} />
     
     </Link>
-    <div className = {styles.text}> X </div>
+    <div className = {styles.text}> Twitter</div>
     </div>
-    <div className = "content-center text-center">
-    <Link href ="https://sochaspace.com/">
-    <Image src= "/sochalogo.png" className=" bg-white cursor-pointer rounded-xl" width={65} height={65} />
+
+
+    <div className = " content-center text-center">
+    <Link href ="https://thejammybrand.com/">
+    <Image src= "/jammy.png"  className="cursor-pointer" width={65} height={65} />
     
     </Link>
-    <div className = {styles.text}> Socha </div>
+    <div className = {styles.text}>Jammy</div>
     </div>
+
+
 
     </div>
 
