@@ -49,10 +49,8 @@ const blog = (post) => {
   // console.log("postsLists", postsLists);
 
   return (
-    <body className=" min-h-screen bg-black">
-
-    <div className="  min-h-screen bg-black ">
-      
+    <body className="min-h-screen bg-[#1a1a1a]">
+    <div className="min-h-screen bg-[#1a1a1a]">
       <Head>
       {/* Coded by: Kaya Jones
   website: https://kayacancode.com/ */}
@@ -69,63 +67,38 @@ const blog = (post) => {
         <meta property="og:site_name" content="In Suave We Trust"/>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className=" text-center text-black bg-[#ffffff] p-5  top-0 w-full 2/4 flex items-center	 ">
-        <div className="flex grid justify-items-start ">
-          <div className="justify-items-start">
-            <div className="grid grid-cols-3">
-              <Link href="/AppHome">
-                <img
-                  src="/arrow.png"
-                  className="realitve float-left cursor-pointer "
-                  width="100%"
-                  height="100%"
-                  layout="responsive"
-                  objectFit="contain"
-                />
-              </Link>
-              {/* <Link href="/AppHome">
-                <a href="" class="relative text-[#007aff] ">
-                  Back
-                </a>
-              </Link> */}
-            </div>
-          </div>
+      <div className="text-center text-white bg-[#1a1a1a] p-5 top-0 w-full flex items-center justify-between shadow-lg">
+        <div className="flex items-center">
+          <Link href="/AppHome" className="hover:opacity-80 transition-opacity">
+            <img
+              src="/arrow.png"
+              className="w-8 h-8 cursor-pointer"
+              alt="Back"
+            />
+          </Link>
         </div>
         
-        <div className="  w-full">
-          <h1 className="font-bold text-3xl pr-5"> Post
- </h1>
+        <div className="flex-1">
+          <h1 className="font-bold text-3xl">Posts</h1>
         </div>
-      </div>
-      <div className="flex justify-between pt-4">
-        <div> </div>
-        <div>
-          
-        </div>
-        <div className="px-16">
-          <Link href="/adminsignin">
-            <img src="/adminprofile.png" width="50px" height="50px" />
+
+        <div className="flex items-center">
+          <Link href="/adminsignin" className="hover:opacity-80 transition-opacity">
+            <img src="/adminprofile.png" width="40px" height="40px" alt="Admin" />
           </Link>
         </div>
       </div>
-      <div className="grid-cols-3 p-16 space-y-2 md:space-y-0 grid-cols-3 sm:grid sm:gap-3 sm:grid-cols-3 ">
-        {postsLists.map((post) => {
-          return (
-            <div>
-              {/* <Post key ={post.id} title = {post.title}/>  */}
-              <Smallpostcard
-                img={post?.imgUrl}
-                key={post.id}
-                title={post.title}
-                // click={() => router.push("/" + post.title.toLowerCase().replace(/\s/g, ""))}
-                // click={() => router.push("/view-post?title="+ post.title.toLowerCase().replace(/\s/g, ""))}
-                // click={() => router.push("/view-post?id="+ post.id + "&title="+ post.title.toLowerCase().replace(/\s/g, ""))}
-                click={() => router.push("/view-post?id="+ post.id + "&title="+ post.title.toLowerCase().replace(/\s/g, ""))}
 
-              /> 
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 p-8">
+        {postsLists.map((post) => (
+          <div key={post.id} className="transform hover:scale-105 transition-transform duration-200">
+            <Smallpostcard
+              img={post?.imgUrl}
+              title={post.title}
+              click={() => router.push("/view-post?id="+ post.id + "&title="+ post.title.toLowerCase().replace(/\s/g, ""))}
+            />
+          </div>
+        ))}
       </div>
     </div>
     </body>

@@ -49,7 +49,6 @@ const Closefreinds = () => {
                         </Link>
                        
                     </div>
-                    
                     <div class = "">
                         <h1 class ="font-bold bg-[#F2F2F2]">D</h1>
                         <Link href= "/closefreinds/Desta">
@@ -129,9 +128,6 @@ const Closefreinds = () => {
                         <h1 class ="font-bold bg-[#F2F2F2]">S</h1>
                         <Link href= "/closefreinds/StevenMuela">
                         <h1 class = "cursor-pointer hover:bg-slate-100">Steven Muela</h1>
-                        </Link>
-                        <Link href= "/closefreinds/Socha">
-                        <h1 class = "cursor-pointer hover:bg-slate-100">Socha</h1>
                         </Link>
                         
                     </div>

@@ -89,35 +89,42 @@ export default function admindashboard() {
   };
 
   return (
-<div className="min-h-screen  items-center justify-center bg-[#000000]">
+    <div className="min-h-screen bg-[#1a1a1a] text-white">
         <Navbar />
-         <div>
-        </div>
-      
-        <h1 class = "text-center text-[#F2EA6D] font-bold text-3xl border-b-4 border-[#FFD800]">Admin Dashboard</h1>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold text-[#F2EA6D] border-b-4 border-[#FFD800] pb-2">
+              Admin Dashboard
+            </h1>
+            <button 
+              onClick={signOutUser}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+            >
+              Sign Out
+            </button>
+          </div>
 
-      <button style={{ background: "red" }} onClick={signOutUser}>
-        SignOut
-      </button>
-      <div className="grid md:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-2">
-    
-    {postsLists.map((post) => (
-       <AdminPosts
-       onDelete={async () => {
-        await deletePost(post);
-        setPostList((prevPosts) => prevPosts.filter((p) => p.id !== post.id));
-      }}       onEdit={() =>
-         router.push({
-           pathname: "/createpost",
-           query: { postId: post?.id },
-         })
-       }
-       Dashboard
-       key={post.id}
-       {...post}
-     />
-    ))}
-  </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {postsLists.map((post) => (
+              <AdminPosts
+                key={post.id}
+                onDelete={async () => {
+                  await deletePost(post);
+                  setPostList((prevPosts) => prevPosts.filter((p) => p.id !== post.id));
+                }}
+                onEdit={() =>
+                  router.push({
+                    pathname: "/createpost",
+                    query: { postId: post?.id },
+                  })
+                }
+                {...post}
+                className="transform hover:scale-105 transition-transform duration-200"
+              />
+            ))}
+          </div>
+        </div>
     </div>
   );
 }
