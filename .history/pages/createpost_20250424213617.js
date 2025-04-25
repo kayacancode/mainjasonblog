@@ -24,6 +24,8 @@ import firebase from "../firebase";
 import { async } from "@firebase/util";
 import { storage } from "../firebase";
 import Link from "next/link";
+import BlogContent from "../components/BlogContent";
+
 const Createpost = () => {
   const router = useRouter();
 
@@ -46,14 +48,14 @@ const Createpost = () => {
 
   useEffect(() => {
     (async () => {
-      if (router.query.projectId) {
+      if (router.query.postId) {
         await fetchProjectData();
       }
     })();
-  }, [router.query.projectId]);
+  }, [router.query.postId]);
 
   const fetchProjectData = async () => {
-    const docRef = doc(db, "posts", router.query.projectId);
+    const docRef = doc(db, "posts", router.query.postId);
     const docSnap = await getDoc(docRef);
 
     const q = query(collection(db, "users"));
@@ -63,7 +65,6 @@ const Createpost = () => {
       querySnapshot.docs.map((doc) => {
         return {
           ...doc.data(),
-          userID: doc.id,
         };
       })
     );
@@ -87,7 +88,7 @@ const Createpost = () => {
   const handlePost = async (e) => {
     e.preventDefault();
 
-    if (router.query.projectId === undefined) {
+    if (router.query.postId === undefined) {
       if (!title || !postText  || !imgFile) {
         setError("Please fill all the fields");
         return;
@@ -109,8 +110,8 @@ const Createpost = () => {
     };
     console.log(data);
     try {
-      if (router.query.projectId) {
-        const postRef = doc(db, "posts", router.query.projectId);
+      if (router.query.postId) {
+        const postRef = doc(db, "posts", router.query.postId);
         await updateDoc(postRef, data);
 
         if (image) {
@@ -118,7 +119,7 @@ const Createpost = () => {
           router.push("/admindashboard");
           return;
         }
-        await imageUpload(router.query.projectId);
+        await imageUpload(router.query.postId);
 
         return;
       }
@@ -133,7 +134,7 @@ const Createpost = () => {
   };
 
   const imageUpload = async (postId) => {
-    const storageRef = ref(storage, "builder/" + user.id + "/" + postId);
+    const storageRef = ref(storage, "blogposts/"  + "/" + postId);
     const uploadTask = uploadBytesResumable(storageRef, imgFile);
     uploadTask.on(
       "state_changed",
@@ -171,7 +172,7 @@ const Createpost = () => {
         setLoading(false);
         setProgress(null);
 
-        router.push("/Dashboard");
+        router.push("/admindashboard");
 
         // router.back();
       }
@@ -198,141 +199,114 @@ const Createpost = () => {
   };
 
   return (
-    <div className=" font-Archivo bg-[#f6f9fc] text-[#0a2540] h-[100%] ">
-      
-      <div className="   text-[#0a2540] pt-10">
-       
+    <div className="min-h-screen bg-[#1a1a1a] text-white">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mb-8">
+          <Link href="/admindashboard" className="inline-flex items-center text-[#F2EA6D] hover:text-[#FFD800] transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+            Back to Dashboard
+          </Link>
+        </div>
+        
         <form
-          className=" max-w-lg mx-auto p-4 bg-white rounded shadow-lg"
+          className="space-y-8"
           onSubmit={(e) => handlePost(e)}
         >
-          <div className="block md:flex">
-            <div className=" text-center ">
-              <h1 className="	 text-[#0a2540] font-Archio mb-10 	 text-5xl	 py-2 	">
-                Create a New Blog Post
+          <div className="space-y-6">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl font-bold text-[#F2EA6D] border-b-4 border-[#FFD800] pb-2 inline-block">
+                {router.query.postId ? "Edit Blog Post" : "Create a New Blog Post"}
               </h1>
-              <div className="mb-4">
+            </div>
+
+            <div className="space-y-4">
+              <div>
                 <label
-                  className="block mb-2 text-lg font-medium"
+                  className="block text-lg font-medium mb-2"
                   htmlFor="title"
                 >
-                  Project Title<span className="text-[#d1202f]">*</span>
+                  Post Title<span className="text-red-500">*</span>
                 </label>
-
                 <input
-                  placeholder="Enter project title"
+                  placeholder="Enter post title"
                   value={title}
                   required
                   onChange={(event) => {
                     setTitle(event.target.value);
                   }}
-                  className="text-xl sm:text-2xl text-[#040404] mb-4 bg-[#e7f0fe] shadow-lg w-full sm:w-96 rounded py-2 pl-2 pr-8 shadow-sm"
+                  className="w-full px-4 py-3 rounded-lg bg-[#2a2a2a] border border-gray-700 focus:border-[#F2EA6D] focus:ring-2 focus:ring-[#F2EA6D] focus:outline-none transition-colors duration-200"
                 />
               </div>
-              <div className="mb-4">
-                  <label className="block mb-2 text-lg font-medium">
-                    Content<span className="text-[#d1202f]">*</span>:
-                  </label>
-                </div>
-                <div className="rounded">
-                  
+
+              <div>
+                <label className="block text-lg font-medium mb-2">
+                  Content<span className="text-red-500">*</span>
+                </label>
+                <div className="rounded-lg border border-gray-700 bg-[#2a2a2a] focus-within:border-[#F2EA6D] focus-within:ring-2 focus-within:ring-[#F2EA6D] transition-colors duration-200">
                   <textarea
                     value={postText}
                     required
                     onChange={(event) => {
                       setPostText(event.target.value);
                     }}
-                    className="resize-none bg-transparent bg-[#e7f0fe]  p-4 outline-none max-h-80 h-25 w-full sm:w-96 border-b-2 rounded"
+                    className="w-full h-64 p-4 bg-transparent resize-none focus:outline-none"
                     placeholder="Enter blog content"
-                    ></textarea>
-              </div>
-              <h2 className="text-xl text-[#0a2540] font-bold pt-8">
-                Upload file
-              </h2>
-              <h2 className="text-base sm:text-lg text-[#0a2540] pt-2">
-                Upload a image for your blog
-              </h2>
-              <div className="p-10 sm:p-20 bg-[#e7f0fe] block  rounded mt-2  ">
-                <div className="text-center block">
-                  <label className="text-xl">
-                    Upload an image file - PNGs, JPEGS, HEICS
-                  </label>
-                  <input
-                    type="file"
-                    className="bg-[#A3CBD4] text-[#0a2540] p-4 w-full lg: w-[200px] sm:w-[263px] rounded my-2 text-center"
-                    onClick={(e) => (e.target.value = null)}
-                    onChange={(event) => selectImage(event)}
-                    id="imageUploader"
                   />
                 </div>
+                <BlogContent postText={postText} />
               </div>
 
-      </div>
-       
-</div>
-          <div className="mt-10">
-            <h1>Preview your post:</h1>
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-xl font-bold text-[#F2EA6D]">Upload Image</h2>
+                  <p className="text-gray-400 mt-1">Upload an image for your blog post</p>
+                </div>
 
-            <div className="m-5 p-3 bg-[#f6f9fc] rounded shadow-lg ">
-             
-                {previewImage && (
-                  <img
-                    className="rounded-t-lg"
-                    src={previewImage || ""}
-                    alt="image"
-                    height={100}
-                    width="100%"
-                  />
-                )}
-              
-
-              <div className="p-5 text-center">
-                <a href="#">
-                  <h5 className="mb-2 text-lg  font-bold tracking-tight text-[#0a2540]">
-                    Blog Title
-                  </h5>
-                
-                </a>
-                <p className="py-3 h-20 overflow-auto font-normal text-gray-700">
-                  Blog Content
-                </p>
-                {router?.query?.projectId && (
-                  <button
-                    onClick={() => {
-                      router.push({
-                        pathname: "/view-post",
-                        query: { id: router.query.projectId },
-                      });
-                    }}
-                    className="inline-flex rounded-full justify-center w-full mt-2 items-center py-2 px-3 text-sm font-extrabold text-center text-[#f6f9fc] bg-[#020738] hover:bg-[#B0D4A5] focus:ring-4 focus:outline-none focus:ring-blue-300"
-                  >
-                    View Blog Post
-                  </button>
-                )}
-              
-                
+                <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 hover:border-[#F2EA6D] transition-colors duration-200">
+                  <div className="space-y-4">
+                    <label className="block text-center">
+                      <span className="text-lg">Upload an image file - PNGs, JPEGS, HEICS</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        onClick={(e) => (e.target.value = null)}
+                        onChange={(event) => selectImage(event)}
+                        id="imageUploader"
+                      />
+                      <div className="mt-4">
+                        <span className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-[#2a2a2a] hover:bg-[#3a3a3a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F2EA6D] transition-colors duration-200 cursor-pointer">
+                          Choose File
+                        </span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
-            
           </div>
-    
-          {error && <p className="text-red-500 my-2">{error}</p>}
-          <div className="flex justify-center mt-8">
-          <button
-            type="submit"
-            className="bg-[#020738] hover:bg-[#B0D4A5] text-white rounded-full py-2 px-8 "
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          <div className="flex justify-center pt-6">
+            <button
+              type="submit"
+              className="px-8 py-3 bg-[#F2EA6D] text-[#1a1a1a] font-bold rounded-lg hover:bg-[#FFD800] transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F2EA6D]"
             >
-            {loading
-              ? "loading " + (progress > 0 ? Math.round(progress) + "%" : "")
-              : router.query.projectId
-              ? "Edit Post"
-              : "Post"}
-          </button>
+              {loading
+                ? `Loading ${progress > 0 ? Math.round(progress) + "%" : ""}`
+                : router.query.postId
+                ? "Update Post"
+                : "Create Post"}
+            </button>
           </div>
         </form>
-        
       </div>
-    
     </div>
   );
 };
