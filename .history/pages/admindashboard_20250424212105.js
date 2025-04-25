@@ -11,11 +11,11 @@ import Image from "next/image";
 import Navbar from "../components/Navbar";
 import Post from '../components/Post'
 import Smallpostcard from '../components/Smallpostcard'
-
+import AdminPosts from '../components/AdminPosts'
 export default function admindashboard() {
   const [postsLists,setPostList] = useState([]);
   const postsCollectionRef = collection(db,"posts");
-  const postsCollectionRef = collection(db, "posts");
+  const draftCollectionRef = collection(db, "drafts");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,45 +74,57 @@ export default function admindashboard() {
       });
   }
 
-  const deletePost = async(id) => {
-    const postDoc = doc(db,"posts",id)
-    await deleteDoc(postDoc)
-  }
-
-  return (
-    <div class = "bg-[#000000]">
-        <Navbar />
-         <div>
-        </div>
-      
-        <h1 class = "text-center text-[#F2EA6D] font-bold text-3xl border-b-4 border-[#FFD800]">Admin Dashboard</h1>
-
-      <button style={{ background: "red" }} onClick={signOutUser}>
-        SignOut
-      </button>
-      <div className="grid-cols-3 p-16 space-y-2 md:space-y-0 sm:grid sm:gap-3 sm:grid-rows-3">
-    
-    {postsLists.map((post) => {
-  return (
-  <div>
+  const deletePost = async (post) => {
+    try {
+      // Delete post document from "posts" collection
+      const postDoc = doc(db, "posts", post.id);
+      await deleteDoc(postDoc);
   
-  <Smallpostcard 
-  key ={post.id} 
-  title = {post.title} 
-  img={post?.imgUrl}
-  />
-  <div className="deletePost"> 
-    <button onClick = {() => {
-      deletePost(post.id);
-      
-    }}>
-      {" "}
-      &#128465;</button>
-  </div>
-  </div>
-  )
-})}
-  </div>
+      // Delete draft document from "drafts" collection
+      const draftDoc = doc(db, "drafts", post.id);
+      await deleteDoc(draftDoc);
+    } catch (error) {
+      console.log("Error deleting post:", error.message);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#1a1a1a] text-white">
+        <Navbar />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold text-[#F2EA6D] border-b-4 border-[#FFD800] pb-2">
+              Admin Dashboard
+            </h1>
+            <button 
+              onClick={signOutUser}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+            >
+              Sign Out
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {postsLists.map((post) => (
+              <AdminPosts
+                key={post.id}
+                onDelete={async () => {
+                  await deletePost(post);
+                  setPostList((prevPosts) => prevPosts.filter((p) => p.id !== post.id));
+                }}
+                onEdit={() =>
+                  router.push({
+                    pathname: "/createpost",
+                    query: { postId: post?.id },
+                  })
+                }
+                {...post}
+                className="transform hover:scale-105 transition-transform duration-200"
+              />
+            ))}
+          </div>
+        </div>
     </div>
   );
 }
