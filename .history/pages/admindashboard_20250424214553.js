@@ -21,27 +21,26 @@ export default function admindashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      // Fetch all posts
-      const postsSnapshot = await getDocs(postsCollectionRef);
-      const postsData = postsSnapshot.docs.map((doc) => ({
+      // Fetch published posts
+      const publishedQuery = query(postsCollectionRef, where("isPublished", "==", true));
+      const publishedSnapshot = await getDocs(publishedQuery);
+      const publishedData = publishedSnapshot.docs.map((doc) => ({
         ...doc.data(),
         id: doc.id,
       }));
       
-      // Separate published and scheduled posts
-      const publishedPosts = postsData.filter(post => post.isPublished === true);
-      const scheduledPosts = postsData.filter(post => 
-        post.isPublished === false && 
-        post.scheduledFor && 
-        new Date(post.scheduledFor.seconds * 1000) > new Date()
+      // Fetch scheduled posts
+      const scheduledQuery = query(
+        postsCollectionRef, 
+        where("isPublished", "==", false),
+        where("scheduledFor", "!=", null),
+        orderBy("scheduledFor", "asc")
       );
-      
-      // Sort scheduled posts by date
-      scheduledPosts.sort((a, b) => {
-        const dateA = new Date(a.scheduledFor.seconds * 1000);
-        const dateB = new Date(b.scheduledFor.seconds * 1000);
-        return dateA - dateB;
-      });
+      const scheduledSnapshot = await getDocs(scheduledQuery);
+      const scheduledData = scheduledSnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      }));
       
       // Fetch drafts
       const draftsSnapshot = await getDocs(draftCollectionRef);
@@ -50,8 +49,8 @@ export default function admindashboard() {
         id: doc.id,
       }));
   
-      setPostList(publishedPosts);
-      setScheduledPosts(scheduledPosts);
+      setPostList(publishedData);
+      setScheduledPosts(scheduledData);
     };
   
     fetchData();
@@ -122,20 +121,12 @@ export default function admindashboard() {
             <h1 className="text-3xl font-bold text-[#F2EA6D] border-b-4 border-[#FFD800] pb-2">
               Admin Dashboard
             </h1>
-            <div className="flex space-x-4">
-              <button 
-                onClick={() => router.push('/blog')}
-                className="bg-[#F2EA6D] hover:bg-[#FFD800] text-[#1a1a1a] font-bold px-4 py-2 rounded-lg transition-colors duration-200"
-              >
-                View Blog
-              </button>
-              <button 
-                onClick={signOutUser}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
-              >
-                Sign Out
-              </button>
-            </div>
+            <button 
+              onClick={signOutUser}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+            >
+              Sign Out
+            </button>
           </div>
 
           {/* Published Posts Section */}
