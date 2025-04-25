@@ -122,20 +122,12 @@ export default function admindashboard() {
             <h1 className="text-3xl font-bold text-[#F2EA6D] border-b-4 border-[#FFD800] pb-2">
               Admin Dashboard
             </h1>
-            <div className="flex space-x-4">
-              <button 
-                onClick={() => router.push('/blog')}
-                className="bg-[#F2EA6D] hover:bg-[#FFD800] text-[#1a1a1a] font-bold px-4 py-2 rounded-lg transition-colors duration-200"
-              >
-                View Blog
-              </button>
-              <button 
-                onClick={signOutUser}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
-              >
-                Sign Out
-              </button>
-            </div>
+            <button 
+              onClick={signOutUser}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+            >
+              Sign Out
+            </button>
           </div>
 
           {/* Published Posts Section */}
