@@ -34,7 +34,7 @@ const AppDock = () => {
           </div>
 
           <div className=" content-center text-center">
-            <Link href="">
+            <Link href="/photos">
               <Image
                 className="cursor-pointer"
                 src="/photos.png"

@@ -20,8 +20,6 @@ export default function admindashboard() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [photoTitle, setPhotoTitle] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [bulkUploading, setBulkUploading] = useState(false);
-  const [bulkFile, setBulkFile] = useState(null);
   const postsCollectionRef = collection(db,"posts");
   const draftCollectionRef = collection(db, "drafts");
 
@@ -137,19 +135,8 @@ export default function admindashboard() {
 
   const formatScheduledDate = (timestamp) => {
     if (!timestamp) return "Not scheduled";
-    try {
-      if (timestamp.seconds) {
-        const date = new Date(timestamp.seconds * 1000);
-        if (isNaN(date.getTime())) return "Invalid date";
-        return date.toLocaleString();
-      }
-      const date = new Date(timestamp);
-      if (isNaN(date.getTime())) return "Invalid date";
-      return date.toLocaleString();
-    } catch (error) {
-      console.error("Error formatting scheduled date:", error);
-      return "Invalid date";
-    }
+    const date = new Date(timestamp.seconds * 1000);
+    return date.toLocaleString();
   };
 
   const handlePhotoUpload = async (e) => {
@@ -199,96 +186,6 @@ export default function admindashboard() {
     } catch (error) {
       console.error("Error deleting photo:", error);
       alert("Error deleting photo. Please try again.");
-    }
-  };
-
-  const handleBulkUpload = async (e) => {
-    e.preventDefault();
-    if (!bulkFile) return;
-
-    setBulkUploading(true);
-    try {
-      const fileText = await bulkFile.text();
-      let posts;
-
-      // Try to parse as JSON first
-      try {
-        posts = JSON.parse(fileText);
-      } catch (jsonError) {
-        // If JSON fails, try CSV parsing
-        const lines = fileText.split('\n');
-        const headers = lines[0].split(',').map(h => h.trim());
-        posts = lines.slice(1).filter(line => line.trim()).map(line => {
-          const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-          const post = {};
-          headers.forEach((header, index) => {
-            post[header] = values[index] || '';
-          });
-          return post;
-        });
-      }
-
-      // Validate posts array
-      if (!Array.isArray(posts)) {
-        throw new Error("File must contain an array of posts");
-      }
-
-      let successCount = 0;
-      let errorCount = 0;
-
-      // Upload posts in batches to avoid overwhelming Firebase
-      const batchSize = 10;
-      for (let i = 0; i < posts.length; i += batchSize) {
-        const batch = posts.slice(i, i + batchSize);
-        
-        await Promise.all(batch.map(async (post) => {
-          try {
-            // Ensure required fields and set defaults
-            const postData = {
-              title: post.title || `Untitled Post ${i + 1}`,
-              postText: post.content || post.body || post.postText || '',
-              author: post.author || 'Admin',
-              createdAt: post.createdAt ? new Date(post.createdAt) : new Date(),
-              isPublished: post.isPublished !== undefined ? post.isPublished : true,
-              postImg: post.imgUrl || post.image || post.postImg || '',
-              tags: post.tags || [],
-              excerpt: post.excerpt || post.summary || '',
-              ...post // Include any additional fields
-            };
-
-            // Add to Firestore
-            await addDoc(postsCollectionRef, postData);
-            successCount++;
-          } catch (error) {
-            console.error(`Error uploading post: ${post.title}`, error);
-            errorCount++;
-          }
-        }));
-
-        // Small delay between batches
-        if (i + batchSize < posts.length) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-
-      alert(`Bulk upload completed!\nSuccessful: ${successCount}\nErrors: ${errorCount}`);
-      
-      // Refresh the posts list
-      const postsSnapshot = await getDocs(postsCollectionRef);
-      const postsData = postsSnapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
-      const publishedPosts = postsData.filter(post => post.isPublished === true);
-      setPostList(publishedPosts);
-
-      // Reset form
-      setBulkFile(null);
-    } catch (error) {
-      console.error("Error during bulk upload:", error);
-      alert(`Error during bulk upload: ${error.message}`);
-    } finally {
-      setBulkUploading(false);
     }
   };
 
@@ -422,77 +319,6 @@ export default function admindashboard() {
           </div>
         </div>
 
-        {/* Bulk Upload Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-              <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 12l2 2 4-4" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Bulk Upload Posts</h2>
-              <p className="text-gray-600">Upload multiple blog posts at once using JSON or CSV format</p>
-            </div>
-          </div>
-
-          <div className="bg-indigo-50 rounded-lg p-4 mb-6">
-            <h3 className="font-medium text-indigo-900 mb-2">📋 File Format Requirements:</h3>
-            <div className="text-sm text-indigo-800 space-y-1">
-              <p><strong>JSON Format:</strong> Array of objects with fields: title, content, author, imgUrl, etc.</p>
-              <p><strong>CSV Format:</strong> Headers in first row: title,content,author,imgUrl,isPublished</p>
-              <p><strong>Required Fields:</strong> title, content (maps to postText internally)</p>
-              <p><strong>Note:</strong> content → postText, imgUrl → postImg (auto-mapped)</p>
-            </div>
-          </div>
-
-          <form onSubmit={handleBulkUpload} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select File (JSON or CSV)
-              </label>
-              <input
-                type="file"
-                accept=".json,.csv"
-                onChange={(e) => setBulkFile(e.target.files[0])}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
-            
-            {bulkFile && (
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-sm text-gray-600">
-                  📁 Selected: <span className="font-medium">{bulkFile.name}</span>
-                  <span className="ml-2 text-gray-500">({(bulkFile.size / 1024).toFixed(1)} KB)</span>
-                </p>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={!bulkFile || bulkUploading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {bulkUploading ? (
-                <span className="flex items-center justify-center space-x-2">
-                  <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>Uploading Posts...</span>
-                </span>
-              ) : (
-                <span className="flex items-center justify-center space-x-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <span>Upload All Posts</span>
-                </span>
-              )}
-            </button>
-          </form>
-        </div>
-
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Published Posts */}
@@ -570,7 +396,7 @@ export default function admindashboard() {
                       <div key={post.id} className="p-3 bg-orange-50 rounded-lg border border-orange-200">
                         <h3 className="font-medium text-gray-900 text-sm truncate">{post.title}</h3>
                         <p className="text-xs text-orange-600 mt-1">
-                          {formatScheduledDate(post.scheduledFor)}
+                          {safeFormatDate(post.scheduledFor)}
                         </p>
                         <div className="flex space-x-2 mt-2">
                           <button

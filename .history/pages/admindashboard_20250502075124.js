@@ -115,36 +115,47 @@ export default function admindashboard() {
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] text-white">
-        <Navbar />
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-[#F2EA6D] border-b-4 border-[#FFD800] pb-2">
+      <Navbar />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 space-y-4 md:space-y-0">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold text-[#F2EA6D] tracking-tight">
               Admin Dashboard
             </h1>
-            <div className="flex space-x-4">
-              <button 
-                onClick={() => router.push('/blog')}
-                className="bg-[#F2EA6D] hover:bg-[#FFD800] text-[#1a1a1a] font-bold px-4 py-2 rounded-lg transition-colors duration-200"
-              >
-                View Blog
-              </button>
-              <button 
-                onClick={signOutUser}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
-              >
-                Sign Out
-              </button>
-            </div>
+            <p className="text-gray-400 text-lg">Manage your creative content</p>
           </div>
+          <div className="flex space-x-4">
+            <button 
+              onClick={() => router.push('/blog')}
+              className="bg-[#F2EA6D] hover:bg-[#FFD800] text-[#1a1a1a] font-bold px-6 py-2 rounded-full transition-all duration-200 transform hover:scale-105"
+            >
+              View Blog
+            </button>
+            <button 
+              onClick={signOutUser}
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full transition-all duration-200 transform hover:scale-105"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
 
-          {/* Published Posts Section */}
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-6">Published Posts</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {postsLists.map((post) => (
+        {/* Published Posts Section */}
+        <div className="mb-16">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold text-white">Published Works</h2>
+            <button
+              onClick={() => router.push("/createpost")}
+              className="bg-[#F2EA6D] text-[#1a1a1a] font-bold px-6 py-2 rounded-full hover:bg-[#FFD800] transform hover:scale-105 transition-all duration-200"
+            >
+              Create New Post
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {postsLists.map((post) => (
+              <div key={post.id} className="bg-[#2a2a2a] rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-300">
                 <AdminPosts
-                  key={post.id}
                   onDelete={async () => {
                     await deletePost(post);
                     setPostList((prevPosts) => prevPosts.filter((p) => p.id !== post.id));
@@ -156,68 +167,58 @@ export default function admindashboard() {
                     })
                   }
                   {...post}
-                  className="transform hover:scale-105 transition-transform duration-200"
                 />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Scheduled Posts Section */}
+        {scheduledPosts.length > 0 && (
+          <div className="mb-16">
+            <h2 className="text-2xl font-bold text-white mb-8">Upcoming Exhibitions</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {scheduledPosts.map((post) => (
+                <div key={post.id} className="bg-[#2a2a2a] rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-all duration-300">
+                  <div className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-xl font-bold text-[#F2EA6D]">{post.title}</h3>
+                      <span className="text-sm bg-[#F2EA6D] text-[#1a1a1a] px-3 py-1 rounded-full font-medium">
+                        Scheduled
+                      </span>
+                    </div>
+                    <p className="text-gray-400 mb-6">
+                      Exhibition Date: {formatScheduledDate(post.scheduledFor)}
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                      <button
+                        onClick={() =>
+                          router.push({
+                            pathname: "/createpost",
+                            query: { postId: post.id },
+                          })
+                        }
+                        className="px-4 py-2 bg-[#F2EA6D] text-[#1a1a1a] rounded-full hover:bg-[#FFD800] transform hover:scale-105 transition-all duration-200"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await deletePost(post);
+                          setScheduledPosts((prevPosts) => prevPosts.filter((p) => p.id !== post.id));
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transform hover:scale-105 transition-all duration-200"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
-
-          {/* Scheduled Posts Section */}
-          {scheduledPosts.length > 0 && (
-            <div className="mb-12">
-              <h2 className="text-2xl font-bold text-white mb-6">Scheduled Posts</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {scheduledPosts.map((post) => (
-                  <div key={post.id} className="bg-[#2a2a2a] rounded-lg overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-200">
-                    <div className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-xl font-bold text-[#F2EA6D]">{post.title}</h3>
-                        <span className="text-sm bg-[#F2EA6D] text-[#1a1a1a] px-2 py-1 rounded-full">
-                          Scheduled
-                        </span>
-                      </div>
-                      <p className="text-gray-400 mb-4">
-                        Scheduled for: {formatScheduledDate(post.scheduledFor)}
-                      </p>
-                      <div className="flex justify-end space-x-2">
-                        <button
-                          onClick={() =>
-                            router.push({
-                              pathname: "/createpost",
-                              query: { postId: post.id },
-                            })
-                          }
-                          className="px-3 py-1 bg-[#F2EA6D] text-[#1a1a1a] rounded hover:bg-[#FFD800] transition-colors duration-200"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={async () => {
-                            await deletePost(post);
-                            setScheduledPosts((prevPosts) => prevPosts.filter((p) => p.id !== post.id));
-                          }}
-                          className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-200"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Create New Post Button */}
-          <div className="flex justify-center mt-8">
-            <button
-              onClick={() => router.push("/createpost")}
-              className="px-6 py-3 bg-[#F2EA6D] text-[#1a1a1a] font-bold rounded-lg hover:bg-[#FFD800] transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F2EA6D]"
-            >
-              Create New Post
-            </button>
-          </div>
-        </div>
+        )}
+      </div>
     </div>
   );
 }
