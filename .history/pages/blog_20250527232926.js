@@ -8,7 +8,7 @@ import Smallpostcard from "../components/Smallpostcard";
 import Bigpostcard from "../components/Bigpostcard";
 import { useRouter } from "next/router";
 
-import { getDocs } from "firebase/firestore";
+import { getDocs, query, where } from "firebase/firestore";
 import { addDoc, collection } from "firebase/firestore";
 import { auth, db } from "../firebase";
 const blog = (post) => {
@@ -19,12 +19,29 @@ const blog = (post) => {
   const draftCollectionRef = collection(db, "drafts");
 
   useEffect(() => {
+    let isMounted = true; // Flag to track if component is mounted
+
     const getPosts = async () => {
-      const data = await getDocs(postsCollectionRef);
-      setPostList(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
+      try {
+        // Query for published posts only
+        const q = query(postsCollectionRef, where("isPublished", "==", true));
+        const data = await getDocs(q);
+        
+        // Only update state if component is still mounted
+        if (isMounted) {
+          setPostList(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
+        }
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+      }
     };
 
     getPosts();
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
   }, []);
   // useEffect(() => {
   //   const fetchData = async () => {

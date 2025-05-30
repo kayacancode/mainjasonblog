@@ -246,11 +246,11 @@ export default function admindashboard() {
             // Ensure required fields and set defaults
             const postData = {
               title: post.title || `Untitled Post ${i + 1}`,
-              postText: post.content || post.body || post.postText || '',
+              content: post.content || post.body || '',
               author: post.author || 'Admin',
               createdAt: post.createdAt ? new Date(post.createdAt) : new Date(),
               isPublished: post.isPublished !== undefined ? post.isPublished : true,
-              postImg: post.imgUrl || post.image || post.postImg || '',
+              imgUrl: post.imgUrl || post.image || '',
               tags: post.tags || [],
               excerpt: post.excerpt || post.summary || '',
               ...post // Include any additional fields
@@ -441,8 +441,7 @@ export default function admindashboard() {
             <div className="text-sm text-indigo-800 space-y-1">
               <p><strong>JSON Format:</strong> Array of objects with fields: title, content, author, imgUrl, etc.</p>
               <p><strong>CSV Format:</strong> Headers in first row: title,content,author,imgUrl,isPublished</p>
-              <p><strong>Required Fields:</strong> title, content (maps to postText internally)</p>
-              <p><strong>Note:</strong> content → postText, imgUrl → postImg (auto-mapped)</p>
+              <p><strong>Required Fields:</strong> title, content (other fields are optional)</p>
             </div>
           </div>
 

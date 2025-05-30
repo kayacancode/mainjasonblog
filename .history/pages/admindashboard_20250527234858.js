@@ -441,8 +441,7 @@ export default function admindashboard() {
             <div className="text-sm text-indigo-800 space-y-1">
               <p><strong>JSON Format:</strong> Array of objects with fields: title, content, author, imgUrl, etc.</p>
               <p><strong>CSV Format:</strong> Headers in first row: title,content,author,imgUrl,isPublished</p>
-              <p><strong>Required Fields:</strong> title, content (maps to postText internally)</p>
-              <p><strong>Note:</strong> content → postText, imgUrl → postImg (auto-mapped)</p>
+              <p><strong>Required Fields:</strong> title, content (other fields are optional)</p>
             </div>
           </div>
 

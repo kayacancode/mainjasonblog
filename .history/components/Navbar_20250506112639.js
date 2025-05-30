@@ -12,13 +12,17 @@ const Navbar = () => {
   </div>
   
   <div class="w-full block flex-grow lg:flex lg:items-center lg:w-auto">
-  
-    <div>
-      <Link href= "/createpost">
-      <a href="" class="inline-block text-2xl px-4 py-2 mx-2 leading-none  text-[#F2EA6D]  font-bold hover:text-white mt-4 lg:mt-0">Create a post</a>
+    <Link href="/" className="text-white hover:text-[#F2EA6D] transition-colors">
+      Home
+    </Link>
+    <Link href="/photos" className="text-white hover:text-[#F2EA6D] transition-colors">
+      Photos
+    </Link>
+    {isAdmin && (
+      <Link href="/admindashboard" className="text-white hover:text-[#F2EA6D] transition-colors">
+        Admin
       </Link>
-
-    </div>
+    )}
   </div>
 </nav>
     </div>
