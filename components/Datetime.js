@@ -8,7 +8,7 @@ var datetime = () =>
     var displaytodaysdate = showDate.getDate() + (showDate.getMonth());
     var dt= showDate.toDateString();
     var displaytime = showDate.getHours() + showDate.getMinutes();
-    var currentTime = new Date().toLocaleTimeString();
+    var currentTime = showDate.getHours() + ":" + showDate.getMinutes() + ":" + showDate.getSeconds();
     return(
         <div>
             <center>

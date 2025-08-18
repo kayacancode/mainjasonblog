@@ -1,69 +1,57 @@
 import React, { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/router";
-import img from 'next/image'
-import Link from 'next/link'
-import { auth } from "../firebase";
+import Link from 'next/link';
+import { supabase } from "../lib/supabaseClient";
 
 const adminsignin = () => {
     const router = useRouter();
-
     const [form, setForm] = useState({ email: "", password: "" });
-    const [userError, setUserError] = useState(false);
-    const [passError, setPassError] = useState(false);
-    const [authError, setAuthError] = useState(false);
-  
-    useEffect(() => {
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          router.push("/admindashboard");
-        }
-      });
-    }, []);
-    const handleChange = (e) => {
-        setAuthError(false);
-        if (e.target.name === "email") {
-          setUserError(false);
-        }
-        if (e.target.name === "password") {
-          setPassError(false);
-        }
-        setForm({
-          ...form,
-          [e.target.name]: e.target.value,
-        });
-      };
-      const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!form.email) {
-          setUserError(true);
-          return;
-        }
-        if (!form.password) {
-          setPassError(true);
-          return;
-        }
-        handleLogin(form.email, form.password);
-      };
-    
-      const handleLogin = (email, password) => {
-        signInWithEmailAndPassword(auth, email, password)
-          .then((userCredential) => {
-            // signed in
-            const user = userCredential.user;
-            router.push("/email-verification", undefined, { shallow: true });
-          })
-          .catch((error) => {
-            console.log(error.message);
-            const errorCode = error.code;
-            const errorMessage = error.message;
-            console.log(errorCode);
-            if (errorCode === "auth/user-not-found")
-              setAuthError("This email is not registered.");
-            if (errorCode === "auth/wrong-password") setAuthError("Wrong password");
-          });
-      };
- 
+  const [errors, setErrors] = useState({ email: "", password: "", auth: "" });
+
+  useEffect(() => {
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((event, session) => {
+    if (session?.user) {
+      router.push("/admindashboard");
+    }
+  });
+
+  return () => {
+    subscription.unsubscribe();
+  };
+}, [router]);
+
+
+  const handleChange = (e) => {
+    setErrors({ ...errors, [e.target.name]: "" });
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.email) {
+      setErrors((prev) => ({ ...prev, email: "Please enter an email." }));
+      return;
+    }
+    if (!form.password) {
+      setErrors((prev) => ({ ...prev, password: "Please enter a password." }));
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: form.email,
+      password: form.password,
+    });
+
+    if (error) {
+      setErrors((prev) => ({ ...prev, auth: error.message }));
+      return;
+    }
+
+    router.push("/admindashboard");
+  };
+
   return (
     <div class= " h-screen bg-black">
     <div>
@@ -95,9 +83,9 @@ const adminsignin = () => {
                         /> 
 
                         </div>
-                        {userError && (
+                        {errors.email && (
           <p className="text-red-500 text-xs italic m-1">
-            Please Enter a email.
+            {errors.email}
           </p>
         )}
 
@@ -108,18 +96,18 @@ const adminsignin = () => {
                             onChange={handleChange}
                         class=" bg-[#F2EA6D] border-4 border-black w-full py-2 px-3 text-black leading-tight placeholder-black focus:outline-none focus:shadow-outline" 
                         name = "password"
-                         type="text" 
+                         type="password" 
                          placeholder="password" 
                          required />
 
                         </div>
-                                    {passError && (
+                                    {errors.password && (
                     <p className="text-red-500 text-xs italic">
-                        Please Enter a password.
+                        {errors.password}
                     </p>
                     )}
                        
-                       {authError && <p className="text-red-500 text-xs italic">{authError}</p>}
+                       {errors.auth && <p className="text-red-500 text-xs italic">{errors.auth}</p>}
 
                     
                         <div className="flex items-center justify-between mt-16">
