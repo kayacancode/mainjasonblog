@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { collection, getDocs,getDoc, addDoc, deleteDoc, doc, updateDoc, query, where, orderBy } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { supabase } from "../lib/supabaseClient";
 import { format } from "date-fns";
 
-import { auth, db, storage } from "../firebase";
 import Image from "next/image";
 import Navbar from "../components/Navbar";
 import Post from '../components/Post'
@@ -13,17 +10,21 @@ import Smallpostcard from '../components/Smallpostcard'
 import AdminPosts from '../components/AdminPosts'
 
 export default function admindashboard() {
-  const [postsLists,setPostList] = useState([]);
-  const [scheduledPosts, setScheduledPosts] = useState([]);
-  const [photos, setPhotos] = useState([]);
+  const router = useRouter();
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [photoTitle, setPhotoTitle] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [bulkUploading, setBulkUploading] = useState(false);
+
+  const [postList, setPostList] = useState([]);
+  const [photos, setPhotos] = useState([]);
+  
   const [bulkFile, setBulkFile] = useState(null);
-  const postsCollectionRef = collection(db,"posts");
-  const draftCollectionRef = collection(db, "drafts");
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [photoTitle, setPhotoTitle] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  const [scheduledPosts, setScheduledPosts] = useState([]);
+  const [drafts, setDrafts] = useState([]);
 
   // Helper function to safely format dates
   const safeFormatDate = (timestamp, fallback = "No date") => {
@@ -47,79 +48,88 @@ export default function admindashboard() {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      // Fetch all posts
-      const postsSnapshot = await getDocs(postsCollectionRef);
-      const postsData = postsSnapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
-      
-      // Separate published and scheduled posts
-      const publishedPosts = postsData.filter(post => post.isPublished === true);
-      const scheduledPosts = postsData.filter(post => 
-        post.isPublished === false && 
-        post.scheduledFor && 
-        new Date(post.scheduledFor.seconds * 1000) > new Date()
-      );
-      
-      // Sort scheduled posts by date
-      scheduledPosts.sort((a, b) => {
-        const dateA = new Date(a.scheduledFor.seconds * 1000);
-        const dateB = new Date(b.scheduledFor.seconds * 1000);
-        return dateA - dateB;
-      });
-      
-      // Fetch drafts
-      const draftsSnapshot = await getDocs(draftCollectionRef);
-      const draftsData = draftsSnapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
+  // features in useEffect right now: fetch posts, fetch drafts, separate published/scheduled, sort scheduled posts
+  // also checking auth state
   
-      setPostList(publishedPosts);
-      setScheduledPosts(scheduledPosts);
+  useEffect(() => {
+    const init = async () => {
+      // 1. Check auth
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        router.replace("/adminsignin");
+        return;
+      }
+
+      setUser(user);
+
+      // 2. Fetch posts
+      const { data: postsData, error: postsError } = await supabase
+        .from("posts")
+        .select("*");
+
+      if (postsError) {
+        console.error("Error fetching posts:", postsError);
+        return;
+      }
+
+      // Separate published/scheduled
+      const published = postsData.filter((p) => p.isPublished === true);
+      const scheduled = postsData
+        .filter(
+          (p) =>
+            p.isPublished === false &&
+            p.scheduledFor &&
+            new Date(p.scheduledFor) > new Date()
+        )
+        .sort((a, b) => new Date(a.scheduledFor) - new Date(b.scheduledFor));
+
+      setPostList(published);
+      setScheduledPosts(scheduled);
+
+      // 3. Fetch drafts
+      const { data: draftsData, error: draftsError } = await supabase
+        .from("drafts")
+        .select("*");
+
+      if (draftsError) {
+        console.error("Error fetching drafts:", draftsError);
+        return;
+      }
+
+      setDrafts(draftsData);
+
+      setLoading(false);
     };
-  
-    fetchData();
-  }, []);
 
-  const router = useRouter();
+    init();
 
-  const [user, setUser] = useState(null);
-  useEffect(() => {
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        if (!user.emailVerified) {
-          // user is signIn, but email is not verified
-          router.push("/email-verification");
-          return;
-        }
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setUser(docSnap.data());
-        } else {
-          console.log("No such document!");
-        }
+    // listen for auth state changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session?.user) {
+        router.replace("/adminsignin");
       } else {
-        // you can also redirect to the signIn page. if user is not signIn.
-        router.push("/adminsignin");
+        setUser(session.user);
       }
     });
-  }, []);
 
-  function signOutUser() {
-    signOut(auth)
-      .then(() => {
-        console.log("signOut success");
-      })
-      .catch((error) => {
-        // An error happened.
-        alert(error.message);
-      });
-  }
+    return () => subscription.unsubscribe();
+  }, [router]);
+
+  const signOutUser = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      alert(error.message);
+    } else {
+      router.replace("/adminsignin");
+    }
+  };
+
 
   const deletePost = async (post) => {
     try {
@@ -336,7 +346,7 @@ export default function admindashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Published Posts</p>
-                <p className="text-2xl font-bold text-gray-900">{postsLists.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{postList.length}</p>
               </div>
             </div>
           </div>
@@ -501,13 +511,13 @@ export default function admindashboard() {
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-900">Recent Posts</h2>
-                  <span className="text-sm text-gray-500">{postsLists.length} total</span>
+                  <span className="text-sm text-gray-500">{postList.length} total</span>
                 </div>
               </div>
               <div className="p-6">
-                {postsLists.length > 0 ? (
+                {postList.length > 0 ? (
                   <div className="space-y-4">
-                    {postsLists.slice(0, 5).map((post) => (
+                    {postList.slice(0, 5).map((post) => (
                       <div key={post.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900 truncate">{post.title}</h3>
