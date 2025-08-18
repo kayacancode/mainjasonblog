@@ -1,377 +1,237 @@
-import React, { useEffect, useState, useContext } from "react";
-import Image from "next/image";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import {
-  collection,
-  doc,
-  setDoc,
-  addDoc,
-  getDoc,
-  updateDoc,
-  query,
-  limit,
-  getDocs,
-  serverTimestamp,
-} from "firebase/firestore";
-import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-} from "firebase/storage";
-import { auth, db } from "../firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import firebase from "../firebase";
-import { async } from "@firebase/util";
-import { storage } from "../firebase";
+import { supabase } from "../lib/supabaseClient";
 import Link from "next/link";
 import BlogContent from "../components/BlogContent";
 
 const Createpost = () => {
   const router = useRouter();
 
-  const storage = getStorage();
   const [loading, setLoading] = useState(false);
-  const [postText, setPostText] = useState("");
   const [title, setTitle] = useState("");
+  const [postText, setPostText] = useState("");
+  const [imgFile, setImgFile] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
+  const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
-  const [isScheduled, setIsScheduled] = useState(false);
-
-  const [imgFile, setImageFile] = useState(null);
-
-  const [progress, setProgress] = useState(null);
   const [error, setError] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
-  const [image, setImage] = useState(null);
-  const [statusProject, setStatusProject] = useState(null);
-  const [currentProject, setCurrentProject] = useState(null);
-
-  const [userList, setUserList] = useState([]);
 
   useEffect(() => {
-    (async () => {
-      if (router.query.postId) {
-        await fetchProjectData();
-      }
-    })();
+    if (router.query.postId) fetchPostData();
   }, [router.query.postId]);
 
-  const fetchProjectData = async () => {
-    const docRef = doc(db, "posts", router.query.postId);
-    const docSnap = await getDoc(docRef);
+  // Fetch existing post for edit
+  const fetchPostData = async () => {
+    try {
+      const { data: post, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("id", router.query.postId)
+        .single();
+      if (error) throw error;
 
-    const q = query(collection(db, "users"));
+      setTitle(post.title);
+      setPostText(post.post_text);
+      setImageUrl(post.post_img);
+      setPreviewImage(post.post_img);
 
-    const querySnapshot = await getDocs(q);
-    setUserList(
-      querySnapshot.docs.map((doc) => {
-        return {
-          ...doc.data(),
-        };
-      })
-    );
-
-    if (docSnap.exists()) {
-      console.log("Document data:", docSnap.data());
-      let data = docSnap.data();
-      data.id = docSnap.id;
-      setTitle(data?.title);
-      setPostText(data?.postText);
-      setPreviewImage(data?.postImg);
-      setImage(data?.postImg);
-      
-      if (data?.scheduledFor) {
-        const scheduledDate = new Date(data.scheduledFor.seconds * 1000);
-        setScheduledDate(scheduledDate.toISOString().split('T')[0]);
-        setScheduledTime(scheduledDate.toTimeString().substring(0, 5));
+      if (post.scheduled_for) {
+        const dateObj = new Date(post.scheduled_for);
+        setScheduledDate(dateObj.toISOString().split("T")[0]);
+        setScheduledTime(dateObj.toTimeString().substring(0, 5));
         setIsScheduled(true);
       }
-    }
-  };
-
-  const handlePost = async (e) => {
-    e.preventDefault();
-
-    if (router.query.postId === undefined) {
-      if (!title || !postText || !imgFile) {
-        setError("Please fill all the fields");
-        return;
-      }
-    }
-
-    setError(null);
-
-    if (loading) {
-      return;
-    }
-    setLoading(true);
-
-    let scheduledTimestamp = null;
-    if (isScheduled && scheduledDate && scheduledTime) {
-      const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
-      scheduledTimestamp = scheduledDateTime;
-    }
-
-    let data = {
-      title: title || "",
-      postText: postText || "",
-      postImg: image || "",
-      scheduledFor: scheduledTimestamp,
-      isPublished: !scheduledTimestamp,
-      createdAt: Date.now(),
-    };
-    
-    console.log(data);
-    try {
-      if (router.query.postId) {
-        const postRef = doc(db, "posts", router.query.postId);
-        await updateDoc(postRef, data);
-
-        if (image) {
-          setLoading(false);
-          router.push("/admindashboard");
-          return;
-        }
-        await imageUpload(router.query.postId);
-
-        return;
-      }
-      const docRef = collection(db, "posts");
-      const { id } = await addDoc(docRef, data);
-
-      console.log("Document written with ID: ", id);
-      await imageUpload(id);
     } catch (err) {
-      console.log("er", err);
+      console.error(err);
+      setError("Failed to load post data.");
     }
   };
 
-  const imageUpload = async (postId) => {
-    const storageRef = ref(storage, "blogposts/"  + "/" + postId);
-    const uploadTask = uploadBytesResumable(storageRef, imgFile);
-    uploadTask.on(
-      "state_changed",
-      (snapshot) => {
-        const progress =
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        console.log("Upload is " + progress + "% done");
-        setProgress(progress);
-        switch (snapshot.state) {
-          case "paused":
-            console.log("Upload is paused");
-            break;
-          case "running":
-            console.log("Upload is running");
-            break;
-        }
-      },
-      (error) => {
-        console.log(error);
-        switch (error.code) {
-          case "storage/unauthorized":
-            break;
-          case "storage/canceled":
-            break;
-          case "storage/unknown":
-            break;
-        }
-      },
-      async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        const postRef = doc(db, "posts", postId);
+  const selectImage = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImgFile(file);
 
-        await setDoc(postRef, { postImg: downloadURL }, { merge: true });
-        setLoading(false);
-        setProgress(null);
-
-        router.push("/admindashboard");
-      }
-    );
+    const reader = new FileReader();
+    reader.onload = () => setPreviewImage(reader.result);
+    reader.readAsDataURL(file);
+    setImageUrl(null); // clear old URL if selecting new image
   };
 
-  function getBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
+const handlePost = async (e) => {
+  e.preventDefault();
+
+  if (!title || !postText) {
+    setError("Please fill all the fields");
+    return;
   }
 
-  const selectImage = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const base64 = await getBase64(file);
-      setPreviewImage(base64);
-      setImage(null);
-      setImageFile(file);
+  setLoading(true);
+  setError(null);
+
+  try {
+    // 🔹 Get current signed-in user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      setError("You must be signed in to create or edit a post.");
+      setLoading(false);
+      return;
     }
-  };
+
+    // 🔹 Determine the image URL to use
+    let imageUrl = null;
+
+    if (imgFile) {
+      // New file selected → upload it
+      const fileName = `${user.id}/${Date.now()}-${imgFile.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("post-images")
+        .upload(fileName, imgFile, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from("post-images")
+        .getPublicUrl(fileName);
+
+      imageUrl = data.publicUrl;
+    } else if (image) {
+      // Existing image (when editing) → keep URL
+      imageUrl = image;
+    } else {
+      // No image uploaded → optional: leave null or a default placeholder
+      imageUrl = null;
+    }
+
+    // 🔹 Prepare scheduled timestamp
+    let scheduledTimestamp = null;
+    if (isScheduled && scheduledDate && scheduledTime) {
+      scheduledTimestamp = new Date(`${scheduledDate}T${scheduledTime}`);
+    }
+
+    // 🔹 Construct post object
+    const postData = {
+      title,
+      post_text: postText,
+      post_img: imageUrl,
+      scheduled_for: scheduledTimestamp,
+      is_published: !scheduledTimestamp,
+      user_id: user.id, // required for RLS
+    };
+
+    if (router.query.postId) {
+      // 🔹 UPDATE existing post
+      const { error } = await supabase
+        .from("posts")
+        .update(postData)
+        .eq("id", router.query.postId);
+
+      if (error) throw error;
+    } else {
+      // 🔹 INSERT new post
+      const { data: inserted, error } = await supabase
+        .from("posts")
+        .insert([postData])
+        .select();
+
+      if (error) throw error;
+      console.log("New post created:", inserted[0]);
+    }
+
+    setLoading(false);
+    router.push("/admindashboard");
+  } catch (err) {
+    console.error("Error saving post:", err);
+    setError("Failed to save post. Make sure you are signed in and have permissions.");
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] text-white">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="mb-8">
           <Link href="/admindashboard">
-            <span className="inline-flex items-center text-[#F2EA6D] hover:text-[#FFD800] transition-colors duration-200">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
-              Back to Dashboard
+            <span className="inline-flex items-center text-[#F2EA6D] hover:text-[#FFD800]">
+              ← Back to Dashboard
             </span>
           </Link>
         </div>
-        
-        <form
-          className="space-y-8"
-          onSubmit={(e) => handlePost(e)}
-        >
-          <div className="space-y-6">
-            <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold text-[#F2EA6D] border-b-4 border-[#FFD800] pb-2 inline-block">
-                {router.query.postId ? "Edit Blog Post" : "Create a New Blog Post"}
-              </h1>
-            </div>
 
-            <div className="space-y-4">
-              <div>
-                <label
-                  className="block text-lg font-medium mb-2"
-                  htmlFor="title"
-                >
-                  Post Title<span className="text-red-500">*</span>
-                </label>
+        <form className="space-y-6" onSubmit={handlePost}>
+          <h1 className="text-4xl font-bold text-[#F2EA6D] border-b-4 border-[#FFD800] pb-2 inline-block">
+            {router.query.postId ? "Edit Blog Post" : "Create a New Blog Post"}
+          </h1>
+
+          <div>
+            <label className="block text-lg mb-2">Title *</label>
+            <input
+              value={title}
+              required
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg bg-[#2a2a2a] border border-gray-700 focus:border-[#F2EA6D] focus:ring-2 focus:ring-[#F2EA6D]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-lg mb-2">Content *</label>
+            <textarea
+              value={postText}
+              required
+              onChange={(e) => setPostText(e.target.value)}
+              className="w-full h-64 px-4 py-2 rounded-lg bg-[#2a2a2a] border border-gray-700 focus:border-[#F2EA6D] focus:ring-2 focus:ring-[#F2EA6D]"
+            />
+            <BlogContent postText={postText} />
+          </div>
+
+          <div>
+            <label className="block text-lg mb-2">Upload Image</label>
+            <input type="file" onChange={selectImage} />
+            {previewImage && (
+              <img src={previewImage} alt="Preview" className="mt-4 max-h-64" />
+            )}
+          </div>
+
+          <div>
+            <label>
+              <input
+                type="checkbox"
+                checked={isScheduled}
+                onChange={(e) => setIsScheduled(e.target.checked)}
+              />{" "}
+              Schedule for later
+            </label>
+            {isScheduled && (
+              <div className="flex gap-4 mt-2">
                 <input
-                  placeholder="Enter post title"
-                  value={title}
-                  required
-                  onChange={(event) => {
-                    setTitle(event.target.value);
-                  }}
-                  className="w-full px-4 py-3 rounded-lg bg-[#2a2a2a] border border-gray-700 focus:border-[#F2EA6D] focus:ring-2 focus:ring-[#F2EA6D] focus:outline-none transition-colors duration-200"
+                  type="date"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="px-2 py-1 rounded bg-[#1a1a1a] border border-gray-700"
+                />
+                <input
+                  type="time"
+                  value={scheduledTime}
+                  onChange={(e) => setScheduledTime(e.target.value)}
+                  className="px-2 py-1 rounded bg-[#1a1a1a] border border-gray-700"
                 />
               </div>
-
-              <div>
-                <label className="block text-lg font-medium mb-2">
-                  Content<span className="text-red-500">*</span>
-                </label>
-                <div className="rounded-lg border border-gray-700 bg-[#2a2a2a] focus-within:border-[#F2EA6D] focus-within:ring-2 focus-within:ring-[#F2EA6D] transition-colors duration-200">
-                  <textarea
-                    value={postText}
-                    required
-                    onChange={(event) => {
-                      setPostText(event.target.value);
-                    }}
-                    className="w-full h-64 p-4 bg-transparent resize-none focus:outline-none"
-                    placeholder="Enter blog content"
-                  />
-                </div>
-                <BlogContent postText={postText} />
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <h2 className="text-xl font-bold text-[#F2EA6D]">Upload Image</h2>
-                  <p className="text-gray-400 mt-1">Upload an image for your blog post</p>
-                </div>
-
-                <div className="border-2 border-dashed border-gray-700 rounded-lg p-8 hover:border-[#F2EA6D] transition-colors duration-200">
-                  <div className="space-y-4">
-                    <label className="block text-center">
-                      <span className="text-lg">Upload an image file - PNGs, JPEGS, HEICS</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        onClick={(e) => (e.target.value = null)}
-                        onChange={(event) => selectImage(event)}
-                        id="imageUploader"
-                      />
-                      <div className="mt-4">
-                        <span className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md text-white bg-[#2a2a2a] hover:bg-[#3a3a3a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F2EA6D] transition-colors duration-200 cursor-pointer">
-                          Choose File
-                        </span>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <h2 className="text-xl font-bold text-[#F2EA6D]">Schedule Post</h2>
-                  <p className="text-gray-400 mt-1">Set a date and time for future publication</p>
-                </div>
-
-                <div className="bg-[#2a2a2a] rounded-lg p-6 border border-gray-700">
-                  <div className="flex items-center mb-4">
-                    <input
-                      type="checkbox"
-                      id="schedulePost"
-                      checked={isScheduled}
-                      onChange={(e) => setIsScheduled(e.target.checked)}
-                      className="h-5 w-5 text-[#F2EA6D] focus:ring-[#F2EA6D] border-gray-700 rounded"
-                    />
-                    <label htmlFor="schedulePost" className="ml-2 block text-lg">
-                      Schedule for later
-                    </label>
-                  </div>
-
-                  {isScheduled && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <label htmlFor="scheduledDate" className="block text-sm font-medium mb-1">
-                          Date
-                        </label>
-                        <input
-                          type="date"
-                          id="scheduledDate"
-                          value={scheduledDate}
-                          onChange={(e) => setScheduledDate(e.target.value)}
-                          min={new Date().toISOString().split('T')[0]}
-                          className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-gray-700 focus:border-[#F2EA6D] focus:ring-2 focus:ring-[#F2EA6D] focus:outline-none transition-colors duration-200"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="scheduledTime" className="block text-sm font-medium mb-1">
-                          Time
-                        </label>
-                        <input
-                          type="time"
-                          id="scheduledTime"
-                          value={scheduledTime}
-                          onChange={(e) => setScheduledTime(e.target.value)}
-                          className="w-full px-4 py-2 rounded-lg bg-[#1a1a1a] border border-gray-700 focus:border-[#F2EA6D] focus:ring-2 focus:ring-[#F2EA6D] focus:outline-none transition-colors duration-200"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
-          {error && (
-            <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg">
-              {error}
-            </div>
-          )}
+          {error && <div className="text-red-500">{error}</div>}
 
-          <div className="flex justify-center pt-6">
-            <button
-              type="submit"
-              className="px-8 py-3 bg-[#F2EA6D] text-[#1a1a1a] font-bold rounded-lg hover:bg-[#FFD800] transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F2EA6D]"
-            >
-              {loading
-                ? `Loading ${progress > 0 ? Math.round(progress) + "%" : ""}`
-                : router.query.postId
-                ? "Update Post"
-                : isScheduled
-                ? "Schedule Post"
-                : "Create Post"}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2 bg-[#F2EA6D] text-[#1a1a1a] rounded-lg font-bold hover:bg-[#FFD800]"
+          >
+            {loading ? "Saving..." : router.query.postId ? "Update Post" : "Create Post"}
+          </button>
         </form>
       </div>
     </div>
