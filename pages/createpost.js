@@ -73,7 +73,10 @@ const handlePost = async (e) => {
 
   try {
     // 🔹 Get current signed-in user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
     if (userError || !user) {
       setError("You must be signed in to create or edit a post.");
       setLoading(false);
@@ -81,7 +84,7 @@ const handlePost = async (e) => {
     }
 
     // 🔹 Determine the image URL to use
-    let imageUrl = null;
+    let finalImageUrl = null;
 
     if (imgFile) {
       // New file selected → upload it
@@ -96,13 +99,13 @@ const handlePost = async (e) => {
         .from("post-images")
         .getPublicUrl(fileName);
 
-      imageUrl = data.publicUrl;
-    } else if (image) {
+      finalImageUrl = data.publicUrl;
+    } else if (imageUrl) {
       // Existing image (when editing) → keep URL
-      imageUrl = image;
+      finalImageUrl = imageUrl;
     } else {
-      // No image uploaded → optional: leave null or a default placeholder
-      imageUrl = null;
+      // No image uploaded → leave null
+      finalImageUrl = null;
     }
 
     // 🔹 Prepare scheduled timestamp
@@ -115,10 +118,10 @@ const handlePost = async (e) => {
     const postData = {
       title,
       post_text: postText,
-      post_img: imageUrl,
+      post_img: finalImageUrl,
       scheduled_for: scheduledTimestamp,
       is_published: !scheduledTimestamp,
-      user_id: user.id, // required for RLS
+      user_id: user.id,
     };
 
     if (router.query.postId) {
@@ -144,7 +147,9 @@ const handlePost = async (e) => {
     router.push("/admindashboard");
   } catch (err) {
     console.error("Error saving post:", err);
-    setError("Failed to save post. Make sure you are signed in and have permissions.");
+    setError(
+      "Failed to save post. Make sure you are signed in and have permissions."
+    );
     setLoading(false);
   }
 };
