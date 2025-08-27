@@ -51,32 +51,25 @@ const Smallpostcard = (bloginfo) => {
   }, []); // Added empty dependency array
 
   return (
-    <div>
-      <div className="w-full rounded">
-        
-        <div
-          onClick={() => bloginfo?.click && bloginfo.click()}
-          className="relative bg-gray-900 w-full h-full overflow-hidden rounded-lg shadow-lg cursor-pointer"
-        >
-          <img
-            src={
-              bloginfo?.img ||
-              `https://ui-avatars.com/api/?name=${encodeURI(bloginfo?.title)}`
-            }
-            className="opacity-25 w-full h-full overflow-hidden"
-            alt="img"
-          />
-          {/* <div className="bg-gray-900	 h-full w-full"></div> */}
-          <div className="absolute left-0 bottom-0">
-            <p className="mx-4 my-2 leading-normal font-black text-3xl text-gray-100">
-              {bloginfo.title} <br />
-             
-            </p>
-          </div>
-        </div>
+    <div
+      onClick={() => bloginfo?.click && bloginfo.click()}
+      className="relative bg-gray-900 w-full h-64 overflow-hidden rounded-lg shadow-lg cursor-pointer"
+    >
+      <img
+        src={
+          bloginfo?.img ||
+          `https://ui-avatars.com/api/?name=${encodeURI(bloginfo?.title)}`
+        }
+        alt={bloginfo?.title || "Post image"}
+        className="w-full h-full object-cover"
+      />
+
+      <div className="absolute left-0 bottom-0 w-full bg-gradient-to-t from-black/70 to-transparent">
+        <p className="mx-4 my-2 font-bold text-xl text-white truncate">
+          {bloginfo.title}
+        </p>
       </div>
     </div>
   );
-};
-
+}
 export default Smallpostcard;
