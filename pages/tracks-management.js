@@ -14,6 +14,9 @@ export default function TracksManagement() {
     const [selectedTracks, setSelectedTracks] = useState(new Set());
     const [selectAll, setSelectAll] = useState(false);
     const [showArchived, setShowArchived] = useState(false);
+    const [filterTags, setFilterTags] = useState([]);
+    const [availableTags, setAvailableTags] = useState([]);
+    const [showTagDropdown, setShowTagDropdown] = useState(false);
 
     // Form state for adding/editing tracks
     const [formData, setFormData] = useState({
@@ -24,14 +27,30 @@ export default function TracksManagement() {
         album_art_url: '',
         popularity: 0,
         playlist_name: '',
-        week_start: '',
         tags: []
     });
 
     useEffect(() => {
         fetchTracks();
         fetchWeeks();
+        fetchAvailableTags();
     }, []);
+
+    useEffect(() => {
+        fetchTracks();
+    }, [selectedWeek, filterPlaylist, searchTerm, showArchived, filterTags]);
+
+    // Close tag dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (showTagDropdown && !event.target.closest('.tag-dropdown')) {
+                setShowTagDropdown(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showTagDropdown]);
 
     const fetchTracks = async () => {
         try {
@@ -56,6 +75,10 @@ export default function TracksManagement() {
             }
             if (searchTerm) {
                 query = query.or(`track_name.ilike.%${searchTerm}%,artists.ilike.%${searchTerm}%`);
+            }
+            if (filterTags.length > 0) {
+                // Filter tracks that contain any of the selected tags
+                query = query.overlaps('tags', filterTags);
             }
 
             const { data, error } = await query;
@@ -83,6 +106,27 @@ export default function TracksManagement() {
         }
     };
 
+    const fetchAvailableTags = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('tracks')
+                .select('tags');
+            
+            if (error) throw error;
+            
+            // Extract all unique tags from all tracks
+            const allTags = data
+                .filter(track => track.tags && Array.isArray(track.tags))
+                .flatMap(track => track.tags)
+                .filter(tag => tag && tag.trim() !== '');
+            
+            const uniqueTags = [...new Set(allTags)].sort();
+            setAvailableTags(uniqueTags);
+        } catch (error) {
+            console.error('Error fetching available tags:', error);
+        }
+    };
+
     const handleAddTrack = async (e) => {
         e.preventDefault();
         
@@ -93,9 +137,13 @@ export default function TracksManagement() {
         }
         
         try {
+            // Get the latest week from the database
+            const latestWeek = weeks.length > 0 ? weeks[0] : null;
+            
             // Convert tags string to proper array format for Supabase
             const cleanFormData = {
                 ...formData,
+                week_start: latestWeek,
                 tags: typeof formData.tags === 'string' 
                     ? (formData.tags.trim() === '' ? [] : formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag))
                     : (Array.isArray(formData.tags) ? formData.tags : [])
@@ -113,7 +161,7 @@ export default function TracksManagement() {
             setShowAddForm(false);
             setFormData({
                 track_name: '', artists: '', album: '', spotify_url: '',
-                album_art_url: '', popularity: 0, playlist_name: '', week_start: '', tags: []
+                album_art_url: '', popularity: 0, playlist_name: '', tags: []
             });
             fetchTracks();
         } catch (error) {
@@ -152,7 +200,7 @@ export default function TracksManagement() {
             setEditingTrack(null);
             setFormData({
                 track_name: '', artists: '', album: '', spotify_url: '',
-                album_art_url: '', popularity: 0, playlist_name: '', week_start: '', tags: []
+                album_art_url: '', popularity: 0, playlist_name: '', tags: []
             });
             fetchTracks();
         } catch (error) {
@@ -186,7 +234,6 @@ export default function TracksManagement() {
             album_art_url: track.album_art_url,
             popularity: track.popularity,
             playlist_name: track.playlist_name,
-            week_start: track.week_start,
             tags: track.tags || ''
         });
     };
@@ -209,34 +256,7 @@ export default function TracksManagement() {
         );
     };
 
-    const triggerManualPull = async () => {
-        try {
-            // This would call your API endpoint to run the scraper
-            const response = await fetch('/api/spotify_scrapper', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'run_scraper'
-                })
-            });
-            
-            if (response.ok) {
-                alert('Manual pull triggered successfully! Check the tracks below.');
-                // Refresh tracks after a short delay
-                setTimeout(() => {
-                    fetchTracks();
-                    fetchWeeks();
-                }, 2000);
-            } else {
-                alert('Failed to trigger manual pull. Please try again.');
-            }
-        } catch (error) {
-            console.error('Error triggering manual pull:', error);
-            alert('Error triggering manual pull. Please check the console.');
-        }
-    };
+
 
     // Bulk selection functions
     const toggleTrackSelection = (trackId) => {
@@ -359,7 +379,22 @@ export default function TracksManagement() {
                 >
                     <option value="">All Weeks</option>
                     {weeks.map(week => (
-                        <option key={week} value={week}>{week}</option>
+                        <option key={week} value={week}>
+                            Friday, {(() => {
+                                try {
+                                    // Parse the date string properly to avoid timezone issues
+                                    const [year, month, day] = week.split('-').map(Number);
+                                    const date = new Date(year, month - 1, day); // month is 0-indexed
+                                    return date.toLocaleDateString('en-US', {
+                                        month: 'long',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    });
+                                } catch (e) {
+                                    return week;
+                                }
+                            })()}
+                        </option>
                     ))}
                 </select>
 
@@ -398,9 +433,85 @@ export default function TracksManagement() {
                         Show Archived Tracks
                     </label>
                 </div>
+                
+                {/* Tag Filter Dropdown */}
+                <div className="relative tag-dropdown">
+                    <button
+                        onClick={() => setShowTagDropdown(!showTagDropdown)}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        <span>🏷️ Filter by Tags</span>
+                        {filterTags.length > 0 && (
+                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                {filterTags.length} selected
+                            </span>
+                        )}
+                        <svg className={`w-4 h-4 text-gray-400 transition-transform ${showTagDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    
+                    {/* Dropdown Menu */}
+                    {showTagDropdown && (
+                        <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                            <div className="p-3 border-b border-gray-200">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-medium text-gray-700">Selected Tags:</span>
+                                    <button
+                                        onClick={() => setFilterTags([])}
+                                        className="text-xs text-red-600 hover:text-red-800 font-medium"
+                                    >
+                                        Clear All
+                                    </button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {filterTags.map(tag => (
+                                        <span
+                                            key={tag}
+                                            className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
+                                        >
+                                            {tag}
+                                            <button
+                                                onClick={() => setFilterTags(prev => prev.filter(t => t !== tag))}
+                                                className="text-blue-600 hover:text-blue-800 font-bold"
+                                            >
+                                                ×
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className="p-3">
+                                <span className="text-sm font-medium text-gray-700 mb-2 block">Available Tags:</span>
+                                <div className="space-y-2">
+                                    {availableTags.map(tag => (
+                                        <label key={tag} className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={filterTags.includes(tag)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setFilterTags(prev => [...prev, tag]);
+                                                    } else {
+                                                        setFilterTags(prev => prev.filter(t => t !== tag));
+                                                    }
+                                                }}
+                                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                            />
+                                            <span className="text-sm text-gray-700">{tag}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* Scheduling Section */}
+
+
+            {/* Automated Music Updates Section */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
                 <div className="flex items-center space-x-4 mb-6">
                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -410,54 +521,44 @@ export default function TracksManagement() {
                     </div>
                     <div>
                         <h2 className="text-lg font-semibold text-gray-900">Automated Music Updates</h2>
-                        <p className="text-gray-600">Configure automated weekly pulls from Spotify playlists</p>
+                        <p className="text-gray-600">Your music is automatically updated every week</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Current Schedule Status */}
                     <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                         <h3 className="font-medium text-blue-900 mb-2">📅 Current Schedule</h3>
                         <div className="space-y-2 text-sm text-blue-800">
                             <p><strong>Frequency:</strong> Every Friday</p>
-                            <p><strong>Time:</strong> 4:00 AM UTC</p>
+                            <p><strong>Time:</strong> {(() => {
+                                // Create a date for Friday 2 PM UTC
+                                const now = new Date();
+                                const friday = new Date(now);
+                                const daysUntilFriday = (5 - now.getDay() + 7) % 7;
+                                friday.setDate(now.getDate() + daysUntilFriday);
+                                friday.setUTCHours(14, 0, 0, 0); // 2 PM UTC
+                                
+                                return friday.toLocaleString('en-US', {
+                                    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                                    weekday: 'long',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                });
+                            })()} (your timezone)</p>
                             <p><strong>Status:</strong> <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Active</span></p>
                         </div>
                     </div>
 
-                    {/* GitHub Actions Info */}
+                    {/* Last Update Info */}
                     <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                        <h3 className="font-medium text-green-900 mb-2">🤖 Automation</h3>
+                        <h3 className="font-medium text-green-900 mb-2">🤖 Last Update</h3>
                         <div className="space-y-2 text-sm text-green-800">
                             <p><strong>Method:</strong> GitHub Actions</p>
-                            <p><strong>File:</strong> .github/workflows/music-update.yml</p>
-                            <p><strong>Last Run:</strong> 2 days ago</p>
+                            <p><strong>Last Run:</strong> {tracks.length > 0 ? `${Math.floor((new Date() - new Date(tracks[0]?.created_at)) / (1000 * 60 * 60 * 24))} days ago` : 'Never'}</p>
+                            <p><strong>Total Tracks:</strong> {tracks.length}</p>
                         </div>
-                    </div>
-
-                    {/* Manual Trigger */}
-                    <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                        <h3 className="font-medium text-purple-900 mb-2">⚡ Manual Trigger</h3>
-                        <div className="space-y-2 text-sm text-purple-800">
-                            <p>Run the scraper manually right now</p>
-                            <button 
-                                onClick={() => triggerManualPull()}
-                                className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md text-sm font-medium transition-colors mt-2"
-                            >
-                                🚀 Run Now
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* GitHub Actions Setup Instructions */}
-                <div className="mt-6 bg-gray-50 rounded-lg p-4">
-                    <h3 className="font-medium text-gray-900 mb-3">🔧 Setup Instructions</h3>
-                    <div className="text-sm text-gray-700 space-y-2">
-                        <p>1. Create <code className="bg-gray-200 px-2 py-1 rounded">.github/workflows/music-update.yml</code> in your repository</p>
-                        <p>2. The workflow will automatically run every Friday at 4 AM UTC</p>
-                        <p>3. Ensure your environment variables are set in GitHub Secrets</p>
-                        <p>4. Monitor runs in the Actions tab of your repository</p>
                     </div>
                 </div>
             </div>
@@ -557,14 +658,23 @@ export default function TracksManagement() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Week Start Date *</label>
-                                    <input
-                                        type="date"
-                                        value={formData.week_start}
-                                        onChange={(e) => setFormData({...formData, week_start: e.target.value})}
-                                        required
-                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-sm transition-colors duration-300 focus:outline-none focus:border-indigo-500"
-                                    />
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Auto-Assigned Week</label>
+                                    <div className="px-4 py-3 bg-gray-100 border-2 border-gray-200 rounded-lg text-sm text-gray-600">
+                                        {weeks.length > 0 ? (() => {
+                                            try {
+                                                // Parse the date string properly to avoid timezone issues
+                                                const [year, month, day] = weeks[0].split('-').map(Number);
+                                                const date = new Date(year, month - 1, day); // month is 0-indexed
+                                                return `Week of Friday, ${date.toLocaleDateString('en-US', {
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                })}`;
+                                            } catch (e) {
+                                                return `Week of Friday, ${weeks[0]}`;
+                                            }
+                                        })() : 'No weeks available'}
+                                    </div>
                                 </div>
                             </div>
                             <div className="mb-5">
@@ -687,7 +797,20 @@ export default function TracksManagement() {
                                                 >
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                                 </svg>
-                                                <h2 className="text-xl font-semibold text-gray-900">📅 Week of {week}</h2>
+                                                <h2 className="text-xl font-semibold text-gray-900">📅 Week of Friday, {(() => {
+                                                    try {
+                                                        // Parse the date string properly to avoid timezone issues
+                                                        const [year, month, day] = week.split('-').map(Number);
+                                                        const date = new Date(year, month - 1, day); // month is 0-indexed
+                                                        return date.toLocaleDateString('en-US', {
+                                                            month: 'long',
+                                                            day: 'numeric',
+                                                            year: 'numeric'
+                                                        });
+                                                    } catch (e) {
+                                                        return week;
+                                                    }
+                                                })()}</h2>
                                             </button>
                                         </div>
                                         <div className="flex items-center gap-4">

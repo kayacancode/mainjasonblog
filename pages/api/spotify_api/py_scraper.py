@@ -217,6 +217,7 @@ class EnhancedSpotifyAutomation:
         """
         import os
         from datetime import datetime, timedelta
+
         from main import SpotifyNewMusicAutomation
 
         def _norm(s: str) -> str:
@@ -320,10 +321,10 @@ class EnhancedSpotifyAutomation:
                 os.getenv('SUPABASE_SERVICE_KEY')
             )
 
-            # Week start (Monday)
+            # Week start (Friday - the day the refresh happens)
             today = datetime.now()
-            days_since_monday = today.weekday()
-            week_start = today - timedelta(days=days_since_monday)
+            days_since_friday = (today.weekday() - 4) % 7  # 4 = Friday (0=Monday, 4=Friday)
+            week_start = today - timedelta(days=days_since_friday)
             week_start_str = week_start.strftime('%Y-%m-%d')
 
             tracks_saved = 0
