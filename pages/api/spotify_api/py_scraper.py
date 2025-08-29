@@ -2,14 +2,16 @@
 Enhanced Selenium scraper with album art fetching and popularity filtering
 """
 
-from selenium_scraper import SpotifySeleniumScraper
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
-from typing import List, Dict
-import requests
 import json
-import time
 import logging
+import time
+from typing import Dict, List
+
+import requests
+import spotipy
+from selenium_scraper import SpotifySeleniumScraper
+from spotipy.oauth2 import SpotifyOAuth
+from supabase import Client, create_client
 
 logger = logging.getLogger(__name__)
 
@@ -204,87 +206,154 @@ class EnhancedSpotifyAutomation:
                 scraper.close()
     
     def run_enhanced_automation(self, 
-                              use_new_music_friday: bool = True,
-                              use_release_radar: bool = False,
-                              top_tracks_per_playlist: int = 15,
-                              use_cached: bool = True) -> Dict:
+                            use_new_music_friday: bool = True,
+                            use_release_radar: bool = False,
+                            top_tracks_per_playlist: int = 15,
+                            use_cached: bool = True) -> Dict:
         """
-        Run the complete enhanced automation
-        
-        Args:
-            use_new_music_friday: Whether to include New Music Friday
-            use_release_radar: Whether to include Release Radar  
-            top_tracks_per_playlist: Number of top tracks from each playlist
-            use_cached: Whether to use cached data
-            
-        Returns:
-            Dictionary with automation results
+        Run the complete enhanced automation with EXACTLY 5 unique tracks per playlist.
+        Dedupe within each playlist and across playlists (NMF has priority).
+        Ensures RR still fills to 5 by pulling from a larger candidate pool.
         """
-        from main import SpotifyNewMusicAutomation
-        from datetime import datetime
         import os
-        
+        from datetime import datetime, timedelta
+        from main import SpotifyNewMusicAutomation
+
+        def _norm(s: str) -> str:
+            return (s or "").strip().lower()
+
+        def track_key(t: dict):
+            # Prefer stable Spotify ID; fallback to normalized name+artist
+            return t.get("id") or (_norm(t.get("name")), _norm(t.get("artist")))
+
+        def pick_top_unique(tracks, limit=5, exclude_keys=None):
+            """Pick top N unique tracks by popularity, avoiding keys in exclude_keys."""
+            if exclude_keys is None:
+                exclude_keys = set()
+            unique = []
+            seen = set()
+            sorted_tracks = sorted(tracks, key=lambda x: x.get('popularity', 0), reverse=True)
+            for tr in sorted_tracks:
+                k = track_key(tr)
+                if k in seen or k in exclude_keys:
+                    continue
+                seen.add(k)
+                unique.append(tr)
+                if len(unique) == limit:
+                    break
+            return unique
+
         print("🚀 Starting Enhanced New Music Friday Automation...")
-        print(f"🎯 Getting top {top_tracks_per_playlist} tracks from each playlist")
+        print("🎯 Goal: 5 unique tracks per playlist (no cross-duplication)")
         print("🖼️ With full album art and metadata")
         print("🔇 Running completely headless")
-        
-        # Get enhanced playlist data
-        playlist_data = self.get_enhanced_playlist_data(use_cached, top_tracks_per_playlist)
-        
-        all_tracks = []
-        
-        if use_new_music_friday and playlist_data['new_music_friday']:
-            nmf_tracks = playlist_data['new_music_friday']
-            all_tracks.extend(nmf_tracks)
-            print(f"✅ Added {len(nmf_tracks)} top New Music Friday tracks")
-        
-        if use_release_radar and playlist_data['release_radar']:
-            rr_tracks = playlist_data['release_radar']
-            all_tracks.extend(rr_tracks)
-            print(f"✅ Added {len(rr_tracks)} top Release Radar tracks")
-        
-        if not all_tracks:
+
+        # --- IMPORTANT FIX ---
+        # Pull a bigger candidate pool so RR can refill after excluding NMF overlaps.
+        candidate_pool_per_playlist = max(top_tracks_per_playlist, 100)
+
+        # Get enhanced playlist data with a LARGE pool to allow refills after cross-dedupe
+        playlist_data = self.get_enhanced_playlist_data(
+            use_cached=use_cached,
+            top_tracks_per_playlist=candidate_pool_per_playlist
+        )
+
+        nmf_tracks = playlist_data.get('new_music_friday', []) if use_new_music_friday else []
+        rr_tracks = playlist_data.get('release_radar', []) if use_release_radar else []
+
+        # First, pick top-unique for NMF
+        nmf_unique = pick_top_unique(nmf_tracks, limit=5)
+
+        # Exclude NMF picks from RR, then pick top-unique until RR also has 5
+        nmf_keys = {track_key(t) for t in nmf_unique}
+        rr_unique = pick_top_unique(rr_tracks, limit=5, exclude_keys=nmf_keys)
+
+        # Add playlist source tags
+        for t in nmf_unique:
+            t['playlist_source'] = 'New Music Friday'
+        for t in rr_unique:
+            t['playlist_source'] = 'Release Radar'
+
+        # Final combined list
+        unique_tracks = nmf_unique + rr_unique
+
+        print("🎵 Final selection:")
+        print(f"   • New Music Friday: {len(nmf_unique)} (target 5)")
+        print(f"   • Release Radar: {len(rr_unique)} (target 5)")
+        print(f"   • Total: {len(unique_tracks)}")
+
+        if not unique_tracks:
             print("❌ No tracks found")
             return {}
-        
-        # Remove duplicates
-        unique_tracks = []
-        seen = set()
-        for track in all_tracks:
-            track_key = (track['name'], track['artist'])
-            if track_key not in seen:
-                seen.add(track_key)
-                unique_tracks.append(track)
-        
-        print(f"🎵 Processing {len(unique_tracks)} unique tracks...")
-        
+
         # Initialize main automation
         automation = SpotifyNewMusicAutomation(self.client_id, self.client_secret)
-        
+
         # Generate content
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
+
         print("🎨 Creating enhanced album art collage...")
         collage_filename = f"enhanced_collage_{timestamp}.png"
         collage_path = automation.create_collage(unique_tracks, collage_filename)
-        
+
         print("📋 Creating enhanced tracklist...")
         tracklist_filename = f"enhanced_tracklist_{timestamp}.png"
         tracklist_path = automation.create_tracklist_image(unique_tracks, tracklist_filename)
-        
+
         print("📝 Generating caption...")
         caption = automation.generate_caption(unique_tracks)
-        
-        # Save files
+
+        # Save JSON data
         data_filename = f"enhanced_data_{timestamp}.json"
         data_path = automation.save_track_data(unique_tracks, data_filename)
-        
+
+        # Save tracks to Supabase
+        print("💾 Saving tracks to Supabase...")
+        try:
+            from dotenv import load_dotenv
+            from supabase import create_client
+
+            load_dotenv('../../.env')
+
+            supabase = create_client(
+                os.getenv('NEXT_PUBLIC_SUPABASE_URL'),
+                os.getenv('SUPABASE_SERVICE_KEY')
+            )
+
+            # Week start (Monday)
+            today = datetime.now()
+            days_since_monday = today.weekday()
+            week_start = today - timedelta(days=days_since_monday)
+            week_start_str = week_start.strftime('%Y-%m-%d')
+
+            tracks_saved = 0
+            for track in unique_tracks:
+                track_data = {
+                    'track_name': track.get('name', ''),
+                    'artists': track.get('artist', ''),
+                    'album': track.get('album', ''),
+                    'spotify_url': track.get('spotify_url', ''),
+                    'album_art_url': track.get('album_art_url'),
+                    'popularity': track.get('popularity', 0),
+                    'playlist_name': track.get('playlist_source', 'Unknown'),
+                    'week_start': week_start_str,
+                    'created_at': datetime.now().isoformat()
+                }
+                result = supabase.table('tracks').insert(track_data).execute()
+                if getattr(result, "data", None):
+                    tracks_saved += 1
+
+            print(f"✅ Successfully saved {tracks_saved}/{len(unique_tracks)} tracks to Supabase")
+
+        except Exception as e:
+            print(f"⚠️ Failed to save to Supabase: {e}")
+            print("💾 Tracks still saved to JSON file")
+
         caption_filename = f"enhanced_caption_{timestamp}.txt"
         caption_path = os.path.join(automation.config.OUTPUT_DIR, caption_filename)
         with open(caption_path, 'w', encoding='utf-8') as f:
             f.write(caption)
-        
+
         results = {
             'track_count': len(unique_tracks),
             'collage_image': collage_path,
@@ -296,14 +365,15 @@ class EnhancedSpotifyAutomation:
             'source': 'enhanced_spotify_scraper',
             'tracks_per_playlist': top_tracks_per_playlist
         }
-        
+
         print("🎉 Enhanced automation completed successfully!")
         print(f"📸 Collage: {collage_path}")
         print(f"📋 Tracklist: {tracklist_path}")
         print(f"📝 Caption: {caption_path}")
         print(f"💾 Data: {data_path}")
-        
+
         return results
+
 
 def test_enhanced_automation():
     """Test the enhanced automation"""
@@ -318,8 +388,8 @@ def test_enhanced_automation():
     # Run enhanced automation
     results = automation.run_enhanced_automation(
         use_new_music_friday=True,
-        use_release_radar=False,  # Set to True for both playlists
-        top_tracks_per_playlist=12,  # Get top 12 most popular from each
+        use_release_radar=True,  # Enable both playlists
+        top_tracks_per_playlist=5,  # Get top 5 most popular from each
         use_cached=True
     )
     

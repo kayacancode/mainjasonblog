@@ -1,29 +1,35 @@
-import React from 'react'
-import styles from '../styles/Home.module.css'
+import React, { useEffect, useState } from 'react';
+import styles from '../styles/Home.module.css';
 
+const Datetime = () => {
+  const [currentTime, setCurrentTime] = useState(null);
+  const [currentDate, setCurrentDate] = useState(null);
 
-var datetime = () => 
-{
-    var showDate = new Date();
-    var displaytodaysdate = showDate.getDate() + (showDate.getMonth());
-    var dt= showDate.toDateString();
-    var displaytime = showDate.getHours() + showDate.getMinutes();
-    var currentTime = showDate.getHours() + ":" + showDate.getMinutes() + ":" + showDate.getSeconds();
-    return(
-        <div>
-            <center>
-                <div className = {styles.lockscreentime}>
-                   
-                <h1 type="text" class = " center font-sans text-5xl	 " value={displaytodaysdate} readonly= "true"/>
-                <h1 type="text" class = "center font-sans text-5xl	" value={currentTime} />
-                
-                {currentTime}
-                < br />
-                {dt}
+  useEffect(() => {
+    const updateTime = () => {
+      const showDate = new Date();
+      setCurrentDate(showDate.toDateString());
+      setCurrentTime(
+        `${showDate.getHours()}:${showDate.getMinutes()}:${showDate.getSeconds()}`
+      );
+    };
+
+    updateTime(); // run once immediately
+    const interval = setInterval(updateTime, 1000); // update every second
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div>
+      <center>
+        <div className={styles.lockscreentime}>
+          <h1 className="center font-sans text-5xl">{currentTime ?? "--:--:--"}</h1>
+          <br />
+          <h2>{currentDate ?? ""}</h2>
         </div>
-                 </center>
-        </div>
-        
-    )
-}
-export default datetime;
+      </center>
+    </div>
+  );
+};
+
+export default Datetime;
