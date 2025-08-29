@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import { supabase } from "../lib/supabaseClient";
 import { format } from "date-fns";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -11,6 +11,7 @@ export default function AdminDashboard() {
   const [postList, setPostList] = useState([]);
   const [scheduledPosts, setScheduledPosts] = useState([]);
   const [photos, setPhotos] = useState([]);
+  const [tracks, setTracks] = useState([]);
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -63,6 +64,15 @@ export default function AdminDashboard() {
 
       if (photoError) console.error(photoError);
       else setPhotos(photoData);
+
+      // Fetch tracks
+      const { data: tracksData, error: tracksError } = await supabase
+        .from("tracks")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (tracksError) console.error(tracksError);
+      else setTracks(tracksData || []);
 
       setLoading(false);
     };
@@ -250,7 +260,7 @@ export default function AdminDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -289,6 +299,20 @@ export default function AdminDashboard() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Photos</p>
                 <p className="text-2xl font-bold text-gray-900">{photos.length}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Tracks</p>
+                <p className="text-2xl font-bold text-gray-900">{tracks.length}</p>
               </div>
             </div>
           </div>
@@ -332,6 +356,18 @@ export default function AdminDashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
                 <span className="text-sm font-medium text-green-600">Preview Blog</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => router.push('/tracks-management')}
+              className="flex items-center justify-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg border-2 border-dashed border-orange-300 hover:border-orange-400 transition-colors group"
+            >
+              <div className="text-center">
+                <svg className="w-8 h-8 text-orange-600 mx-auto mb-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+                <span className="text-sm font-medium text-orange-600">Manage Tracks</span>
               </div>
             </button>
 
