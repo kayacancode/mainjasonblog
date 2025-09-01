@@ -1,11 +1,15 @@
+import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 export default function TracksManagement() {
+    const router = useRouter();
     const [tracks, setTracks] = useState([]);
     const [weeks, setWeeks] = useState([]);
     const [selectedWeek, setSelectedWeek] = useState('');
     const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState(null);
+    const [authLoading, setAuthLoading] = useState(true);
     const [editingTrack, setEditingTrack] = useState(null);
     const [showAddForm, setShowAddForm] = useState(false);
     const [filterPlaylist, setFilterPlaylist] = useState('');
@@ -30,11 +34,39 @@ export default function TracksManagement() {
         tags: []
     });
 
+    // Authentication check
     useEffect(() => {
-        fetchTracks();
-        fetchWeeks();
-        fetchAvailableTags();
-    }, []);
+        const checkAuth = async () => {
+            const { data: { user }, error } = await supabase.auth.getUser();
+            if (error || !user) {
+                router.replace('/adminsignin');
+                return;
+            }
+            setUser(user);
+            setAuthLoading(false);
+        };
+        
+        checkAuth();
+
+        // Auth listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (!session?.user) {
+                router.replace('/adminsignin');
+            } else {
+                setUser(session.user);
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, [router]);
+
+    useEffect(() => {
+        if (!authLoading && user) {
+            fetchTracks();
+            fetchWeeks();
+            fetchAvailableTags();
+        }
+    }, [authLoading, user]);
 
     useEffect(() => {
         fetchTracks();
@@ -358,10 +390,60 @@ export default function TracksManagement() {
 
     const groupedTracks = groupTracksByWeek(tracks);
 
+    // Show loading state while checking authentication
+    if (authLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Sign out function
+    const signOutUser = async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) alert(error.message);
+        else router.replace('/adminsignin');
+    };
+
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-5 py-6 sm:py-8 font-sans">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b-2 border-gray-200">
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 m-0 text-center sm:text-left">🎵 Tracks Management</h1>
+        <div className="min-h-screen bg-gray-50">
+            {/* Top Navigation Bar */}
+            <nav className="bg-white shadow-sm border-b border-gray-200">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center h-16">
+                        <div className="flex items-center space-x-4">
+                            <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center">
+                                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                </svg>
+                            </div>
+                            <h1 className="text-xl font-semibold text-gray-900">Tracks Management</h1>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <button 
+                                onClick={() => router.push('/admindashboard')}
+                                className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                            >
+                                Dashboard
+                            </button>
+                            <button 
+                                onClick={signOutUser}
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                            >
+                                Sign Out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-5 py-6 sm:py-8 font-sans">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b-2 border-gray-200">
+                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 m-0 text-center sm:text-left">🎵 Tracks Management</h1>
                 <button 
                     onClick={() => setShowAddForm(true)}
                     className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-none py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg text-sm sm:text-base font-semibold cursor-pointer transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-full sm:w-auto"
@@ -371,7 +453,7 @@ export default function TracksManagement() {
             </div>
 
             {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 sm:mb-8 flex-wrap items-stretch sm:items-center">
+            <div className="flex flex-col gap-3 mb-6 sm:mb-8">
                 <select 
                     value={selectedWeek} 
                     onChange={(e) => setSelectedWeek(e.target.value)}
@@ -710,8 +792,8 @@ export default function TracksManagement() {
             {/* Bulk Actions Toolbar */}
             {selectedTracks.size > 0 && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                             <span className="text-blue-900 font-medium">
                                 {selectedTracks.size} track(s) selected
                             </span>
@@ -722,18 +804,18 @@ export default function TracksManagement() {
                                 Clear Selection
                             </button>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
                             {!showArchived ? (
                                 <>
                                     <button
                                         onClick={() => handleBulkDelete(false)}
-                                        className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                                        className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors w-full sm:w-auto"
                                     >
                                         📦 Archive Selected
                                     </button>
                                     <button
                                         onClick={() => handleBulkDelete(true)}
-                                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors w-full sm:w-auto"
                                     >
                                         🗑️ Delete Permanently
                                     </button>
@@ -741,7 +823,7 @@ export default function TracksManagement() {
                             ) : (
                                 <button
                                     onClick={handleRestoreTracks}
-                                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors w-full sm:w-auto"
                                 >
                                     🔄 Restore Selected
                                 </button>
@@ -849,64 +931,135 @@ export default function TracksManagement() {
                                     <div className="p-6">
                                         <div className="space-y-3">
                                             {weekTracks.map(track => (
-                                                <div key={track.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200">
-                                                    {/* Selection Checkbox */}
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedTracks.has(track.id)}
-                                                        onChange={() => toggleTrackSelection(track.id)}
-                                                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
-                                                    />
-                                                    
-                                                    {/* Album Art */}
-                                                    <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
-                                                        {track.album_art_url ? (
-                                                            <img src={track.album_art_url} alt="Album Art" className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            <div className="text-2xl text-gray-400">🎵</div>
-                                                        )}
+                                                <div key={track.id} className="bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-200">
+                                                    {/* Mobile Layout */}
+                                                    <div className="block sm:hidden p-3">
+                                                        <div className="flex items-start gap-3 mb-3">
+                                                            {/* Selection Checkbox */}
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedTracks.has(track.id)}
+                                                                onChange={() => toggleTrackSelection(track.id)}
+                                                                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0 mt-1"
+                                                            />
+                                                            
+                                                            {/* Album Art - Smaller on mobile */}
+                                                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                                                                {track.album_art_url ? (
+                                                                    <img src={track.album_art_url} alt="Album Art" className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <div className="text-lg text-gray-400">🎵</div>
+                                                                )}
+                                                            </div>
+                                                            
+                                                            {/* Track Info - Full width on mobile */}
+                                                            <div className="flex-1 min-w-0">
+                                                                <h3 className="text-base font-semibold text-gray-900 truncate">{track.track_name}</h3>
+                                                                <p className="text-gray-600 text-sm font-medium truncate">{track.artists}</p>
+                                                                <p className="text-gray-500 text-xs truncate">{track.album}</p>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {/* Mobile Meta Info */}
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="bg-indigo-500 text-white px-2 py-1 rounded-full text-xs font-semibold">{track.playlist_name}</span>
+                                                                <span className="text-amber-500 font-semibold text-xs">⭐ {track.popularity}</span>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {/* Mobile Actions - Compact horizontal layout */}
+                                                        <div className="flex items-center justify-between">
+                                                            {track.spotify_url && (
+                                                                <a 
+                                                                    href={track.spotify_url} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    className="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600 transition-colors duration-200 flex items-center gap-1"
+                                                                    title="Open in Spotify"
+                                                                >
+                                                                    🎧 <span className="hidden xs:inline">Spotify</span>
+                                                                </a>
+                                                            )}
+                                                            <div className="flex items-center gap-1">
+                                                                <button 
+                                                                    onClick={() => startEdit(track)}
+                                                                    className="bg-amber-500 text-white px-2 py-1 rounded text-xs hover:bg-amber-600 transition-colors duration-200"
+                                                                    title="Edit Track"
+                                                                >
+                                                                    ✏️
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => handleDeleteTrack(track.id)}
+                                                                    className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600 transition-colors duration-200"
+                                                                    title="Delete Track"
+                                                                >
+                                                                    🗑️
+                                                                </button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                     
-                                                    {/* Track Info */}
-                                                    <div className="flex-1 min-w-0">
-                                                        <h3 className="text-lg font-semibold text-gray-900 truncate">{track.track_name}</h3>
-                                                        <p className="text-gray-600 text-sm font-medium truncate">{track.artists}</p>
-                                                        <p className="text-gray-500 text-sm truncate">{track.album}</p>
-                                                    </div>
-                                                    
-                                                    {/* Meta Info */}
-                                                    <div className="flex items-center gap-3 flex-shrink-0">
-                                                        <span className="bg-indigo-500 text-white px-3 py-1 rounded-full text-xs font-semibold">{track.playlist_name}</span>
-                                                        <span className="text-amber-500 font-semibold text-sm">⭐ {track.popularity}</span>
-                                                    </div>
-                                                    
-                                                    {/* Actions */}
-                                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                                        {track.spotify_url && (
-                                                            <a 
-                                                                href={track.spotify_url} 
-                                                                target="_blank" 
-                                                                rel="noopener noreferrer"
-                                                                className="bg-green-500 text-white p-2 rounded-md hover:bg-green-600 transition-colors duration-200"
-                                                                title="Open in Spotify"
+                                                    {/* Desktop Layout */}
+                                                    <div className="hidden sm:flex items-center gap-4 p-4">
+                                                        {/* Selection Checkbox */}
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={selectedTracks.has(track.id)}
+                                                            onChange={() => toggleTrackSelection(track.id)}
+                                                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
+                                                        />
+                                                        
+                                                        {/* Album Art */}
+                                                        <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                                                            {track.album_art_url ? (
+                                                                <img src={track.album_art_url} alt="Album Art" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <div className="text-2xl text-gray-400">🎵</div>
+                                                            )}
+                                                        </div>
+                                                        
+                                                        {/* Track Info */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <h3 className="text-lg font-semibold text-gray-900 truncate">{track.track_name}</h3>
+                                                            <p className="text-gray-600 text-sm font-medium truncate">{track.artists}</p>
+                                                            <p className="text-gray-500 text-sm truncate">{track.album}</p>
+                                                        </div>
+                                                        
+                                                        {/* Meta Info */}
+                                                        <div className="flex items-center gap-3 flex-shrink-0">
+                                                            <span className="bg-indigo-500 text-white px-3 py-1 rounded-full text-xs font-semibold">{track.playlist_name}</span>
+                                                            <span className="text-amber-500 font-semibold text-sm">⭐ {track.popularity}</span>
+                                                        </div>
+                                                        
+                                                        {/* Actions */}
+                                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                                            {track.spotify_url && (
+                                                                <a 
+                                                                    href={track.spotify_url} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer"
+                                                                    className="bg-green-500 text-white p-2 rounded-md hover:bg-green-600 transition-colors duration-200"
+                                                                    title="Open in Spotify"
+                                                                >
+                                                                    🎧
+                                                                </a>
+                                                            )}
+                                                            <button 
+                                                                onClick={() => startEdit(track)}
+                                                                className="bg-amber-500 text-white p-2 rounded-md hover:bg-amber-600 transition-colors duration-200"
+                                                                title="Edit Track"
                                                             >
-                                                                🎧
-                                                            </a>
-                                                        )}
-                                                        <button 
-                                                            onClick={() => startEdit(track)}
-                                                            className="bg-amber-500 text-white p-2 rounded-md hover:bg-amber-600 transition-colors duration-200"
-                                                            title="Edit Track"
-                                                        >
-                                                            ✏️
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => handleDeleteTrack(track.id)}
-                                                            className="bg-red-500 text-white p-2 rounded-md hover:bg-red-600 transition-colors duration-200"
-                                                            title="Delete Track"
-                                                        >
-                                                            🗑️
-                                                        </button>
+                                                                ✏️
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleDeleteTrack(track.id)}
+                                                                className="bg-red-500 text-white p-2 rounded-md hover:bg-red-600 transition-colors duration-200"
+                                                                title="Delete Track"
+                                                            >
+                                                                🗑️
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -918,6 +1071,7 @@ export default function TracksManagement() {
                     ))
                 )}
             </div>
+        </div>
         </div>
     );
 }

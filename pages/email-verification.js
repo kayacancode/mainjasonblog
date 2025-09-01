@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { useRouter } from "next/router";
 import { useState } from "react";
 import styles from "../styles/emailVerify.module.css";
@@ -21,20 +22,40 @@ export default function EmailVerify() {
       <div className={styles.heading}>
         <h2> Please verify your email </h2>
       </div>
-      {verifySent ? (
-        <div className={styles.verify}>
-          <h3>
-            Please check your email for a verification link. If you don't see
-            the email, check your spam folder.
-          </h3>
-        </div>
-      ) : (
-        <div className={styles.button}>
-          <button onClick={handleVerify}>
-            {loading ? "Loading..." : "Send Verification Code"}
-          </button>
-        </div>
-      )}
+             {verifySent ? (
+         <div>
+           <div className={styles.verify}>
+             <h3>
+               Please check your email for a verification link. If you don't see
+               the email, check your spam folder.
+             </h3>
+           </div>
+           
+           <div style={{ marginTop: '20px', textAlign: 'center' }}>
+             <Link href="/adminsignin">
+               <button className={styles.backButton}>
+                 Back to Sign In
+               </button>
+             </Link>
+           </div>
+         </div>
+       ) : (
+         <div>
+           <div className={styles.button}>
+             <button onClick={handleVerify}>
+               {loading ? "Loading..." : "Send Verification Code"}
+             </button>
+           </div>
+           
+           <div style={{ marginTop: '20px', textAlign: 'center' }}>
+             <Link href="/adminsignin">
+               <button className={styles.backButton}>
+                 Back to Sign In
+               </button>
+             </Link>
+           </div>
+         </div>
+       )}
     </div>
   );
 }
