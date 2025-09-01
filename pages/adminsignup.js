@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import Link from 'next/link';
 import { useRouter } from "next/router";
+import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 const adminsignup = () => {
@@ -85,7 +86,7 @@ const adminsignup = () => {
                                 }}
                             class=" bg-[#F2EA6D] border-4 border-black w-full py-2 px-3 text-black leading-tight placeholder-black focus:outline-none focus:shadow-outline" 
                             name = "password"
-                             type="text" 
+                             type="password" 
                              placeholder="enter your password" 
                              required />
 
@@ -99,7 +100,7 @@ const adminsignup = () => {
                               }}
                             class=" bg-[#F2EA6D] border-4 border-black w-full py-2 px-3 text-black leading-tight placeholder-black focus:outline-none focus:shadow-outline" 
                             id="ConfirmPassword"
-                            type="text" 
+                            type="password" 
                             placeholder="repeat your password" required />
 
                             </div>
@@ -108,12 +109,23 @@ const adminsignup = () => {
                             <div className="flex items-center justify-between mt-16">
                                 <button
                                 type="submit"
-                                class="w-full border-4 border-black hover:bg-pastel_green-700 text-tiber font-bold py-2 px-4  focus:outline-none focus:shadow-outline"
+                                disabled={loading}
+                                class="w-full border-4 border-black hover:bg-pastel_green-700 text-tiber font-bold py-2 px-4 focus:outline-none focus:shadow-outline disabled:opacity-50"
                                 >
-                                  <a className=" ">
-                    {loading ? "Loading..." : "Submit"}
-                                        </a>
+                                    {loading ? "Creating Account..." : "Create Account"}
                                 </button>
+                            </div>
+
+                            {/* Back to Sign In Link */}
+                            <div className="mt-4 text-center">
+                                <Link href="/adminsignin">
+                                    <button
+                                        type="button"
+                                        className="text-sm text-gray-600 hover:text-gray-800 underline"
+                                    >
+                                        Already have an account? Sign in
+                                    </button>
+                                </Link>
                             </div>
                         </form>
                         </div>

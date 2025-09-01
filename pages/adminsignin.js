@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/router";
 import Link from 'next/link';
+import { useRouter } from "next/router";
+import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 const adminsignin = () => {
     const router = useRouter();
     const [form, setForm] = useState({ email: "", password: "" });
-  const [errors, setErrors] = useState({ email: "", password: "", auth: "" });
+    const [errors, setErrors] = useState({ email: "", password: "", auth: "" });
+    const [loading, setLoading] = useState(false);
+    const [resetLoading, setResetLoading] = useState(false);
+    const [resetMessage, setResetMessage] = useState("");
 
   useEffect(() => {
   const {
@@ -39,6 +42,7 @@ const adminsignin = () => {
       return;
     }
 
+    setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email: form.email,
       password: form.password,
@@ -46,10 +50,34 @@ const adminsignin = () => {
 
     if (error) {
       setErrors((prev) => ({ ...prev, auth: error.message }));
+      setLoading(false);
       return;
     }
 
     router.push("/admindashboard");
+  };
+
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    if (!form.email) {
+      setErrors((prev) => ({ ...prev, email: "Please enter your email address first." }));
+      return;
+    }
+
+    setResetLoading(true);
+    setResetMessage("");
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (error) {
+      setErrors((prev) => ({ ...prev, auth: error.message }));
+    } else {
+      setResetMessage("Password reset email sent! Check your inbox.");
+    }
+    
+    setResetLoading(false);
   };
 
   return (
@@ -108,15 +136,41 @@ const adminsignin = () => {
                     )}
                        
                        {errors.auth && <p className="text-red-500 text-xs italic">{errors.auth}</p>}
+                       {resetMessage && <p className="text-green-600 text-xs italic">{resetMessage}</p>}
 
                     
                         <div className="flex items-center justify-between mt-16">
                             <button
                             type="submit"
-                            class="w-full border-4 border-black hover:bg-pastel_green-700 text-tiber font-bold py-2 px-4  focus:outline-none focus:shadow-outline"
+                            disabled={loading}
+                            class="w-full border-4 border-black hover:bg-pastel_green-700 text-tiber font-bold py-2 px-4 focus:outline-none focus:shadow-outline disabled:opacity-50"
                             >
-                                Sign in 
+                                {loading ? "Signing in..." : "Sign in"}
                             </button>
+                        </div>
+
+                        {/* Forgot Password Link */}
+                        <div className="mt-4 text-center">
+                            <button
+                                type="button"
+                                onClick={handlePasswordReset}
+                                disabled={resetLoading}
+                                className="text-sm text-blue-600 hover:text-blue-800 underline disabled:opacity-50"
+                            >
+                                {resetLoading ? "Sending..." : "Forgot Password?"}
+                            </button>
+                        </div>
+
+                        {/* Sign Up Link */}
+                        <div className="mt-4 text-center">
+                            <Link href="/adminsignup">
+                                <button
+                                    type="button"
+                                    className="text-sm text-gray-600 hover:text-gray-800 underline"
+                                >
+                                    Don't have an account? Sign up
+                                </button>
+                            </Link>
                         </div>
                     </form>
                     </div>
