@@ -1,23 +1,6 @@
-import img from 'next/image'
-import styles from '../styles/Home.module.css'
-import React, { useState, useEffect } from "react";
-import Link from 'next/link';
-import blog from '../pages/blog';
-import {getDocs} from 'firebase/firestore'
-import {addDoc,collection} from "firebase/firestore";
-import { auth, db } from "../firebase";
+import React from "react";
 
 const Bigpostcard = (bloginfo) => {
-    const [postsLists,setPostList] = useState([]);
-    const postsCollectionRef = collection(db,"posts");
-    useEffect(() => {
-      const getPosts = async () => {
-        const data = await getDocs(postsCollectionRef)
-        setPostList(data.docs.map((doc) => ({...doc.data(), id:doc.id})))
-      };
-  
-      getPosts();
-    })
 
   return (
        <div className="w-full col-span-0 md:col-span-2	 rounded">
