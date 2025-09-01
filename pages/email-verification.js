@@ -24,7 +24,7 @@ export default function EmailVerify() {
       {verifySent ? (
         <div className={styles.verify}>
           <h3>
-            Please check your email for a verification link.If you don 't see
+            Please check your email for a verification link. If you don't see
             the email, check your spam folder.
           </h3>
         </div>
