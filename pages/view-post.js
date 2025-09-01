@@ -1,92 +1,78 @@
 import Head from "next/head";
-import Image from "next/image";
-import styles from "../styles/Home.module.css";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../firebase";
-import SpotifyPlayer from 'react-spotify-web-playback';
+import { supabase } from "../lib/supabaseClient";
 
-const ViewPost = (bloginfo) => {
- 
-  
+const ViewPost = () => {
   const { query } = useRouter();
-  
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    getPostDetail();
+    if (query?.id) {
+      getPostDetail(query.id);
+    }
   }, [query?.id]);
 
-  const getPostDetail = async () => {
-    if (query?.id) {
-      const docRef = doc(db, "posts", query?.id);
-      const docSnap = await getDoc(docRef);
+  const getPostDetail = async (id) => {
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("id", id)
+        .single();
 
-      if (docSnap.exists()) {
-        let data = docSnap.data();
-        data.id = docSnap.id;
-        setData(data);
-        console.log("Document data:", docSnap.data());
-        return;
-      }
-      console.log(" Document Not found");
+      if (error) throw error;
+      setData(data);
+    } catch (err) {
+      console.error("Error fetching post:", err.message);
     }
   };
 
-  console.log("query", data);
-
   return (
-    <div className="bg-[#000000]">
-      <div className="text-center bg-[#000000] p-5  top-0 w-full 2/4 flex items-center">
-        <div className="flex grid justify-items-start ">
-          <div className="justify-items-start">
-            <div className="grid grid-cols-3">
-              <Link href="/blog">
-                <img
-                  src="/arrow.png"
-                  className="realitve float-left cursor-pointer "
-                  width="100%"
-                  height="100%"
-                  layout="responsive"
-                  objectFit="contain"
-                />
-              </Link>
-              {/* <Link href="/blog">
-                <a href="" class="relative text-[#007aff] ">
-                  Back
-                </a>
-              </Link> */}
-            </div>
-          </div>
+    <div className="bg-[#000000] min-h-screen">
+      {/* Header */}
+      <div className="text-center bg-[#000000] p-5 top-0 w-full flex items-center">
+        <div className="flex justify-start">
+          <Link href="/blog">
+            <img
+              src="/arrow.png"
+              className="relative cursor-pointer w-8 h-8"
+              alt="Back"
+            />
+          </Link>
         </div>
-        <div className="  w-full">
-          <h1 className="font-bold text-white text-3xl text-center pr-8 "> In Suave We Trust </h1>
-        </div>
-      </div>
-      <div className="text-center">
-        <div> </div>
-        <div>
-          <h1 className="text-white text-4xl border-b-4 border-[#FFD800] pb-2 italic">
-          {data?.title}
-          {data?.date}
+        <div className="flex-1">
+          <h1 className="font-bold text-white text-3xl text-center pr-8">
+            In Suave We Trust
           </h1>
         </div>
       </div>
-      <div class="relative w-full h-full overflow-hidden pt-20">
-        <img
-          src={
-            data?.postImg
-          }
-          class="opacity-25 	w-full h-full overflow-hidden "
-          alt="img"
-        />
-        <div class="absolute text-center bottom-0 ">
-        
+
+      {/* Post Title */}
+      <div className="text-center mt-6">
+        <h1 className="text-white text-4xl border-b-4 border-[#FFD800] pb-2 italic inline-block">
+          {data?.title}
+        </h1>
+        {data?.date && (
+          <p className="text-gray-400 text-lg mt-2">{data.date}</p>
+        )}
+      </div>
+
+      {data?.post_img && (
+        <div className="relative w-full h-96 mt-10">
+          <img
+            src={data.post_img}
+            className="w-full h-full object-cover opacity-70"
+            alt={data?.title}
+          />
         </div>
-     
-        <p class ="text-white  pt-40 text-2xl p-20"> {data?.postText} </p>
+      )}
+
+      <div className="px-6 md:px-20 lg:px-40 py-10">
+        <p className="text-white text-2xl leading-relaxed whitespace-pre-line">
+          {data?.post_text}
+        </p>
       </div>
     </div>
   );

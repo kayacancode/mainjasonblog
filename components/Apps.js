@@ -1,86 +1,36 @@
 import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import styles from '../styles/Home.module.css'
 
 const Apps = () => {
+  const apps = [
+    { href: "https://open.spotify.com/user/suavemontana", img: "/spotify.png", label: "Spotify" },
+    { href: "https://vm.tiktok.com/TTPdBsn3ML/", img: "/tiktok.png", label: "TikTok" },
+    { href: "https://www.youtube.com/@Sochaspace", img: "/yt.png", label: "YouTube" },
+    { href: "/blog", img: "/blog.png", label: "Blog" },
+    { href: "https://www.instagram.com/insuavewetrust/", img: "/insta.png", label: "Instagram" },
+    { href: "https://twitter.com/SuaveMontana", img: "/x.jpg", label: "X" },
+    { href: "https://sochaspace.com/", img: "/sochalogo.png", label: "Socha" },
+  ];
+
   return (
-    <div>
-    {/* <div className = "flex "> */}
-    <div className = "  mt-8 mx-5 grid grid-cols-4 gap-4  content-center  ">
-
-      {/* <div className = " content-center text-center">
-    <Link href ="https://music.apple.com/profile/insuavewetrust">
-    <Image src= "/applemusic.png" className="cursor-pointer" width={65} height={65} />
-    
-    </Link>
-    <div className = {styles.text}> Apple Music</div>
-    </div> */}
-
-
-    <div className = "  content-center text-center">
-    <Link href ="https://open.spotify.com/user/suavemontana">
-    <Image src= "/spotify.png" className="cursor-pointer" width={65} height={65} />
-    
-    </Link>
-    <div className = {styles.text}> Spotify</div>
+    <div className="mt-8 mx-5 grid grid-cols-4 gap-6">
+      {apps.map((app, idx) => (
+        <div key={idx} className="flex flex-col items-center">
+          <Link href={app.href}>
+            <Image
+              src={app.img}
+              alt={app.label}
+              width={65}
+              height={65}
+              className="cursor-pointer rounded-xl"
+            />
+          </Link>
+          <span className="mt-2 text-sm text-center invert">{app.label}</span>
+        </div>
+      ))}
     </div>
-    
-    <div className = " content-center text-center">
-    <Link href ="https://vm.tiktok.com/TTPdBsn3ML/">
-    <Image src= "/tiktok.png" className="cursor-pointer" width={65} height={65} />
-    
-    </Link>
-    <div className = {styles.text}> Tiktok</div>
-    </div>
+  );
+};
 
-    <div className = " content-center text-center">
-    <Link href ="https://www.youtube.com/@Sochaspace">
-    <Image src= "/yt.png" className="cursor-pointer" width={65} height={65} />
-    
-    </Link>
-    <div className = {styles.text}> Youtube</div>
-    </div>
-
-    <div className = " content-center text-center">
-    <Link href ="/blog">
-    <Image src= "/blog.png" className="cursor-pointer" width={65} height={65} />
-    
-    </Link>
-    <div className = {styles.text}> Blog </div>
-    </div>
-
-
-    <div className = " content-center text-center">
-    <Link href ="https://www.instagram.com/insuavewetrust/">
-    <Image src= "/insta.png" className="cursor-pointer" width={65} height={65} />
-    
-    </Link>
-    <div className = {styles.text}> Instagram </div>
-    </div>
-    
-   
-    <div className = "content-center text-center">
-    <Link href ="https://twitter.com/SuaveMontana">
-    <Image src= "/x.jpg" className="cursor-pointer rounded-xl" width={65} height={65} />
-    
-    </Link>
-    <div className = {styles.text}> X </div>
-    </div>
-    <div className = "content-center text-center">
-    <Link href ="https://sochaspace.com/">
-    <Image src= "/sochalogo.png" className=" bg-white cursor-pointer rounded-xl" width={65} height={65} />
-    
-    </Link>
-    <div className = {styles.text}> Socha </div>
-    </div>
-
-    </div>
-
-    
-
-</div>
-  )
-}
-
-export default Apps
+export default Apps;

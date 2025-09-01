@@ -1,121 +1,27 @@
-import { useEffect, useState } from "react";
-import { collection, getDocs, deleteDoc, doc, addDoc } from "firebase/firestore";
-import { ref, deleteObject, uploadBytes, getDownloadURL } from "firebase/storage";
-import { onAuthStateChanged } from "firebase/auth";
-import { db, storage, auth } from "../firebase";
-import Navbar from "../components/Navbar";
 import Image from "next/image";
+import { useState } from "react";
 
 export default function Photos() {
-  const [photos, setPhotos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(true); // Simplified for now
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [photoTitle, setPhotoTitle] = useState("");
-  const [uploading, setUploading] = useState(false);
+  const [photos, setPhotos] = useState([]);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log("Auth state changed:", user);
-      if (user) {
-        setUser(user);
-        console.log("User is signed in:", user.email);
-        // If user is signed in, they are admin
-        setIsAdmin(true);
-        console.log("Admin status set to true - user is authenticated");
-      } else {
-        console.log("No user signed in");
-        setUser(null);
-        setIsAdmin(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const fetchPhotos = async () => {
-      try {
-        const photosCollection = collection(db, "photos");
-        const photosSnapshot = await getDocs(photosCollection);
-        const photosList = photosSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setPhotos(photosList);
-      } catch (error) {
-        console.error("Error fetching photos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPhotos();
-  }, []);
-
-  const handlePhotoDelete = async (photoId, storagePath) => {
+  // Simplified photo management - Firebase functionality removed
+  const handlePhotoDelete = async (photoId) => {
     if (!confirm("Are you sure you want to delete this photo?")) return;
-
-    try {
-      // Delete from Storage if storagePath exists
-      if (storagePath) {
-        const storageRef = ref(storage, storagePath);
-        await deleteObject(storageRef);
-      }
-
-      // Delete from Firestore
-      await deleteDoc(doc(db, "photos", photoId));
-      setPhotos(photos.filter(photo => photo.id !== photoId));
-    } catch (error) {
-      console.error("Error deleting photo:", error);
-      alert("Error deleting photo. Please try again.");
-    }
+    alert("Photo deletion functionality needs to be implemented with Supabase");
   };
 
   const handlePhotoUpload = async (e) => {
     e.preventDefault();
-    if (!selectedFile) {
-      alert("Please select a file to upload.");
-      return;
-    }
-
-    setUploading(true);
-    try {
-      // Upload image to Firebase Storage
-      const storageRef = ref(storage, `photos/${Date.now()}_${selectedFile.name}`);
-      await uploadBytes(storageRef, selectedFile);
-      const downloadURL = await getDownloadURL(storageRef);
-
-      // Save photo metadata to Firestore
-      const photoData = {
-        url: downloadURL,
-        title: photoTitle,
-        uploadedAt: new Date().toISOString(),
-        storagePath: storageRef.fullPath
-      };
-
-      const docRef = await addDoc(collection(db, "photos"), photoData);
-      setPhotos([...photos, { id: docRef.id, ...photoData }]);
-      
-      // Reset form
-      setSelectedFile(null);
-      setPhotoTitle("");
-      setShowUploadForm(false);
-      alert("Photo uploaded successfully!");
-    } catch (error) {
-      console.error("Error uploading photo:", error);
-      alert("Error uploading photo. Please try again.");
-    } finally {
-      setUploading(false);
-    }
+    alert("Photo upload functionality needs to be implemented with Supabase");
   };
 
   return (
     <div className="min-h-screen bg-white">
-      {console.log("Rendering photos page - isAdmin:", isAdmin, "user:", user)}
-      
       {/* iOS-style Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

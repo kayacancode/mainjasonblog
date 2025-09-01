@@ -1,80 +1,54 @@
-import React, { useEffect, useState } from "react";
+import Link from 'next/link';
 import { useRouter } from "next/router";
-import { collection, doc, setDoc } from "firebase/firestore";
-import {
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
-import { auth, db } from "../firebase";
-import img from 'next/image'
+import React, { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 const adminsignup = () => {
     const router = useRouter();
-    const userRef = collection(db, "users");
-  
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
-    const [data, setData] = useState({
-        email: "",
-    })
+    const [email, setEmail] = useState("");
 
-    useEffect(() => {
-        onAuthStateChanged(auth, async (user) => {
-          if (user) {
-            router.push("/admindashboard");
-          }
-        });
-      }, []);
-    
-      const register = async (e) => {
-        e.preventDefault();
-    
-        if (password.length < 6) {
-          alert("Password must be at least 6 characters long");
-          let pass = document.getElementById("password");
-          pass.focus();
-          pass.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-          return;
-        }
-    
-        if (password !== confirmPassword) {
-          alert("Password does not match");
-    
-          let pass = document.getElementById("ConfirmPassword");
-          pass.focus();
-          pass.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-          return;
-        }
-        setLoading(true);
-    
-        try {
-          const result = await createUserWithEmailAndPassword(
-            auth,
-            data.email,
-            password
-          );
-    
-          await setDoc(doc(userRef, result.user.uid), data);
-          router.push("/email-verification", undefined, { shallow: true });
-          console.log(result);
-          setLoading(false);
-        } catch (error) {
-          alert(error.message);
-          setLoading(false);
-        }
-      };
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) {
+        router.push("/admindashboard");
+      }
+    };
+    checkUser();
+  }, [router]);
 
-        const handleChange = (e) =>
-        setData({ ...data, [e.target.name]: e.target.value });
+  const register = async (e) => {
+    e.preventDefault();
+
+    if (password.length < 6) {
+      alert("Password must be at least 6 characters long");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      alert(error.message);
+      setLoading(false);
+      return;
+    }
+
+    // Supabase automatically sends verification emails if enabled
+    router.push("/email-verification", undefined, { shallow: true });
+    setLoading(false);
+  };
 
   return (
     <div class= "h-screen  bg-black">
@@ -91,23 +65,18 @@ const adminsignup = () => {
                         class = "bg-[#F2EA6D] px-8 pt-6 pb-8 mb-4 "
                         onSubmit={register}
                         >
-                          
-
-                            <div class = "mb-4 ">
-                            <input 
-                             value={data.email}
-                             onChange={handleChange}
-                            class=" bg-[#F2EA6D] border-4 border-black w-full py-2 px-3 text-black leading-tight placeholder-black focus:outline-none focus:shadow-outline" 
-                            name = "email" 
-                            id="email" 
-                            type="text" 
-                            placeholder="email address" 
-                            required 
-                            /> 
-
-                            </div>
-                         
-
+                            <div className="mb-4">
+                              <input
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="bg-[#F2EA6D] border-4 border-black w-full py-2 px-3 text-black leading-tight placeholder-black focus:outline-none focus:shadow-outline"
+                            name="email"
+                            id="email"
+                            type="email"
+                            placeholder="email address"
+                            required
+                          />
+                        </div>
                             <div class = "mb-4 ">
                             <input 
                                 value={password}
@@ -117,7 +86,7 @@ const adminsignup = () => {
                                 }}
                             class=" bg-[#F2EA6D] border-4 border-black w-full py-2 px-3 text-black leading-tight placeholder-black focus:outline-none focus:shadow-outline" 
                             name = "password"
-                             type="text" 
+                             type="password" 
                              placeholder="enter your password" 
                              required />
 
@@ -131,7 +100,7 @@ const adminsignup = () => {
                               }}
                             class=" bg-[#F2EA6D] border-4 border-black w-full py-2 px-3 text-black leading-tight placeholder-black focus:outline-none focus:shadow-outline" 
                             id="ConfirmPassword"
-                            type="text" 
+                            type="password" 
                             placeholder="repeat your password" required />
 
                             </div>
@@ -140,12 +109,23 @@ const adminsignup = () => {
                             <div className="flex items-center justify-between mt-16">
                                 <button
                                 type="submit"
-                                class="w-full border-4 border-black hover:bg-pastel_green-700 text-tiber font-bold py-2 px-4  focus:outline-none focus:shadow-outline"
+                                disabled={loading}
+                                class="w-full border-4 border-black hover:bg-pastel_green-700 text-tiber font-bold py-2 px-4 focus:outline-none focus:shadow-outline disabled:opacity-50"
                                 >
-                                  <a className=" ">
-                    {loading ? "Loading..." : "Submit"}
-                  </a>
+                                    {loading ? "Creating Account..." : "Create Account"}
                                 </button>
+                            </div>
+
+                            {/* Back to Sign In Link */}
+                            <div className="mt-4 text-center">
+                                <Link href="/adminsignin">
+                                    <button
+                                        type="button"
+                                        className="text-sm text-gray-600 hover:text-gray-800 underline"
+                                    >
+                                        Already have an account? Sign in
+                                    </button>
+                                </Link>
                             </div>
                         </form>
                         </div>

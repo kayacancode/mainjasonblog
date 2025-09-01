@@ -1,69 +1,85 @@
-import React, { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import Link from 'next/link';
 import { useRouter } from "next/router";
-import img from 'next/image'
-import Link from 'next/link'
-import { auth } from "../firebase";
+import React, { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
 const adminsignin = () => {
     const router = useRouter();
-
     const [form, setForm] = useState({ email: "", password: "" });
-    const [userError, setUserError] = useState(false);
-    const [passError, setPassError] = useState(false);
-    const [authError, setAuthError] = useState(false);
-  
-    useEffect(() => {
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          router.push("/admindashboard");
-        }
-      });
-    }, []);
-    const handleChange = (e) => {
-        setAuthError(false);
-        if (e.target.name === "email") {
-          setUserError(false);
-        }
-        if (e.target.name === "password") {
-          setPassError(false);
-        }
-        setForm({
-          ...form,
-          [e.target.name]: e.target.value,
-        });
-      };
-      const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!form.email) {
-          setUserError(true);
-          return;
-        }
-        if (!form.password) {
-          setPassError(true);
-          return;
-        }
-        handleLogin(form.email, form.password);
-      };
+    const [errors, setErrors] = useState({ email: "", password: "", auth: "" });
+    const [loading, setLoading] = useState(false);
+    const [resetLoading, setResetLoading] = useState(false);
+    const [resetMessage, setResetMessage] = useState("");
+
+  useEffect(() => {
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((event, session) => {
+    if (session?.user) {
+      router.push("/admindashboard");
+    }
+  });
+
+  return () => {
+    subscription.unsubscribe();
+  };
+}, [router]);
+
+
+  const handleChange = (e) => {
+    setErrors({ ...errors, [e.target.name]: "" });
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.email) {
+      setErrors((prev) => ({ ...prev, email: "Please enter an email." }));
+      return;
+    }
+    if (!form.password) {
+      setErrors((prev) => ({ ...prev, password: "Please enter a password." }));
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: form.email,
+      password: form.password,
+    });
+
+    if (error) {
+      setErrors((prev) => ({ ...prev, auth: error.message }));
+      setLoading(false);
+      return;
+    }
+
+    router.push("/admindashboard");
+  };
+
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    if (!form.email) {
+      setErrors((prev) => ({ ...prev, email: "Please enter your email address first." }));
+      return;
+    }
+
+    setResetLoading(true);
+    setResetMessage("");
     
-      const handleLogin = (email, password) => {
-        signInWithEmailAndPassword(auth, email, password)
-          .then((userCredential) => {
-            // signed in
-            const user = userCredential.user;
-            router.push("/email-verification", undefined, { shallow: true });
-          })
-          .catch((error) => {
-            console.log(error.message);
-            const errorCode = error.code;
-            const errorMessage = error.message;
-            console.log(errorCode);
-            if (errorCode === "auth/user-not-found")
-              setAuthError("This email is not registered.");
-            if (errorCode === "auth/wrong-password") setAuthError("Wrong password");
-          });
-      };
- 
+    const { error } = await supabase.auth.resetPasswordForEmail(form.email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (error) {
+      setErrors((prev) => ({ ...prev, auth: error.message }));
+    } else {
+      setResetMessage("Password reset email sent! Check your inbox.");
+    }
+    
+    setResetLoading(false);
+  };
+
   return (
     <div class= " h-screen bg-black">
     <div>
@@ -95,9 +111,9 @@ const adminsignin = () => {
                         /> 
 
                         </div>
-                        {userError && (
+                        {errors.email && (
           <p className="text-red-500 text-xs italic m-1">
-            Please Enter a email.
+            {errors.email}
           </p>
         )}
 
@@ -108,27 +124,53 @@ const adminsignin = () => {
                             onChange={handleChange}
                         class=" bg-[#F2EA6D] border-4 border-black w-full py-2 px-3 text-black leading-tight placeholder-black focus:outline-none focus:shadow-outline" 
                         name = "password"
-                         type="text" 
+                         type="password" 
                          placeholder="password" 
                          required />
 
                         </div>
-                                    {passError && (
+                                    {errors.password && (
                     <p className="text-red-500 text-xs italic">
-                        Please Enter a password.
+                        {errors.password}
                     </p>
                     )}
                        
-                       {authError && <p className="text-red-500 text-xs italic">{authError}</p>}
+                       {errors.auth && <p className="text-red-500 text-xs italic">{errors.auth}</p>}
+                       {resetMessage && <p className="text-green-600 text-xs italic">{resetMessage}</p>}
 
                     
                         <div className="flex items-center justify-between mt-16">
                             <button
                             type="submit"
-                            class="w-full border-4 border-black hover:bg-pastel_green-700 text-tiber font-bold py-2 px-4  focus:outline-none focus:shadow-outline"
+                            disabled={loading}
+                            class="w-full border-4 border-black hover:bg-pastel_green-700 text-tiber font-bold py-2 px-4 focus:outline-none focus:shadow-outline disabled:opacity-50"
                             >
-                                Sign in 
+                                {loading ? "Signing in..." : "Sign in"}
                             </button>
+                        </div>
+
+                        {/* Forgot Password Link */}
+                        <div className="mt-4 text-center">
+                            <button
+                                type="button"
+                                onClick={handlePasswordReset}
+                                disabled={resetLoading}
+                                className="text-sm text-blue-600 hover:text-blue-800 underline disabled:opacity-50"
+                            >
+                                {resetLoading ? "Sending..." : "Forgot Password?"}
+                            </button>
+                        </div>
+
+                        {/* Sign Up Link */}
+                        <div className="mt-4 text-center">
+                            <Link href="/adminsignup">
+                                <button
+                                    type="button"
+                                    className="text-sm text-gray-600 hover:text-gray-800 underline"
+                                >
+                                    Don't have an account? Sign up
+                                </button>
+                            </Link>
                         </div>
                     </form>
                     </div>

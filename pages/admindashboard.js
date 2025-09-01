@@ -1,296 +1,230 @@
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { collection, getDocs,getDoc, addDoc, deleteDoc, doc, updateDoc, query, where, orderBy } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { format } from "date-fns";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 
-import { auth, db, storage } from "../firebase";
-import Image from "next/image";
-import Navbar from "../components/Navbar";
-import Post from '../components/Post'
-import Smallpostcard from '../components/Smallpostcard'
-import AdminPosts from '../components/AdminPosts'
+export default function AdminDashboard() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-export default function admindashboard() {
-  const [postsLists,setPostList] = useState([]);
+  const [postList, setPostList] = useState([]);
   const [scheduledPosts, setScheduledPosts] = useState([]);
   const [photos, setPhotos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [photoTitle, setPhotoTitle] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [bulkUploading, setBulkUploading] = useState(false);
-  const [bulkFile, setBulkFile] = useState(null);
-  const postsCollectionRef = collection(db,"posts");
-  const draftCollectionRef = collection(db, "drafts");
+  const [tracks, setTracks] = useState([]);
 
-  // Helper function to safely format dates
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  const [bulkFile, setBulkFile] = useState(null);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [photoTitle, setPhotoTitle] = useState("");
+
+  // Format date helper
   const safeFormatDate = (timestamp, fallback = "No date") => {
     try {
       if (!timestamp) return fallback;
-      
-      // Handle Firestore timestamp
-      if (timestamp.seconds) {
-        const date = new Date(timestamp.seconds * 1000);
-        if (isNaN(date.getTime())) return fallback;
-        return format(date, "MMM d, yyyy");
-      }
-      
-      // Handle regular date string
       const date = new Date(timestamp);
       if (isNaN(date.getTime())) return fallback;
       return format(date, "MMM d, yyyy");
-    } catch (error) {
-      console.error("Error formatting date:", error);
+    } catch {
       return fallback;
     }
   };
 
+  // Fetch posts and photos
   useEffect(() => {
-    const fetchData = async () => {
-      // Fetch all posts
-      const postsSnapshot = await getDocs(postsCollectionRef);
-      const postsData = postsSnapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
-      
-      // Separate published and scheduled posts
-      const publishedPosts = postsData.filter(post => post.isPublished === true);
-      const scheduledPosts = postsData.filter(post => 
-        post.isPublished === false && 
-        post.scheduledFor && 
-        new Date(post.scheduledFor.seconds * 1000) > new Date()
-      );
-      
-      // Sort scheduled posts by date
-      scheduledPosts.sort((a, b) => {
-        const dateA = new Date(a.scheduledFor.seconds * 1000);
-        const dateB = new Date(b.scheduledFor.seconds * 1000);
-        return dateA - dateB;
-      });
-      
-      // Fetch drafts
-      const draftsSnapshot = await getDocs(draftCollectionRef);
-      const draftsData = draftsSnapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
-  
-      setPostList(publishedPosts);
-      setScheduledPosts(scheduledPosts);
+    const init = async () => {
+      // Check auth
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) return router.replace("/adminsignin");
+      setUser(user);
+
+      // Fetch posts
+      const { data: postsData, error: postsError } = await supabase
+        .from("posts")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (postsError) console.error(postsError);
+      else {
+        const published = postsData.filter(p => p.is_published);
+        const scheduled = postsData
+          .filter(p => !p.is_published && p.scheduled_for && new Date(p.scheduled_for) > new Date())
+          .sort((a, b) => new Date(a.scheduled_for) - new Date(b.scheduled_for));
+        setPostList(published);
+        setScheduledPosts(scheduled);
+      }
+
+      // Fetch photos
+      const { data: photoData, error: photoError } = await supabase
+        .from("photos")
+        .select("*")
+        .order("uploaded_at", { ascending: false });
+
+      if (photoError) console.error(photoError);
+      else setPhotos(photoData);
+
+      // Fetch tracks
+      const { data: tracksData, error: tracksError } = await supabase
+        .from("tracks")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (tracksError) console.error(tracksError);
+      else setTracks(tracksData || []);
+
+      setLoading(false);
     };
-  
-    fetchData();
-  }, []);
 
-  const router = useRouter();
+    init();
 
-  const [user, setUser] = useState(null);
-  useEffect(() => {
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        if (!user.emailVerified) {
-          // user is signIn, but email is not verified
-          router.push("/email-verification");
-          return;
-        }
-        const docRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setUser(docSnap.data());
-        } else {
-          console.log("No such document!");
-        }
-      } else {
-        // you can also redirect to the signIn page. if user is not signIn.
-        router.push("/adminsignin");
-      }
+    // Auth listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session?.user) router.replace("/adminsignin");
+      else setUser(session.user);
     });
-  }, []);
 
-  function signOutUser() {
-    signOut(auth)
-      .then(() => {
-        console.log("signOut success");
-      })
-      .catch((error) => {
-        // An error happened.
-        alert(error.message);
-      });
-  }
+    return () => subscription.unsubscribe();
+  }, [router]);
 
-  const deletePost = async (post) => {
-    try {
-      // Delete post document from "posts" collection
-      const postDoc = doc(db, "posts", post.id);
-      await deleteDoc(postDoc);
-  
-      // Delete draft document from "drafts" collection
-      const draftDoc = doc(db, "drafts", post.id);
-      await deleteDoc(draftDoc);
-    } catch (error) {
-      console.log("Error deleting post:", error.message);
-    }
+  // Sign out
+  const signOutUser = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) alert(error.message);
+    else router.replace("/adminsignin");
   };
 
-  const formatScheduledDate = (timestamp) => {
-    if (!timestamp) return "Not scheduled";
+  // Delete post
+  const deletePost = async (postId) => {
     try {
-      if (timestamp.seconds) {
-        const date = new Date(timestamp.seconds * 1000);
-        if (isNaN(date.getTime())) return "Invalid date";
-        return date.toLocaleString();
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId);
+
+      if (error) {
+        console.error('Error deleting post:', error.message);
+        alert('Failed to delete post: ' + error.message);
+        return false;
       }
-      const date = new Date(timestamp);
-      if (isNaN(date.getTime())) return "Invalid date";
-      return date.toLocaleString();
-    } catch (error) {
-      console.error("Error formatting scheduled date:", error);
-      return "Invalid date";
+
+      return true;
+    } catch (err) {
+      console.error('Unexpected error deleting post:', err);
+      alert('Unexpected error deleting post.');
+      return false;
     }
   };
-
+  
+  // Upload photo
   const handlePhotoUpload = async (e) => {
     e.preventDefault();
     if (!selectedFile) return;
-
     setUploading(true);
+
     try {
-      // Upload image to Firebase Storage
-      const storageRef = ref(storage, `photos/${Date.now()}_${selectedFile.name}`);
-      await uploadBytes(storageRef, selectedFile);
-      const downloadURL = await getDownloadURL(storageRef);
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
 
-      // Save photo metadata to Firestore
-      const photoData = {
-        url: downloadURL,
-        title: photoTitle,
-        uploadedAt: new Date().toISOString(),
-        storagePath: storageRef.fullPath
-      };
+      const { error: uploadError } = await supabase.storage
+        .from("photos")
+        .upload(filePath, selectedFile);
 
-      const docRef = await addDoc(collection(db, "photos"), photoData);
-      setPhotos([...photos, { id: docRef.id, ...photoData }]);
-      
-      // Reset form
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage.from("photos").getPublicUrl(filePath);
+
+      const { data, error } = await supabase
+        .from("photos")
+        .insert([{ title: photoTitle, url: publicUrl, uploaded_at: new Date(), storage_path: filePath }])
+        .select();
+
+      if (error) throw error;
+
+      setPhotos([data[0], ...photos]);
       setSelectedFile(null);
       setPhotoTitle("");
-    } catch (error) {
-      console.error("Error uploading photo:", error);
-      alert("Error uploading photo. Please try again.");
+    } catch (err) {
+      console.error(err);
+      alert("Error uploading photo: " + err.message);
     } finally {
       setUploading(false);
     }
   };
 
+  // Delete photo
   const handlePhotoDelete = async (photoId, storagePath) => {
     if (!confirm("Are you sure you want to delete this photo?")) return;
-
     try {
-      // Delete from Storage
-      const storageRef = ref(storage, storagePath);
-      await deleteObject(storageRef);
+      const { error: storageError } = await supabase.storage.from("photos").remove([storagePath]);
+      if (storageError) throw storageError;
 
-      // Delete from Firestore
-      await deleteDoc(doc(db, "photos", photoId));
-      setPhotos(photos.filter(photo => photo.id !== photoId));
-    } catch (error) {
-      console.error("Error deleting photo:", error);
-      alert("Error deleting photo. Please try again.");
+      const { error: dbError } = await supabase.from("photos").delete().eq("id", photoId);
+      if (dbError) throw dbError;
+
+      setPhotos(photos.filter(p => p.id !== photoId));
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting photo: " + err.message);
     }
   };
 
+  // Bulk upload posts (JSON or CSV)
   const handleBulkUpload = async (e) => {
     e.preventDefault();
     if (!bulkFile) return;
-
     setBulkUploading(true);
-    try {
-      const fileText = await bulkFile.text();
-      let posts;
 
-      // Try to parse as JSON first
+    try {
+      const text = await bulkFile.text();
+      let posts = [];
+
       try {
-        posts = JSON.parse(fileText);
-      } catch (jsonError) {
-        // If JSON fails, try CSV parsing
-        const lines = fileText.split('\n');
+        posts = JSON.parse(text);
+      } catch {
+        const lines = text.split('\n');
         const headers = lines[0].split(',').map(h => h.trim());
-        posts = lines.slice(1).filter(line => line.trim()).map(line => {
+        posts = lines.slice(1).filter(l => l.trim()).map(line => {
           const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-          const post = {};
-          headers.forEach((header, index) => {
-            post[header] = values[index] || '';
-          });
-          return post;
+          const obj = {};
+          headers.forEach((h, i) => obj[h] = values[i] || '');
+          return obj;
         });
       }
 
-      // Validate posts array
-      if (!Array.isArray(posts)) {
-        throw new Error("File must contain an array of posts");
+      for (const post of posts) {
+        await supabase.from("posts").insert([{
+          title: post.title || "Untitled",
+          post_text: post.content || post.postText || "",
+          author: post.author || "Admin",
+          post_img: post.imgUrl || post.postImg || "",
+          is_published: post.isPublished !== undefined ? post.isPublished : true,
+          scheduled_for: post.scheduledFor || null,
+          created_at: new Date()
+        }]);
       }
 
-      let successCount = 0;
-      let errorCount = 0;
-
-      // Upload posts in batches to avoid overwhelming Firebase
-      const batchSize = 10;
-      for (let i = 0; i < posts.length; i += batchSize) {
-        const batch = posts.slice(i, i + batchSize);
-        
-        await Promise.all(batch.map(async (post) => {
-          try {
-            // Ensure required fields and set defaults
-            const postData = {
-              title: post.title || `Untitled Post ${i + 1}`,
-              postText: post.content || post.body || post.postText || '',
-              author: post.author || 'Admin',
-              createdAt: post.createdAt ? new Date(post.createdAt) : new Date(),
-              isPublished: post.isPublished !== undefined ? post.isPublished : true,
-              postImg: post.imgUrl || post.image || post.postImg || '',
-              tags: post.tags || [],
-              excerpt: post.excerpt || post.summary || '',
-              ...post // Include any additional fields
-            };
-
-            // Add to Firestore
-            await addDoc(postsCollectionRef, postData);
-            successCount++;
-          } catch (error) {
-            console.error(`Error uploading post: ${post.title}`, error);
-            errorCount++;
-          }
-        }));
-
-        // Small delay between batches
-        if (i + batchSize < posts.length) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
-
-      alert(`Bulk upload completed!\nSuccessful: ${successCount}\nErrors: ${errorCount}`);
-      
-      // Refresh the posts list
-      const postsSnapshot = await getDocs(postsCollectionRef);
-      const postsData = postsSnapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      }));
-      const publishedPosts = postsData.filter(post => post.isPublished === true);
-      setPostList(publishedPosts);
-
-      // Reset form
+      alert("Bulk upload completed!");
       setBulkFile(null);
-    } catch (error) {
-      console.error("Error during bulk upload:", error);
-      alert(`Error during bulk upload: ${error.message}`);
+
+      // Refresh posts
+      const { data: postsData } = await supabase.from("posts").select("*");
+      const published = postsData.filter(p => p.is_published);
+      const scheduled = postsData.filter(p => !p.is_published && p.scheduled_for && new Date(p.scheduled_for) > new Date());
+      setPostList(published);
+      setScheduledPosts(scheduled);
+
+    } catch (err) {
+      console.error(err);
+      alert("Error during bulk upload: " + err.message);
     } finally {
       setBulkUploading(false);
     }
   };
+
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -326,7 +260,7 @@ export default function admindashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -336,7 +270,7 @@ export default function admindashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Published Posts</p>
-                <p className="text-2xl font-bold text-gray-900">{postsLists.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{postList.length}</p>
               </div>
             </div>
           </div>
@@ -365,6 +299,20 @@ export default function admindashboard() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Photos</p>
                 <p className="text-2xl font-bold text-gray-900">{photos.length}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Tracks</p>
+                <p className="text-2xl font-bold text-gray-900">{tracks.length}</p>
               </div>
             </div>
           </div>
@@ -408,6 +356,18 @@ export default function admindashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
                 <span className="text-sm font-medium text-green-600">Preview Blog</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => router.push('/tracks-management')}
+              className="flex items-center justify-center p-4 bg-orange-50 hover:bg-orange-100 rounded-lg border-2 border-dashed border-orange-300 hover:border-orange-400 transition-colors group"
+            >
+              <div className="text-center">
+                <svg className="w-8 h-8 text-orange-600 mx-auto mb-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+                <span className="text-sm font-medium text-orange-600">Manage Tracks</span>
               </div>
             </button>
 
@@ -501,13 +461,13 @@ export default function admindashboard() {
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-gray-900">Recent Posts</h2>
-                  <span className="text-sm text-gray-500">{postsLists.length} total</span>
+                  <span className="text-sm text-gray-500">{postList.length} total</span>
                 </div>
               </div>
               <div className="p-6">
-                {postsLists.length > 0 ? (
+                {postList.length > 0 ? (
                   <div className="space-y-4">
-                    {postsLists.slice(0, 5).map((post) => (
+                    {postList.slice(0, 5).map((post) => (
                       <div key={post.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900 truncate">{post.title}</h3>
@@ -531,8 +491,13 @@ export default function admindashboard() {
                           </button>
                           <button
                             onClick={async () => {
-                              await deletePost(post);
-                              setPostList((prevPosts) => prevPosts.filter((p) => p.id !== post.id));
+                              const confirmed = confirm("Are you sure you want to delete this post?");
+                              if (!confirmed) return;
+
+                              const success = await deletePost(post.id);
+                              if (success) {
+                                setPostList(prevPosts => prevPosts.filter(p => p.id !== post.id));
+                              }
                             }}
                             className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
                           >
@@ -540,6 +505,7 @@ export default function admindashboard() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
+
                         </div>
                       </div>
                     ))}
