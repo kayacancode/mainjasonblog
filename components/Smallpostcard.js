@@ -1,54 +1,6 @@
-import Image from "next/image";
-import styles from "../styles/Home.module.css";
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import blog from "../pages/blog";
-import { getDocs } from "firebase/firestore";
-import { addDoc, collection } from "firebase/firestore";
-import { getStorage, ref, getDownloadURL } from "firebase/storage";
-import { auth, db } from "../firebase";
+import React from "react";
 
 const Smallpostcard = (bloginfo) => {
-  // Remove unnecessary state and Firebase calls since data is passed as props
-  // const [postsLists, setPostList] = useState([]);
-  // const postsCollectionRef = collection(db, "posts");
-  const [url, setUrl] = useState();
-
-  // Remove this useEffect entirely since we don't need to fetch posts here
-  // The data is already passed as props from the parent component
-  // useEffect(() => {
-  //   const getPosts = async () => {
-  //     const data = await getDocs(postsCollectionRef);
-  //     setPostList(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
-  //   };
-
-  //   getPosts();
-  // });
-
-  useEffect(() => {
-    let isMounted = true; // Flag to track if component is mounted
-
-    const func = async () => {
-      try {
-        const storage = getStorage();
-        const imgListRef = ref(storage, "imgs/");
-        // await getDownloadURL(reference).then((x) => {
-        //   if (isMounted) {
-        //     setUrl(x);
-        //   }
-        // })
-      } catch (error) {
-        console.error("Error fetching image:", error);
-      }
-    };
-
-    func();
-
-    // Cleanup function
-    return () => {
-      isMounted = false;
-    };
-  }, []); // Added empty dependency array
 
   return (
     <div
