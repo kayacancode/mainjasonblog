@@ -1,31 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import img from 'next/image'
 import Link from 'next/link'
-import { auth, db } from '../firebase'
-import { onAuthStateChanged } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
+import React from 'react'
 
 const Navbar = () => {
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [user, setUser] = useState(null)
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUser(user)
-        // Check if user is admin
-        const userDoc = await getDoc(doc(db, "users", user.uid))
-        if (userDoc.exists() && userDoc.data().isAdmin) {
-          setIsAdmin(true)
-        }
-      } else {
-        setUser(null)
-        setIsAdmin(false)
-      }
-    })
-
-    return () => unsubscribe()
-  }, [])
 
   return (
     <div>
@@ -43,11 +19,9 @@ const Navbar = () => {
           <Link href="/photos" className="text-white hover:text-[#F2EA6D] transition-colors">
             Photos
           </Link>
-          {isAdmin && (
-            <Link href="/admindashboard" className="text-white hover:text-[#F2EA6D] transition-colors">
-              Admin
-            </Link>
-          )}
+          <Link href="/admindashboard" className="text-white hover:text-[#F2EA6D] transition-colors">
+            Admin
+          </Link>
         </div>
       </nav>
     </div>

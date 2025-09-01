@@ -1,72 +1,45 @@
 import Head from "next/head";
-import Image from "next/image";
-import styles from "../styles/Home.module.css";
-import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Post from "../components/Post";
-import Smallpostcard from "../components/Smallpostcard";
-import Bigpostcard from "../components/Bigpostcard";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 
-import { getDocs, query, where } from "firebase/firestore";
-import { addDoc, collection } from "firebase/firestore";
-import { auth, db } from "../firebase";
-const blog = (post) => {
-  const router = useRouter();
+import Smallpostcard from "../components/Smallpostcard";
+import { supabase } from "../lib/supabaseClient";
 
+const blog = () => {
+  const router = useRouter();
   const [postsLists, setPostList] = useState([]);
-  const postsCollectionRef = collection(db, "posts");
-  const draftCollectionRef = collection(db, "drafts");
 
   useEffect(() => {
-    let isMounted = true; // Flag to track if component is mounted
+    let isMounted = true;
 
     const getPosts = async () => {
       try {
-        // Query for published posts only
-        const q = query(postsCollectionRef, where("isPublished", "==", true));
-        const data = await getDocs(q);
-        
-        // Only update state if component is still mounted
-        if (isMounted) {
-          setPostList(data.docs.map((doc) => ({ ...doc.data(), id: doc.id })));
+        // Fetch only published posts
+        const { data, error } = await supabase
+          .from("posts")
+          .select("*")
+          .eq("is_published", true)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        if (isMounted && data) {
+          setPostList(data);
         }
       } catch (error) {
-        console.error("Error fetching posts:", error);
+        console.error("Error fetching posts:", error.message);
       }
     };
 
     getPosts();
 
-    // Cleanup function
     return () => {
       isMounted = false;
     };
   }, []);
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     const postsSnapshot = await getDocs(postsCollectionRef);
-  //     const draftsSnapshot = await getDocs(draftCollectionRef);
-  
-  //     const postsData = postsSnapshot.docs.map((doc) => ({
-  //       ...doc.data(),
-  //       id: doc.id,
-  //     }));
-  //     const draftsData = draftsSnapshot.docs.map((doc) => ({
-  //       ...doc.data(),
-  //       id: doc.id,
-  //     }));
-  
-  //     setPostList([...postsData, ...draftsData]);
-  //   };
-  
-  //   fetchData();
-  // }, []);
-
-  // console.log("postsLists", postsLists);
 
   return (
-    <body className="min-h-screen bg-[#1a1a1a]">
     <div className="min-h-screen bg-[#1a1a1a]">
       <Head>
       {/* Coded by: Kaya Jones
@@ -109,16 +82,18 @@ const blog = (post) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 p-8">
         {postsLists.map((post) => (
           <div key={post.id} className="transform hover:scale-105 transition-transform duration-200">
+            <div className="w-full h-48 relative">
             <Smallpostcard
-              img={post?.imgUrl}
+              img={post.post_img}
               title={post.title}
+              className="w-full h-full object-cover"
               click={() => router.push("/view-post?id="+ post.id + "&title="+ post.title.toLowerCase().replace(/\s/g, ""))}
             />
+          </div>
           </div>
         ))}
       </div>
     </div>
-    </body>
   );
 };
 export default blog;
