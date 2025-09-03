@@ -4,6 +4,7 @@ Enhanced Selenium scraper with album art fetching and popularity filtering
 
 import json
 import logging
+import os
 import time
 from typing import Dict, List
 
@@ -30,7 +31,7 @@ class EnhancedSpotifyAutomation:
             auth_manager = SpotifyOAuth(
                 client_id=self.client_id,
                 client_secret=self.client_secret,
-                redirect_uri="http://127.0.0.1:8080/callback",
+                redirect_uri=os.getenv('SPOTIFY_REDIRECT_URI', 'http://127.0.0.1:8080/callback'),
                 scope=scope,
                 cache_path=".spotify_cache"
             )

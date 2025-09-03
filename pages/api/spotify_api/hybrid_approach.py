@@ -2,11 +2,14 @@
 Hybrid approach: Use the accessible playlist from your library + mock data for demonstration
 """
 
+import json
+import os
+import random
+from typing import Dict, List
+
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-from typing import List, Dict
-import random
-import json
+
 
 class HybridSpotifyFetcher:
     """Hybrid approach using real accessible playlist + demo functionality"""
@@ -20,7 +23,7 @@ class HybridSpotifyFetcher:
         auth_manager = SpotifyOAuth(
             client_id=client_id,
             client_secret=client_secret,
-            redirect_uri="http://127.0.0.1:8080/callback",
+            redirect_uri=os.getenv('SPOTIFY_REDIRECT_URI', 'http://127.0.0.1:8080/callback'),
             scope=scope,
             cache_path=".spotify_cache"
         )
