@@ -3,17 +3,18 @@ New Music Friday Instagram Automation
 Main automation script for generating Instagram content from Spotify playlists
 """
 
-import os
 import json
 import logging
+import os
 from datetime import datetime
-from typing import List, Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
+
 import requests
-from PIL import Image, ImageDraw, ImageFont
 import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
 from config import SpotifyConfig
 from hybrid_approach import HybridSpotifyFetcher
+from PIL import Image, ImageDraw, ImageFont
+from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
 
 # Set up logging
 logging.basicConfig(
@@ -52,7 +53,7 @@ class SpotifyNewMusicAutomation:
             auth_manager = SpotifyOAuth(
                 client_id=self.client_id,
                 client_secret=self.client_secret,
-                redirect_uri="http://127.0.0.1:8080/callback",
+                redirect_uri=os.getenv('SPOTIFY_REDIRECT_URI', 'http://127.0.0.1:8080/callback'),
                 scope=scope,
                 cache_path=".spotify_cache"
             )
