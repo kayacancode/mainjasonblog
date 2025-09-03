@@ -65,18 +65,16 @@ jobs:
     - name: Run music scraper
       run: |
         cd pages/api/spotify_api
-        # Create a simple .env file for the script
-        echo "SPOTIFY_CLIENT_ID=$SPOTIFY_CLIENT_ID" > .env
-        echo "SPOTIFY_CLIENT_SECRET=$SPOTIFY_CLIENT_SECRET" >> .env
-        echo "SPOTIFY_REDIRECT_URI=$SPOTIFY_REDIRECT_URI" >> .env
-        echo "SPOTIPY_CLIENT_ID=$SPOTIFY_CLIENT_ID" >> .env
-        echo "SPOTIPY_CLIENT_SECRET=$SPOTIFY_CLIENT_SECRET" >> .env
-        echo "SPOTIPY_REDIRECT_URI=$SPOTIFY_REDIRECT_URI" >> .env
-        echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" >> .env
-        echo "SUPABASE_SERVICE_KEY=$SUPABASE_SERVICE_KEY" >> .env
+        # Debug: Check if environment variables are set
+        echo "🔍 Debug - Environment variables in shell:"
+        echo "SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:0:10}..."
+        echo "NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:0:30}..."
+        echo "SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:0:10}..."
+        echo "SPOTIPY_CLIENT_ID: ${SPOTIPY_CLIENT_ID:0:10}..."
+        echo "SPOTIPY_CLIENT_SECRET: ${SPOTIPY_CLIENT_SECRET:0:10}..."
         # Ensure Python can find local modules
         export PYTHONPATH="${PYTHONPATH}:$(pwd)"
-        # Run the scraper
+        # Run the scraper (environment variables are already set)
         python py_scraper.py
         
     - name: Commit and push changes

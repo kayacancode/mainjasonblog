@@ -312,22 +312,27 @@ class EnhancedSpotifyAutomation:
         # Save tracks to Supabase
         print("💾 Saving tracks to Supabase...")
         try:
-            from dotenv import load_dotenv
             from supabase import create_client
 
-            # Try to load .env from current directory first (GitHub Actions), then fallback to ../../.env (local)
-            if os.path.exists('.env'):
-                load_dotenv('.env')
-            else:
-                load_dotenv('../../.env')
-
+            # Get environment variables directly from GitHub Actions
             supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
             supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+            
+            # Debug: Print what we found
+            print(f"🔍 Debug - Supabase URL found: {bool(supabase_url)}")
+            print(f"🔍 Debug - Supabase KEY found: {bool(supabase_key)}")
+            
+            if supabase_url:
+                print(f"🔍 Debug - Supabase URL: {supabase_url[:50]}...")
+            if supabase_key:
+                print(f"🔍 Debug - Supabase KEY: {supabase_key[:20]}...")
             
             if not supabase_url or not supabase_key:
                 raise Exception(f"Missing Supabase credentials: URL={bool(supabase_url)}, KEY={bool(supabase_key)}")
 
+            print("🔗 Creating Supabase client...")
             supabase = create_client(supabase_url, supabase_key)
+            print("✅ Supabase client created successfully!")
 
             # Week start (Friday - the day the refresh happens)
             today = datetime.now()
@@ -386,8 +391,11 @@ class EnhancedSpotifyAutomation:
 
 def test_enhanced_automation():
     """Test the enhanced automation"""
-    client_id = "cf27169236814c0cab9f7b9f90005058"
-    client_secret = "4ad9af9ecb7d4001a50632ad314c623b"
+    # Try to get from environment variables first, fallback to hardcoded values
+    client_id = os.getenv('SPOTIFY_CLIENT_ID', "cf27169236814c0cab9f7b9f90005058")
+    client_secret = os.getenv('SPOTIFY_CLIENT_SECRET', "4ad9af9ecb7d4001a50632ad314c623b")
+    
+    print(f"🔍 Debug - Using Spotify Client ID: {client_id[:10]}...")
     
     automation = EnhancedSpotifyAutomation(client_id, client_secret)
     
@@ -414,4 +422,11 @@ def test_enhanced_automation():
 
 if __name__ == "__main__":
     import os
+
+    # Debug: Print all environment variables that start with SPOTIFY or SUPABASE
+    print("🔍 Debug - Environment variables:")
+    for key, value in os.environ.items():
+        if key.startswith(('SPOTIFY', 'SUPABASE', 'NEXT_PUBLIC')):
+            print(f"  {key}: {value[:20]}..." if len(value) > 20 else f"  {key}: {value}")
+    
     test_enhanced_automation()
