@@ -38,22 +38,8 @@ jobs:
         # Install additional dependencies that might be needed
         pip install typing-extensions
         
-    - name: Set up environment variables
-      env:
-        SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
-        SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
-        SPOTIFY_REDIRECT_URI: ${{ secrets.SPOTIFY_REDIRECT_URI }}
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-        SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+    - name: Set up Chrome environment
       run: |
-        echo "SPOTIFY_CLIENT_ID=$SPOTIFY_CLIENT_ID" >> $GITHUB_ENV
-        echo "SPOTIFY_CLIENT_SECRET=$SPOTIFY_CLIENT_SECRET" >> $GITHUB_ENV
-        echo "SPOTIFY_REDIRECT_URI=$SPOTIFY_REDIRECT_URI" >> $GITHUB_ENV
-        echo "SPOTIPY_CLIENT_ID=$SPOTIFY_CLIENT_ID" >> $GITHUB_ENV
-        echo "SPOTIPY_CLIENT_SECRET=$SPOTIFY_CLIENT_SECRET" >> $GITHUB_ENV
-        echo "SPOTIPY_REDIRECT_URI=$SPOTIFY_REDIRECT_URI" >> $GITHUB_ENV
-        echo "NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL" >> $GITHUB_ENV
-        echo "SUPABASE_SERVICE_KEY=$SUPABASE_SERVICE_KEY" >> $GITHUB_ENV
         echo "CHROME_HEADLESS=true" >> $GITHUB_ENV
         echo "DISPLAY=:99" >> $GITHUB_ENV
         echo "CHROME_BIN=/usr/bin/google-chrome-stable" >> $GITHUB_ENV
@@ -63,6 +49,15 @@ jobs:
         Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
         
     - name: Run music scraper
+      env:
+        SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+        SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+        SPOTIFY_REDIRECT_URI: ${{ secrets.SPOTIFY_REDIRECT_URI }}
+        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        SPOTIPY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+        SPOTIPY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+        SPOTIPY_REDIRECT_URI: ${{ secrets.SPOTIFY_REDIRECT_URI }}
       run: |
         cd pages/api/spotify_api
         # Debug: Check if environment variables are set
@@ -74,7 +69,7 @@ jobs:
         echo "SPOTIPY_CLIENT_SECRET: ${SPOTIPY_CLIENT_SECRET:0:10}..."
         # Ensure Python can find local modules
         export PYTHONPATH="${PYTHONPATH}:$(pwd)"
-        # Run the scraper (environment variables are already set)
+        # Run the scraper (environment variables are now explicitly passed)
         python py_scraper.py
         
     - name: Commit and push changes
