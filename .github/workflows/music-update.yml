@@ -17,12 +17,15 @@ jobs:
       with:
         python-version: '3.9'
         
-    - name: Install Chrome
+    - name: Install system dependencies
       run: |
-        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
-        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
-        apt-get update
-        apt-get install -y google-chrome-stable xvfb
+        sudo apt-get update
+        sudo apt-get install -y xvfb
+        # Install Chrome using the official method
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
         
     - name: Install dependencies
       run: |
@@ -46,6 +49,7 @@ jobs:
         echo "SUPABASE_SERVICE_KEY=$SUPABASE_SERVICE_KEY" >> $GITHUB_ENV
         echo "CHROME_HEADLESS=true" >> $GITHUB_ENV
         echo "DISPLAY=:99" >> $GITHUB_ENV
+        echo "CHROME_BIN=/usr/bin/google-chrome-stable" >> $GITHUB_ENV
         
     - name: Start virtual display
       run: |
