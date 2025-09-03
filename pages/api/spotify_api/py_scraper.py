@@ -315,12 +315,19 @@ class EnhancedSpotifyAutomation:
             from dotenv import load_dotenv
             from supabase import create_client
 
-            load_dotenv('../../.env')
+            # Try to load .env from current directory first (GitHub Actions), then fallback to ../../.env (local)
+            if os.path.exists('.env'):
+                load_dotenv('.env')
+            else:
+                load_dotenv('../../.env')
 
-            supabase = create_client(
-                os.getenv('NEXT_PUBLIC_SUPABASE_URL'),
-                os.getenv('SUPABASE_SERVICE_KEY')
-            )
+            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+            
+            if not supabase_url or not supabase_key:
+                raise Exception(f"Missing Supabase credentials: URL={bool(supabase_url)}, KEY={bool(supabase_key)}")
+
+            supabase = create_client(supabase_url, supabase_key)
 
             # Week start (Friday - the day the refresh happens)
             today = datetime.now()
