@@ -31,7 +31,7 @@ class EnhancedSpotifyAutomation:
             auth_manager = SpotifyOAuth(
                 client_id=self.client_id,
                 client_secret=self.client_secret,
-                redirect_uri=os.getenv('SPOTIFY_REDIRECT_URI', 'http://127.0.0.1:8080/callback'),
+                redirect_uri=os.getenv('SPOTIPY_REDIRECT_URI', 'http://127.0.0.1:8080/callback'),
                 scope=scope,
                 cache_path=".spotify_cache"
             )
