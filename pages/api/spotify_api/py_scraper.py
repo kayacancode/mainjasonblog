@@ -315,19 +315,41 @@ class EnhancedSpotifyAutomation:
             from supabase import create_client
 
             # Hardcoded Supabase credentials (same approach as Spotify)
-            supabase_url = "https://yxziaumwnvyswnqfyosh.supabase.co"  # Replace with your actual URL
-            supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"  # Replace with your actual service key
+            supabase_url = "https://yxziaumwnvyswnqfyosh.supabase.co"
+            supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"
             
-            # Try to get from environment variables first, fallback to hardcoded
-            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL', supabase_url)
-            supabase_key = os.getenv('SUPABASE_SERVICE_KEY', supabase_key)
+            # Only use environment variables if they're not empty
+            env_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+            env_key = os.getenv('SUPABASE_SERVICE_KEY')
+            
+            if env_url and env_url.strip():
+                supabase_url = env_url
+                print("🔍 Using Supabase URL from environment")
+            else:
+                print("🔍 Using hardcoded Supabase URL")
+                
+            if env_key and env_key.strip():
+                supabase_key = env_key
+                print("🔍 Using Supabase KEY from environment")
+            else:
+                print("🔍 Using hardcoded Supabase KEY")
             
             print(f"🔍 Debug - Using Supabase URL: {supabase_url[:50]}...")
             print(f"🔍 Debug - Using Supabase KEY: {supabase_key[:20]}...")
+            
+            # Validate credentials before creating client
+            if not supabase_url or not supabase_url.strip():
+                raise Exception("Invalid Supabase URL")
+            if not supabase_key or not supabase_key.strip():
+                raise Exception("Invalid Supabase KEY")
 
             print("🔗 Creating Supabase client...")
-            supabase = create_client(supabase_url, supabase_key)
-            print("✅ Supabase client created successfully!")
+            try:
+                supabase = create_client(supabase_url, supabase_key)
+                print("✅ Supabase client created successfully!")
+            except Exception as client_error:
+                print(f"❌ Failed to create Supabase client: {client_error}")
+                raise client_error
 
             # Week start (Friday - the day the refresh happens)
             today = datetime.now()
