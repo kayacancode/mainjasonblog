@@ -314,21 +314,16 @@ class EnhancedSpotifyAutomation:
         try:
             from supabase import create_client
 
-            # Get environment variables directly from GitHub Actions
-            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
-            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+            # Hardcoded Supabase credentials (same approach as Spotify)
+            supabase_url = "https://yxziaumwnvyswnqfyosh.supabase.co"  # Replace with your actual URL
+            supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"  # Replace with your actual service key
             
-            # Debug: Print what we found
-            print(f"🔍 Debug - Supabase URL found: {bool(supabase_url)}")
-            print(f"🔍 Debug - Supabase KEY found: {bool(supabase_key)}")
+            # Try to get from environment variables first, fallback to hardcoded
+            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL', supabase_url)
+            supabase_key = os.getenv('SUPABASE_SERVICE_KEY', supabase_key)
             
-            if supabase_url:
-                print(f"🔍 Debug - Supabase URL: {supabase_url[:50]}...")
-            if supabase_key:
-                print(f"🔍 Debug - Supabase KEY: {supabase_key[:20]}...")
-            
-            if not supabase_url or not supabase_key:
-                raise Exception(f"Missing Supabase credentials: URL={bool(supabase_url)}, KEY={bool(supabase_key)}")
+            print(f"🔍 Debug - Using Supabase URL: {supabase_url[:50]}...")
+            print(f"🔍 Debug - Using Supabase KEY: {supabase_key[:20]}...")
 
             print("🔗 Creating Supabase client...")
             supabase = create_client(supabase_url, supabase_key)
