@@ -1,0 +1,56 @@
+{
+  "generated_at": "2025-09-04T00:05:03.431128",
+  "track_count": 5,
+  "tracks": [
+    {
+      "id": "1JBO94PcFFU28q3ApaONq0",
+      "name": "London",
+      "artist": "Skepta, Fred again..",
+      "album": "Skepta .. Fred",
+      "popularity": 66,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2731b99c901e8ae0f68c60e7b89",
+      "spotify_url": "https://open.spotify.com/track/1JBO94PcFFU28q3ApaONq0",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "4lz4aKs60vUoyZP4pNy3aD",
+      "name": "Isaka II (6am) [with Tems, Omah Lay, Thukuthela, Jazzworx, Lekaa Beats]",
+      "artist": "CIZA, Tems, Omah Lay, Thukuthela, Jazzworx, Lekaa Beats",
+      "album": "Isaka II (6am) [with Tems, Omah Lay, Thukuthela, Jazzworx, Lekaa Beats]",
+      "popularity": 62,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273ac22e367a3bb9308d2a2beb5",
+      "spotify_url": "https://open.spotify.com/track/4lz4aKs60vUoyZP4pNy3aD",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "0vMhUzszNsYPcUfLitNRNp",
+      "name": "Recognize",
+      "artist": "Russ, Jessy Blakemore",
+      "album": "W!LD Deluxe: The Elephant & The Rider",
+      "popularity": 62,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27356a9b08ae38499c98c75e3f4",
+      "spotify_url": "https://open.spotify.com/track/0vMhUzszNsYPcUfLitNRNp",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "2xXFdcdHLudyShQhoTwBai",
+      "name": "HIGHROLLER (feat. A$AP Ferg & Kelz2busy)",
+      "artist": "Joey Bada$$, A$AP Ferg, Kelz2busy",
+      "album": "Lonely At The Top",
+      "popularity": 59,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2732c659cd5c18e91db0ea83145",
+      "spotify_url": "https://open.spotify.com/track/2xXFdcdHLudyShQhoTwBai",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "15NS5eaGKVrqBR2APHrV2P",
+      "name": "Say Goodbye Hollywood",
+      "artist": "Eminem",
+      "album": "STANS (The Official Soundtrack)",
+      "popularity": 56,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273837a5c94e095f7f06bf6de38",
+      "spotify_url": "https://open.spotify.com/track/15NS5eaGKVrqBR2APHrV2P",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}

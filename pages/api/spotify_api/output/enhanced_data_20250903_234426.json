@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-09-03T23:44:27.124074",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "4waPZF96vX1Oz5pzH6dB0h",
+      "name": "I'll Take Care of You (feat. Yebba)",
+      "artist": "Tyler, The Creator, Yebba",
+      "album": "DON'T TAP THE GLASS",
+      "popularity": 82,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273979047951fa8b15df9f9e984",
+      "spotify_url": "https://open.spotify.com/track/4waPZF96vX1Oz5pzH6dB0h",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "4rPl7ezxtoqshKnI1kk3dX",
+      "name": "Drum Show",
+      "artist": "Twenty One Pilots",
+      "album": "Drum Show",
+      "popularity": 80,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2739530ffdcce654b324e79ceeb",
+      "spotify_url": "https://open.spotify.com/track/4rPl7ezxtoqshKnI1kk3dX",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "3AoF1Fd8rWPBTIfGkcxdQM",
+      "name": "SE LO JURO MOR",
+      "artist": "Feid",
+      "album": "SE LO JURO MOR",
+      "popularity": 80,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273e45e19251d17ca29a7ea4b45",
+      "spotify_url": "https://open.spotify.com/track/3AoF1Fd8rWPBTIfGkcxdQM",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5Lfdb0KKLWKEns27p20uYt",
+      "name": "i wish i knew how to quit you",
+      "artist": "sombr",
+      "album": "I Barely Know Her",
+      "popularity": 79,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273d2eb391e0b3c3bc21c127db6",
+      "spotify_url": "https://open.spotify.com/track/5Lfdb0KKLWKEns27p20uYt",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "3txlvthoUa9vWvG1zr2Lnr",
+      "name": "infinite source",
+      "artist": "Deftones",
+      "album": "private music",
+      "popularity": 75,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27317e4d3ab44b89f1b62dcc2d6",
+      "spotify_url": "https://open.spotify.com/track/3txlvthoUa9vWvG1zr2Lnr",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "4PMqSO5qyjpvzhlLI5GnID",
+      "name": "Good Days",
+      "artist": "SZA",
+      "album": "SOS",
+      "popularity": 80,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27370dbc9f47669d120ad874ec1",
+      "spotify_url": "https://open.spotify.com/track/4PMqSO5qyjpvzhlLI5GnID",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "1vR0FAmbln2Qjpyg0TvG2J",
+      "name": "Sacrifice",
+      "artist": "Mariah the Scientist",
+      "album": "HEARTS SOLD SEPARATELY",
+      "popularity": 70,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27340f15c5b786fda63242b7389",
+      "spotify_url": "https://open.spotify.com/track/1vR0FAmbln2Qjpyg0TvG2J",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "7JjciUzSALsonXv6MukgrP",
+      "name": "Box Me Up (feat. Jelly Roll)",
+      "artist": "BigXthaPlug, Jelly Roll",
+      "album": "I Hope You're Happy",
+      "popularity": 70,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27309432650f719fa6478f1e129",
+      "spotify_url": "https://open.spotify.com/track/7JjciUzSALsonXv6MukgrP",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "1pNEdS8LS4TKZgTSvfvl5C",
+      "name": "Great Pretender",
+      "artist": "Dominic Fike",
+      "album": "Rocket",
+      "popularity": 70,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27380fec759f207cdd216899577",
+      "spotify_url": "https://open.spotify.com/track/1pNEdS8LS4TKZgTSvfvl5C",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "13DIg33b655IuPHHdnlimm",
+      "name": "Back 2 Back",
+      "artist": "Skepta, Fred again..",
+      "album": "Back 2 Back",
+      "popularity": 69,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273e5db5e6fe35c7b3a7fa78f41",
+      "spotify_url": "https://open.spotify.com/track/13DIg33b655IuPHHdnlimm",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}
