@@ -1,7 +1,7 @@
 name: Weekly Music Update
 on:
   schedule:
-    - cron: '0 14 * * 5'  # Every Friday at 2 PM UTC (10 AM EST, 7 AM PST, 6 PM CET)
+    - cron: '0 9 * * 5'  # Every Friday at 9 AM UTC (3 AM CST/4 AM CDT Chicago, 4 AM EST/5 AM EDT Eastern, 1 AM PST/2 AM PDT California)
   workflow_dispatch:  # Allow manual triggering
 
 jobs:
@@ -50,6 +50,7 @@ jobs:
         
     - name: Run music scraper
       env:
+        GITHUB_ACTIONS: true
         SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
         SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
         SPOTIFY_REDIRECT_URI: ${{ secrets.SPOTIFY_REDIRECT_URI }}
@@ -87,10 +88,10 @@ jobs:
         echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY
         echo "**Status:** ✅ Successfully updated music tracks" >> $GITHUB_STEP_SUMMARY
         echo "**Next Run:** Next Friday at:" >> $GITHUB_STEP_SUMMARY
-        echo "- 2:00 PM UTC" >> $GITHUB_STEP_SUMMARY
-        echo "- 10:00 AM EST (Eastern)" >> $GITHUB_STEP_SUMMARY
-        echo "- 7:00 AM PST (Pacific)" >> $GITHUB_STEP_SUMMARY
-        echo "- 6:00 PM CET (Central Europe)" >> $GITHUB_STEP_SUMMARY
+        echo "- 9:00 AM UTC" >> $GITHUB_STEP_SUMMARY
+        echo "- 3:00 AM CST / 4:00 AM CDT (Chicago)" >> $GITHUB_STEP_SUMMARY
+        echo "- 4:00 AM EST / 5:00 AM EDT (Eastern)" >> $GITHUB_STEP_SUMMARY
+        echo "- 1:00 AM PST / 2:00 AM PDT (California)" >> $GITHUB_STEP_SUMMARY
         
     - name: Create failure summary
       if: failure()
