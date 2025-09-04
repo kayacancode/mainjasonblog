@@ -1,5 +1,249 @@
 {
-  "new_music_friday": [],
+  "new_music_friday": [
+    {
+      "id": "",
+      "name": "Tears",
+      "artist": "Sabrina Carpenter",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Vivid Light",
+      "artist": "Blood Orange",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Brother (with Post Malone & YoungBoy Never Broke Again)",
+      "artist": "DJ Khaled, Post Malone, YoungBoy Never Broke Again",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Everybody’s Looking At Me",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Seems Like Old Times - Bonus Track",
+      "artist": "Laufey",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Sideways",
+      "artist": "Balu Brigada",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Lost In Translation",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "SHE DON'T NEED TO KNOW",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "When You See Me",
+      "artist": "Zach Top",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Parachute",
+      "artist": "Hayley Williams",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "London",
+      "artist": "Skepta, Fred again..",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Cinnamon",
+      "artist": "BENEE",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "100 Horses",
+      "artist": "Geese",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Love Me Like You Used To Do [Feat. Tyler Childers]",
+      "artist": "Margo Price, Tyler Childers",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Another Life",
+      "artist": "Alabama Shakes",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Tell Her",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Excited",
+      "artist": "dvsn",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Sort It Out",
+      "artist": "KETTAMA, Clouds",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Daddy’s Little Girl",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "SUPAFLEE (feat. Bri Steves)",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "COMO OREO",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Scared of Myself",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Can I Call You in the Morning?",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "When A Good Man Cries",
+      "artist": "CMAT",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Glory",
+      "artist": "Nova Twins",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "u don't have to tell me",
+      "artist": "Artemas",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "West of Ohio",
+      "artist": "Chance Peña",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    }
+  ],
   "release_radar": [
     {
       "id": "",
@@ -263,6 +507,6 @@
       "spotify_url": ""
     }
   ],
-  "scraped_at": "2025-09-04 00:04:55",
+  "scraped_at": "2025-09-04 00:30:15",
   "method": "enhanced_scraper"
 }
