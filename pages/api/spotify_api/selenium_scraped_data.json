@@ -1,253 +1,9 @@
 {
-  "new_music_friday": [
-    {
-      "id": "",
-      "name": "i wish i knew how to quit you",
-      "artist": "sombr",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Mr. Eclectic",
-      "artist": "Laufey",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Jealous Type",
-      "artist": "E",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "infinite source",
-      "artist": "Deftones",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Different Species (feat. Gunna)",
-      "artist": "E",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Drum Show",
-      "artist": "Twenty One Pilots",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Box Me Up (feat. Jelly Roll)",
-      "artist": "BigXthaPlug, Jelly Roll",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Sacrifice",
-      "artist": "Mariah the Scientist",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Just Two Girls",
-      "artist": "E",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "SE LO JURO MOR",
-      "artist": "Feid",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Great Pretender",
-      "artist": "Dominic Fike",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "who’s your boyfriend",
-      "artist": "Royel Otis",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "FREE (feat. Vory)",
-      "artist": "E",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "925",
-      "artist": "Sammy Virji, Chris Lake, RoRo",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "We're Onto Something (feat. Zach Bryan)",
-      "artist": "Kings of Leon, Zach Bryan",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "21",
-      "artist": "Kingfishr",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Everybody Scream",
-      "artist": "Florence + The Machine",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Phantom",
-      "artist": "Mac DeMarco",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "The Suburbs",
-      "artist": "Ruel",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Hard Part (feat. Lucky Daye)",
-      "artist": "E",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Perfect Person (feat. coop)",
-      "artist": "E",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "I Don't Care...",
-      "artist": "E",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Politix",
-      "artist": "Balu Brigada",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "More",
-      "artist": "Carly Rae Jepsen",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Monsoon",
-      "artist": "Emma Louise, Flume",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Euphoria",
-      "artist": "Khamari",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Goodnight Music City",
-      "artist": "Old Dominion",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    }
-  ],
+  "new_music_friday": [],
   "release_radar": [
     {
       "id": "",
-      "name": "Run It Up (feat. Key Glock)",
+      "name": "Something Wrong (with Don Toliver)",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -256,7 +12,7 @@
     },
     {
       "id": "",
-      "name": "DARK AURA",
+      "name": "STILL (feat. Ab-Soul & Rapsody)",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -265,7 +21,7 @@
     },
     {
       "id": "",
-      "name": "I Don't Care...",
+      "name": "Rich in Rome (feat. LAZER DIM 700 & Nino Paid)",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -274,7 +30,52 @@
     },
     {
       "id": "",
-      "name": "Back 2 Back",
+      "name": "SUPAFLEE (feat. Bri Steves)",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "BK'S FINEST (feat. Rome Streetz, Kai Ca$h & CJ Fly)",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "POWER HOUSE HOBBS",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "HIGHROLLER (feat. A$AP Ferg & Kelz2busy)",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Daddy’s Little Girl",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "London",
       "artist": "Skepta, Fred again..",
       "album": "",
       "popularity": 0,
@@ -283,7 +84,7 @@
     },
     {
       "id": "",
-      "name": "No Comment",
+      "name": "READY TO LOVE (feat. Ty Dolla $ign)",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -292,7 +93,7 @@
     },
     {
       "id": "",
-      "name": "Favorite Girl (feat. Ty Dolla $ign)",
+      "name": "SHE DON'T NEED TO KNOW",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -301,7 +102,7 @@
     },
     {
       "id": "",
-      "name": "Mr. Miracle",
+      "name": "Nite N Day (feat. Babyfxce E & 1up Tee)",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -310,7 +111,7 @@
     },
     {
       "id": "",
-      "name": "GO",
+      "name": "sun's out (feat. Zerrydl)",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -319,7 +120,7 @@
     },
     {
       "id": "",
-      "name": "3 Peat (feat. VonOff1700 & 1900Rugrat)",
+      "name": "W.G.W",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -328,7 +129,7 @@
     },
     {
       "id": "",
-      "name": "TOURMALINE",
+      "name": "Flood",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -337,7 +138,7 @@
     },
     {
       "id": "",
-      "name": "Stay Dangerous (Part 2)",
+      "name": "Coco Gauff",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -346,7 +147,25 @@
     },
     {
       "id": "",
-      "name": "Why Would I (feat. G Herbo) - Extended",
+      "name": "Isaka II (6am) [with Tems, Omah Lay, Thukuthela, Jazzworx, Lekaa Beats]",
+      "artist": "CIZA, Tems, Omah Lay, Thukuthela, Jazzworx, Lekaa Beats",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Recognize",
+      "artist": "Russ, Jessy Blakemore",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": ""
+    },
+    {
+      "id": "",
+      "name": "Van Cleef (feat. Rob49)",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -355,25 +174,7 @@
     },
     {
       "id": "",
-      "name": "Sacrifice",
-      "artist": "Mariah the Scientist",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "PAY ME (feat. Stormzy and Zlatan)",
-      "artist": "ODUMODUBLVCK, Stormzy, Zlatan",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Trials & Tribulations",
+      "name": "Purple - Lost Tapes 2022",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -382,7 +183,7 @@
     },
     {
       "id": "",
-      "name": "White Tee",
+      "name": "Firebomber",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -391,16 +192,7 @@
     },
     {
       "id": "",
-      "name": "Box Me Up (feat. Jelly Roll)",
-      "artist": "BigXthaPlug, Jelly Roll",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Pack U Up",
+      "name": "Cash Flow (feat. Wizkid)",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -409,7 +201,7 @@
     },
     {
       "id": "",
-      "name": "FREE (feat. Vory)",
+      "name": "deserve",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -418,7 +210,7 @@
     },
     {
       "id": "",
-      "name": "Jealous Type",
+      "name": "4 AM in Orlando",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -427,7 +219,7 @@
     },
     {
       "id": "",
-      "name": "Hard Part (feat. Lucky Daye)",
+      "name": "Playground",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -436,7 +228,7 @@
     },
     {
       "id": "",
-      "name": "DESIGNER",
+      "name": "TCB Style",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -445,7 +237,7 @@
     },
     {
       "id": "",
-      "name": "Journey",
+      "name": "100K ANTHEM",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -454,16 +246,7 @@
     },
     {
       "id": "",
-      "name": "Handstand",
-      "artist": "Che Ecru",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Don't Deserve It",
+      "name": "Penny Pinchin' - 2025 Remastered Version",
       "artist": "E",
       "album": "",
       "popularity": 0,
@@ -472,41 +255,14 @@
     },
     {
       "id": "",
-      "name": "SOLEIL",
-      "artist": "916frosty",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Mir Fontane \"On The Radar\" Freestyle",
+      "name": "WhatUWant",
       "artist": "E",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Curtis May",
-      "artist": "E",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": ""
-    },
-    {
-      "id": "",
-      "name": "Great Pretender",
-      "artist": "Dominic Fike",
       "album": "",
       "popularity": 0,
       "album_art_url": null,
       "spotify_url": ""
     }
   ],
-  "scraped_at": "2025-08-28 19:49:14",
+  "scraped_at": "2025-09-04 00:04:55",
   "method": "enhanced_scraper"
 }
