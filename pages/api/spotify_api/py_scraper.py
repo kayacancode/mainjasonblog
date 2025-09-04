@@ -263,12 +263,18 @@ class EnhancedSpotifyAutomation:
         nmf_tracks = playlist_data.get('new_music_friday', []) if use_new_music_friday else []
         rr_tracks = playlist_data.get('release_radar', []) if use_release_radar else []
 
+        # Debug: Show how many tracks we got from each playlist
+        print(f"🔍 Debug - New Music Friday tracks available: {len(nmf_tracks)}")
+        print(f"🔍 Debug - Release Radar tracks available: {len(rr_tracks)}")
+        
         # First, pick top-unique for NMF
         nmf_unique = pick_top_unique(nmf_tracks, limit=5)
+        print(f"🔍 Debug - New Music Friday unique tracks selected: {len(nmf_unique)}")
 
         # Exclude NMF picks from RR, then pick top-unique until RR also has 5
         nmf_keys = {track_key(t) for t in nmf_unique}
         rr_unique = pick_top_unique(rr_tracks, limit=5, exclude_keys=nmf_keys)
+        print(f"🔍 Debug - Release Radar unique tracks selected: {len(rr_unique)}")
 
         # Add playlist source tags
         for t in nmf_unique:
@@ -419,12 +425,11 @@ def test_enhanced_automation():
     print("🧪 Testing Enhanced Automation...")
     print("=" * 60)
     
-    # Determine if we should use cached data
-    # Force fresh scraping in GitHub Actions or if explicitly requested
-    use_cached = not os.getenv('GITHUB_ACTIONS')  # False if running in GitHub Actions
+    # Always pull fresh tracks (no caching)
+    use_cached = False
     
     print(f"🔍 Running in GitHub Actions: {bool(os.getenv('GITHUB_ACTIONS'))}")
-    print(f"🔍 Using cached data: {use_cached}")
+    print(f"🔍 Using cached data: {use_cached} (always fresh)")
     
     # Run enhanced automation
     results = automation.run_enhanced_automation(
