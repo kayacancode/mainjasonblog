@@ -419,12 +419,19 @@ def test_enhanced_automation():
     print("🧪 Testing Enhanced Automation...")
     print("=" * 60)
     
+    # Determine if we should use cached data
+    # Force fresh scraping in GitHub Actions or if explicitly requested
+    use_cached = not os.getenv('GITHUB_ACTIONS')  # False if running in GitHub Actions
+    
+    print(f"🔍 Running in GitHub Actions: {bool(os.getenv('GITHUB_ACTIONS'))}")
+    print(f"🔍 Using cached data: {use_cached}")
+    
     # Run enhanced automation
     results = automation.run_enhanced_automation(
         use_new_music_friday=True,
         use_release_radar=True,  # Enable both playlists
         top_tracks_per_playlist=5,  # Get top 5 most popular from each
-        use_cached=True
+        use_cached=use_cached
     )
     
     if results:
