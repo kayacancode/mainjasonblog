@@ -57,6 +57,15 @@ class EnhancedSpotifyAutomation:
             print("⚠️ Spotify API not available, using scraped data only")
             return tracks
         
+        # Test if Spotify API is working
+        try:
+            # Try a simple API call to test authentication
+            self.spotify.search(q="test", type='track', limit=1)
+        except Exception as e:
+            print(f"⚠️ Spotify API authentication failed: {e}")
+            print("🔄 Using scraped data without API enhancement")
+            return tracks
+        
         enhanced_tracks = []
         
         print(f"🔍 Enhancing {len(tracks)} tracks with Spotify API data...")
@@ -295,7 +304,36 @@ class EnhancedSpotifyAutomation:
             return {}
 
         # Initialize main automation
-        automation = SpotifyNewMusicAutomation(self.client_id, self.client_secret)
+        try:
+            automation = SpotifyNewMusicAutomation(self.client_id, self.client_secret)
+        except Exception as e:
+            print(f"⚠️ Failed to initialize Spotify automation: {e}")
+            print("🔄 Continuing without Spotify API features...")
+            # Create a minimal automation object for basic functionality
+            class MinimalAutomation:
+                def __init__(self):
+                    self.config = type('Config', (), {'OUTPUT_DIR': 'output'})()
+                
+                def create_collage(self, tracks, filename):
+                    print(f"⚠️ Skipping collage creation due to Spotify API error")
+                    return f"output/{filename}"
+                
+                def create_tracklist_image(self, tracks, filename):
+                    print(f"⚠️ Skipping tracklist creation due to Spotify API error")
+                    return f"output/{filename}"
+                
+                def generate_caption(self, tracks):
+                    return f"🎵 {len(tracks)} new tracks discovered!"
+                
+                def save_track_data(self, tracks, filename):
+                    import json
+                    os.makedirs('output', exist_ok=True)
+                    filepath = f"output/{filename}"
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        json.dump(tracks, f, indent=2, ensure_ascii=False)
+                    return filepath
+            
+            automation = MinimalAutomation()
 
         # Generate content
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
