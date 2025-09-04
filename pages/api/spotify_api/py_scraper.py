@@ -31,7 +31,7 @@ class EnhancedSpotifyAutomation:
             auth_manager = SpotifyOAuth(
                 client_id=self.client_id,
                 client_secret=self.client_secret,
-                redirect_uri=os.getenv(' https://www.insuavewetrust.com/callback', 'http://127.0.0.1:8080/callback'),
+                redirect_uri=os.getenv('SPOTIPY_REDIRECT_URI', 'https://www.insuavewetrust.com/callback', 'http://127.0.0.1:8080/callback'),
                 scope=scope,
                 cache_path=".spotify_cache"
             )
@@ -55,15 +55,6 @@ class EnhancedSpotifyAutomation:
         """
         if not self.spotify:
             print("⚠️ Spotify API not available, using scraped data only")
-            return tracks
-        
-        # Test if Spotify API is working
-        try:
-            # Try a simple API call to test authentication
-            self.spotify.search(q="test", type='track', limit=1)
-        except Exception as e:
-            print(f"⚠️ Spotify API authentication failed: {e}")
-            print("🔄 Using scraped data without API enhancement")
             return tracks
         
         enhanced_tracks = []
@@ -272,18 +263,12 @@ class EnhancedSpotifyAutomation:
         nmf_tracks = playlist_data.get('new_music_friday', []) if use_new_music_friday else []
         rr_tracks = playlist_data.get('release_radar', []) if use_release_radar else []
 
-        # Debug: Show how many tracks we got from each playlist
-        print(f"🔍 Debug - New Music Friday tracks available: {len(nmf_tracks)}")
-        print(f"🔍 Debug - Release Radar tracks available: {len(rr_tracks)}")
-        
         # First, pick top-unique for NMF
         nmf_unique = pick_top_unique(nmf_tracks, limit=5)
-        print(f"🔍 Debug - New Music Friday unique tracks selected: {len(nmf_unique)}")
 
         # Exclude NMF picks from RR, then pick top-unique until RR also has 5
         nmf_keys = {track_key(t) for t in nmf_unique}
         rr_unique = pick_top_unique(rr_tracks, limit=5, exclude_keys=nmf_keys)
-        print(f"🔍 Debug - Release Radar unique tracks selected: {len(rr_unique)}")
 
         # Add playlist source tags
         for t in nmf_unique:
@@ -304,36 +289,7 @@ class EnhancedSpotifyAutomation:
             return {}
 
         # Initialize main automation
-        try:
-            automation = SpotifyNewMusicAutomation(self.client_id, self.client_secret)
-        except Exception as e:
-            print(f"⚠️ Failed to initialize Spotify automation: {e}")
-            print("🔄 Continuing without Spotify API features...")
-            # Create a minimal automation object for basic functionality
-            class MinimalAutomation:
-                def __init__(self):
-                    self.config = type('Config', (), {'OUTPUT_DIR': 'output'})()
-                
-                def create_collage(self, tracks, filename):
-                    print(f"⚠️ Skipping collage creation due to Spotify API error")
-                    return f"output/{filename}"
-                
-                def create_tracklist_image(self, tracks, filename):
-                    print(f"⚠️ Skipping tracklist creation due to Spotify API error")
-                    return f"output/{filename}"
-                
-                def generate_caption(self, tracks):
-                    return f"🎵 {len(tracks)} new tracks discovered!"
-                
-                def save_track_data(self, tracks, filename):
-                    import json
-                    os.makedirs('output', exist_ok=True)
-                    filepath = f"output/{filename}"
-                    with open(filepath, 'w', encoding='utf-8') as f:
-                        json.dump(tracks, f, indent=2, ensure_ascii=False)
-                    return filepath
-            
-            automation = MinimalAutomation()
+        automation = SpotifyNewMusicAutomation(self.client_id, self.client_secret)
 
         # Generate content
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -463,11 +419,12 @@ def test_enhanced_automation():
     print("🧪 Testing Enhanced Automation...")
     print("=" * 60)
     
-    # Always pull fresh tracks (no caching)
-    use_cached = False
+    # Determine if we should use cached data
+    # Force fresh scraping in GitHub Actions or if explicitly requested
+    use_cached = False  # False if running in GitHub Actions
     
     print(f"🔍 Running in GitHub Actions: {bool(os.getenv('GITHUB_ACTIONS'))}")
-    print(f"🔍 Using cached data: {use_cached} (always fresh)")
+    print(f"🔍 Using cached data: {use_cached}")
     
     # Run enhanced automation
     results = automation.run_enhanced_automation(
