@@ -70,6 +70,15 @@ jobs:
         echo "SPOTIPY_CLIENT_SECRET: ${SPOTIPY_CLIENT_SECRET:0:10}..."
         # Ensure Python can find local modules
         export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+        # Explicitly export environment variables to ensure they're available to Python
+        export SPOTIFY_CLIENT_ID="$SPOTIFY_CLIENT_ID"
+        export SPOTIFY_CLIENT_SECRET="$SPOTIFY_CLIENT_SECRET"
+        export SPOTIFY_REDIRECT_URI="$SPOTIFY_REDIRECT_URI"
+        export NEXT_PUBLIC_SUPABASE_URL="$NEXT_PUBLIC_SUPABASE_URL"
+        export SUPABASE_SERVICE_KEY="$SUPABASE_SERVICE_KEY"
+        export SPOTIPY_CLIENT_ID="$SPOTIPY_CLIENT_ID"
+        export SPOTIPY_CLIENT_SECRET="$SPOTIPY_CLIENT_SECRET"
+        export SPOTIPY_REDIRECT_URI="$SPOTIPY_REDIRECT_URI"
         # Run the scraper (environment variables are now explicitly passed)
         python py_scraper.py
         

@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-09-05T16:19:17.693618",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "3NFs3XUduzBfvc5Bx1gmzh",
+      "name": "The Dead Dance",
+      "artist": "Lady Gaga",
+      "album": "The Dead Dance",
+      "popularity": 68,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273d8a389abdf9cb2d03b85ff54",
+      "spotify_url": "https://open.spotify.com/track/3NFs3XUduzBfvc5Bx1gmzh",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "3RmFPuTTAjSQ2pbEd2j9oA",
+      "name": "Loser",
+      "artist": "Tame Impala",
+      "album": "Loser",
+      "popularity": 55,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2735b46c80f286f7a4b8eca0b16",
+      "spotify_url": "https://open.spotify.com/track/3RmFPuTTAjSQ2pbEd2j9oA",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "4H5DcBcHSt6ReloheY37Yi",
+      "name": "A COLD PLAY",
+      "artist": "The Kid LAROI",
+      "album": "A COLD PLAY",
+      "popularity": 44,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273487ea1df8519b73242d4281c",
+      "spotify_url": "https://open.spotify.com/track/4H5DcBcHSt6ReloheY37Yi",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "3Vqcx4fajH02dyRuY99szQ",
+      "name": "Favorite Fear",
+      "artist": "Goldie Boutilier",
+      "album": "Goldie Boutilier Presents... Goldie Montana",
+      "popularity": 12,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2739cbcad0be0dace300c46aebe",
+      "spotify_url": "https://open.spotify.com/track/3Vqcx4fajH02dyRuY99szQ",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "1mEQbSq0PCNjyL6oMgHKFQ",
+      "name": "LOVE SONG",
+      "artist": "Justin Bieber",
+      "album": "SWAG II",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273239851044d4fffe6fe8a7215",
+      "spotify_url": "https://open.spotify.com/track/1mEQbSq0PCNjyL6oMgHKFQ",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "2MKGbK10kT2hySS40U7gAD",
+      "name": "LA",
+      "artist": "Aminé",
+      "album": "LA",
+      "popularity": 45,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273a90ebc8c8327216a56f93e4f",
+      "spotify_url": "https://open.spotify.com/track/2MKGbK10kT2hySS40U7gAD",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "6mIQYKIlWw9JgTS8WeMzju",
+      "name": "Swim (feat. MAVI)",
+      "artist": "Guapdad 4000, MAVI, HIM Movie",
+      "album": "Swim (feat. MAVI)",
+      "popularity": 38,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2737281035ea7159e3ea0f357b7",
+      "spotify_url": "https://open.spotify.com/track/6mIQYKIlWw9JgTS8WeMzju",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "2T05HJCjCcn6Frpn8RuTlX",
+      "name": "top down",
+      "artist": "Lil Mabu",
+      "album": "top down",
+      "popularity": 17,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273a71bc9300c79a949affc79f5",
+      "spotify_url": "https://open.spotify.com/track/2T05HJCjCcn6Frpn8RuTlX",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "215MkXd23lFtFD1lUeRuGF",
+      "name": "Mr Popular (feat. Smino)",
+      "artist": "Venna, Smino",
+      "album": "MALIK",
+      "popularity": 15,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2739d7d55174ed627e240bfcafa",
+      "spotify_url": "https://open.spotify.com/track/215MkXd23lFtFD1lUeRuGF",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "62S7v1Sttf5uU8CoRhhaxE",
+      "name": "cash flow (feat. DDG)",
+      "artist": "310babii, DDG",
+      "album": "webkam",
+      "popularity": 12,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2737305d1e20ed7bb3f3fc35911",
+      "spotify_url": "https://open.spotify.com/track/62S7v1Sttf5uU8CoRhhaxE",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}
