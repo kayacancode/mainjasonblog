@@ -320,15 +320,41 @@ class SpotifySeleniumScraper:
                 except:
                     continue
             
+            # Try to find Spotify URL
+            spotify_url = ""
+            url_selectors = [
+                '[data-testid="internal-track-link"]',
+                'a[data-testid="track-name"]',
+                '.track-name a'
+            ]
+            
+            for selector in url_selectors:
+                try:
+                    url_element = row_element.find_element(By.CSS_SELECTOR, selector)
+                    href = url_element.get_attribute('href')
+                    if href and 'open.spotify.com/track/' in href:
+                        spotify_url = href
+                        break
+                except:
+                    continue
+            
+            # Extract track ID from URL if available
+            track_id = ""
+            if spotify_url:
+                import re
+                match = re.search(r'/track/([a-zA-Z0-9]+)', spotify_url)
+                if match:
+                    track_id = match.group(1)
+            
             if track_name and len(track_name.strip()) > 0:
                 return {
-                    'id': '',
+                    'id': track_id,
                     'name': track_name.strip(),
                     'artist': artist_name.strip() if artist_name else 'Unknown Artist',
                     'album': '',
                     'popularity': 0,
                     'album_art_url': None,
-                    'spotify_url': ''
+                    'spotify_url': spotify_url
                 }
         
         except Exception as e:
@@ -341,29 +367,38 @@ class SpotifySeleniumScraper:
         tracks = []
         
         try:
-            # Look for track patterns in the HTML
+            # Look for track patterns in the HTML with URLs
             patterns = [
-                r'"name":"([^"]+)".*?"artists":\[.*?"name":"([^"]+)"',
-                r'data-testid="internal-track-link"[^>]*>([^<]+)</.*?data-testid="[^"]*artist[^"]*"[^>]*>([^<]+)<',
-                r'aria-label="([^"]+) by ([^"]+)"'
+                r'href="(https://open\.spotify\.com/track/[^"]+)"[^>]*>([^<]+)</.*?data-testid="[^"]*artist[^"]*"[^>]*>([^<]+)<',
+                r'"name":"([^"]+)".*?"artists":\[.*?"name":"([^"]+)".*?"external_urls":\{"spotify":"(https://open\.spotify\.com/track/[^"]+)"',
+                r'data-testid="internal-track-link"[^>]*href="(https://open\.spotify\.com/track/[^"]+)"[^>]*>([^<]+)</.*?data-testid="[^"]*artist[^"]*"[^>]*>([^<]+)<',
+                r'aria-label="([^"]+) by ([^"]+)".*?href="(https://open\.spotify\.com/track/[^"]+)"'
             ]
             
             for pattern in patterns:
                 matches = re.findall(pattern, page_source, re.DOTALL)
                 for match in matches:
-                    if len(match) >= 2:
-                        track_name = match[0].strip()
-                        artist_name = match[1].strip()
+                    if len(match) >= 3:
+                        spotify_url = match[0].strip()
+                        track_name = match[1].strip()
+                        artist_name = match[2].strip()
+                        
+                        # Extract track ID from URL
+                        track_id = ""
+                        if spotify_url:
+                            id_match = re.search(r'/track/([a-zA-Z0-9]+)', spotify_url)
+                            if id_match:
+                                track_id = id_match.group(1)
                         
                         if len(track_name) > 2 and len(artist_name) > 1:
                             tracks.append({
-                                'id': '',
+                                'id': track_id,
                                 'name': track_name,
                                 'artist': artist_name,
                                 'album': '',
                                 'popularity': 0,
                                 'album_art_url': None,
-                                'spotify_url': ''
+                                'spotify_url': spotify_url
                             })
                 
                 if tracks:
