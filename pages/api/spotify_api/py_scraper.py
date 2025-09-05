@@ -409,26 +409,11 @@ class EnhancedSpotifyAutomation:
         try:
             from supabase import create_client
 
-            # Hardcoded Supabase credentials (same approach as Spotify)
+            # Always use hardcoded Supabase credentials for consistency
             supabase_url = "https://yxziaumwnvyswnqfyosh.supabase.co"
             supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"
             
-            # Only use environment variables if they're not empty
-            env_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
-            env_key = os.getenv('SUPABASE_SERVICE_KEY')
-            
-            if env_url and env_url.strip():
-                supabase_url = env_url
-                print("🔍 Using Supabase URL from environment")
-            else:
-                print("🔍 Using hardcoded Supabase URL")
-                
-            if env_key and env_key.strip():
-                supabase_key = env_key
-                print("🔍 Using Supabase KEY from environment")
-            else:
-                print("🔍 Using hardcoded Supabase KEY")
-            
+            print("🔍 Using hardcoded Supabase credentials for consistency")
             print(f"🔍 Debug - Using Supabase URL: {supabase_url[:50]}...")
             print(f"🔍 Debug - Using Supabase KEY: {supabase_key[:20]}...")
             
@@ -503,11 +488,11 @@ class EnhancedSpotifyAutomation:
 
 def test_enhanced_automation():
     """Test the enhanced automation"""
-    # Try to get from environment variables first, fallback to hardcoded values
-    client_id = os.getenv('SPOTIFY_CLIENT_ID', "cf27169236814c0cab9f7b9f90005058")
-    client_secret = os.getenv('SPOTIFY_CLIENT_SECRET', "4ad9af9ecb7d4001a50632ad314c623b")
+    # Always use hardcoded values to ensure consistency between local and GitHub Actions
+    client_id = "cf27169236814c0cab9f7b9f90005058"
+    client_secret = "4ad9af9ecb7d4001a50632ad314c623b"
     
-    print(f"🔍 Debug - Using Spotify Client ID: {client_id[:10]}...")
+    print(f"🔍 Debug - Using hardcoded Spotify Client ID: {client_id[:10]}...")
     
     automation = EnhancedSpotifyAutomation(client_id, client_secret)
     
