@@ -63,12 +63,66 @@ class EnhancedSpotifyAutomation:
         
         for i, track in enumerate(tracks):
             try:
-                # Search for the track on Spotify to get full metadata
-                search_query = f"track:{track['name']} artist:{track['artist']}"
-                results = self.spotify.search(q=search_query, type='track', limit=1, market='US')
+                spotify_track = None
                 
-                if results['tracks']['items']:
-                    spotify_track = results['tracks']['items'][0]
+                # If we have a track ID from scraping, use it directly
+                if track.get('id') and track.get('spotify_url'):
+                    try:
+                        spotify_track = self.spotify.track(track['id'])
+                        print(f"  ✅ Found exact track: {track['name']} - {track['artist']}")
+                    except Exception as e:
+                        print(f"  ⚠️ Could not fetch track by ID {track['id']}: {e}")
+                        spotify_track = None
+                
+                # If no track ID or direct fetch failed, fall back to search
+                if not spotify_track:
+                    # Search for the track on Spotify to get full metadata
+                    search_query = f'"{track["name"]}" artist:"{track["artist"]}"'
+                    results = self.spotify.search(q=search_query, type='track', limit=10, market='US')
+                    
+                    # Try to find the best match with more sophisticated matching
+                    if results['tracks']['items']:
+                        best_match = None
+                        best_score = 0
+                        
+                        for item in results['tracks']['items']:
+                            score = 0
+                            
+                            # Exact name match
+                            if item['name'].lower() == track['name'].lower():
+                                score += 10
+                            # Partial name match
+                            elif track['name'].lower() in item['name'].lower() or item['name'].lower() in track['name'].lower():
+                                score += 5
+                            
+                            # Exact artist match
+                            if any(artist['name'].lower() == track['artist'].lower() 
+                                   for artist in item.get('artists', [])):
+                                score += 10
+                            # Partial artist match
+                            elif any(track['artist'].lower() in artist['name'].lower() or 
+                                    artist['name'].lower() in track['artist'].lower()
+                                    for artist in item.get('artists', [])):
+                                score += 5
+                            
+                            # Higher popularity is better (if available)
+                            if item.get('popularity', 0) > 0:
+                                score += 1
+                            
+                            if score > best_score:
+                                best_score = score
+                                best_match = item
+                        
+                        if best_match and best_score >= 10:  # Require at least exact name or artist match
+                            spotify_track = best_match
+                            if best_score < 20:  # Not perfect match
+                                print(f"  ⚠️ Using best match (score: {best_score}) for '{track['name']}' by '{track['artist']}'")
+                        else:
+                            # If no good match, skip this track and keep original
+                            print(f"  ⚠️ No good match found for '{track['name']}' by '{track['artist']}', keeping original data")
+                            spotify_track = None
+                
+                if spotify_track:
                     
                     # Get album art URL
                     album_art_url = None
@@ -78,12 +132,16 @@ class EnhancedSpotifyAutomation:
                         album_art_url = max(images, key=lambda x: x.get('width', 0)).get('url')
                     
                     # Create enhanced track data
+                    popularity = spotify_track.get('popularity', 0)
+                    if popularity == 0:
+                        print(f"  ℹ️ Track '{track['name']}' has popularity 0 (likely a new release)")
+                    
                     enhanced_track = {
                         'id': spotify_track.get('id', ''),
                         'name': spotify_track.get('name', track['name']),
                         'artist': ', '.join([artist['name'] for artist in spotify_track.get('artists', [])]),
                         'album': spotify_track.get('album', {}).get('name', ''),
-                        'popularity': spotify_track.get('popularity', 0),
+                        'popularity': popularity,
                         'album_art_url': album_art_url,
                         'spotify_url': f"https://open.spotify.com/track/{spotify_track.get('id', '')}"
                     }
@@ -208,7 +266,7 @@ class EnhancedSpotifyAutomation:
     
     def run_enhanced_automation(self, 
                             use_new_music_friday: bool = True,
-                            use_release_radar: bool = False,
+                            use_release_radar: bool = True,
                             top_tracks_per_playlist: int = 15,
                             use_cached: bool = True) -> Dict:
         """
@@ -289,18 +347,55 @@ class EnhancedSpotifyAutomation:
             return {}
 
         # Initialize main automation
-        automation = SpotifyNewMusicAutomation(self.client_id, self.client_secret)
+        try:
+            automation = SpotifyNewMusicAutomation(self.client_id, self.client_secret)
+        except Exception as e:
+            print(f"⚠️ Failed to initialize Spotify automation: {e}")
+            print("🔄 Continuing without Spotify API features...")
+            # Create a minimal automation object for basic functionality
+            class MinimalAutomation:
+                def __init__(self):
+                    self.config = type('Config', (), {'OUTPUT_DIR': 'output'})()
+                
+                def create_collage(self, tracks, filename):
+                    print(f"⚠️ Skipping collage creation due to Spotify API error")
+                    return f"output/{filename}"
+                
+                def create_tracklist_image(self, tracks, filename):
+                    print(f"⚠️ Skipping tracklist creation due to Spotify API error")
+                    return f"output/{filename}"
+                
+                def generate_caption(self, tracks):
+                    return f"🎵 {len(tracks)} new tracks discovered!"
+                
+                def save_track_data(self, tracks, filename):
+                    import json
+                    os.makedirs('output', exist_ok=True)
+                    filepath = f"output/{filename}"
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        json.dump(tracks, f, indent=2, ensure_ascii=False)
+                    return filepath
+            
+            automation = MinimalAutomation()
 
         # Generate content
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         print("🎨 Creating enhanced album art collage...")
         collage_filename = f"enhanced_collage_{timestamp}.png"
-        collage_path = automation.create_collage(unique_tracks, collage_filename)
+        try:
+            collage_path = automation.create_collage(unique_tracks, collage_filename)
+        except Exception as e:
+            print(f"⚠️ Failed to create collage: {e}")
+            collage_path = f"output/{collage_filename}"
 
         print("📋 Creating enhanced tracklist...")
         tracklist_filename = f"enhanced_tracklist_{timestamp}.png"
-        tracklist_path = automation.create_tracklist_image(unique_tracks, tracklist_filename)
+        try:
+            tracklist_path = automation.create_tracklist_image(unique_tracks, tracklist_filename)
+        except Exception as e:
+            print(f"⚠️ Failed to create tracklist image: {e}")
+            tracklist_path = f"output/{tracklist_filename}"
 
         print("📝 Generating caption...")
         caption = automation.generate_caption(unique_tracks)
@@ -429,7 +524,7 @@ def test_enhanced_automation():
     # Run enhanced automation
     results = automation.run_enhanced_automation(
         use_new_music_friday=True,
-        use_release_radar=True,  # Enable both playlists
+        use_release_radar=True,  # Re-enable Release Radar
         top_tracks_per_playlist=5,  # Get top 5 most popular from each
         use_cached=use_cached
     )
