@@ -42,6 +42,7 @@ class SpotifySeleniumScraper:
             chrome_options.add_argument("--disable-gpu")
             chrome_options.add_argument("--window-size=1920,1080")
             chrome_options.add_argument("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+            chrome_options.add_argument("--accept-language=en-US,en;q=0.9")
             
             # Use custom Chrome binary path if available (for GitHub Actions)
             chrome_bin = os.getenv('CHROME_BIN')
@@ -77,7 +78,12 @@ class SpotifySeleniumScraper:
         print(f"🌐 Loading playlist: {playlist_url}")
         
         try:
-            # Load the playlist page
+            # Load the playlist page with US region parameter
+            if '?' in playlist_url:
+                playlist_url += '&gl=US&hl=en'
+            else:
+                playlist_url += '?gl=US&hl=en'
+            
             self.driver.get(playlist_url)
             
             # Wait for page to load
