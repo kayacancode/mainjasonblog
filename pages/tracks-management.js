@@ -478,15 +478,20 @@ export default function TracksManagement() {
             if (response.ok) {
                 const result = await response.json();
                 if (result.success) {
-                    // Update status to show generation is in progress
-                    setWeekImageStatus(prev => ({
-                        ...prev,
-                        [weekString]: 'generating'
-                    }));
-                    alert(`Image generation triggered successfully! This may take a few minutes.`);
-                    
-                    // Wait a bit then refresh images
-                    setTimeout(async () => {
+                    if (result.instructions) {
+                        // Production: Show instructions for manual GitHub Actions
+                        const instructions = result.instructions;
+                        const workflowUrl = result.workflow_url || 'https://github.com/kayacancode/mainjasonblog/actions';
+                        
+                        alert(`Image generation setup complete!\n\n${instructions}\n\nOr click here: ${workflowUrl}`);
+                        
+                        // Open GitHub Actions in new tab
+                        window.open(workflowUrl, '_blank');
+                    } else {
+                        // Local development: Images were generated successfully
+                        alert(`Images generated successfully for week ${weekString}!`);
+                        
+                        // Refresh images
                         try {
                             const images = await fetchWeekImages(weekString);
                             if (images && images.cover_image_url && images.tracklist_image_url) {
@@ -499,9 +504,9 @@ export default function TracksManagement() {
                         } catch (error) {
                             console.error('Error refreshing images:', error);
                         }
-                    }, 30000); // Wait 30 seconds
+                    }
                 } else {
-                    alert('Failed to trigger image generation: ' + result.error);
+                    alert('Failed to generate images: ' + result.error);
                 }
             } else {
                 alert('Failed to generate images');
