@@ -40,7 +40,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install google-generativeai pillow requests
+        pip install google-generativeai pillow requests python-dotenv beautifulsoup4
         
     - name: Set up output directory
       run: |
