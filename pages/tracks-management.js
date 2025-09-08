@@ -483,7 +483,23 @@ export default function TracksManagement() {
                         ...prev,
                         [weekString]: 'generating'
                     }));
-                    alert(`Image generation triggered successfully! Check GitHub Actions for progress. This may take a few minutes.`);
+                    alert(`Image generation triggered successfully! This may take a few minutes.`);
+                    
+                    // Wait a bit then refresh images
+                    setTimeout(async () => {
+                        try {
+                            const images = await fetchWeekImages(weekString);
+                            if (images && images.cover_image_url && images.tracklist_image_url) {
+                                setCurrentWeekImages(images);
+                                setWeekImageStatus(prev => ({
+                                    ...prev,
+                                    [weekString]: true
+                                }));
+                            }
+                        } catch (error) {
+                            console.error('Error refreshing images:', error);
+                        }
+                    }, 30000); // Wait 30 seconds
                 } else {
                     alert('Failed to trigger image generation: ' + result.error);
                 }

@@ -38,9 +38,14 @@ export default async function handler(req, res) {
 
         // Trigger GitHub Actions workflow for image generation
         console.log(`Triggering GitHub Actions for week ${week_start} with ${tracks.length} tracks`);
+        console.log('GITHUB_REPOSITORY:', process.env.GITHUB_REPOSITORY);
+        console.log('GITHUB_TOKEN exists:', !!process.env.GITHUB_TOKEN);
+        
+        // Fallback repository name if not set
+        const repository = process.env.GITHUB_REPOSITORY || 'shayanbaig/mainjasonblog';
         
         try {
-            const response = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/actions/workflows/instagram-image-generation.yml/dispatches`, {
+            const response = await fetch(`https://api.github.com/repos/${repository}/actions/workflows/instagram-image-generation.yml/dispatches`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `token ${process.env.GITHUB_TOKEN}`,
@@ -61,7 +66,7 @@ export default async function handler(req, res) {
                     message: 'Image generation triggered successfully! Check GitHub Actions for progress.',
                     tracks_count: tracks.length,
                     week_start: week_start,
-                    workflow_url: `https://github.com/${process.env.GITHUB_REPOSITORY}/actions`
+                    workflow_url: `https://github.com/${repository}/actions`
                 });
             } else {
                 const errorText = await response.text();
