@@ -1,0 +1,98 @@
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+);
+
+export default async function handler(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    try {
+        const { week_start } = req.body;
+        
+        if (!week_start) {
+            return res.status(400).json({ error: 'week_start is required' });
+        }
+
+        console.log('API: Generating images for week:', week_start);
+        console.log('API: Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+        console.log('API: Service key exists:', !!process.env.SUPABASE_SERVICE_KEY);
+
+        // Get tracks for the specified week
+        const { data: tracks, error: tracksError } = await supabase
+            .from('tracks')
+            .select('*')
+            .eq('week_start', week_start);
+
+        if (tracksError) {
+            console.error('Error fetching tracks:', tracksError);
+            return res.status(500).json({ error: 'Failed to fetch tracks' });
+        }
+
+        if (!tracks || tracks.length === 0) {
+            return res.status(404).json({ error: 'No tracks found for this week' });
+        }
+
+        // Trigger GitHub Actions workflow for image generation (just like music update)
+        console.log(`Triggering image generation for week ${week_start} with ${tracks.length} tracks`);
+        
+        try {
+            // Trigger the GitHub Actions workflow
+            const githubToken = process.env.GITHUB_TOKEN;
+            if (!githubToken) {
+                return res.status(500).json({ 
+                    success: false, 
+                    error: 'GitHub token not configured. Add GITHUB_TOKEN to your environment variables.' 
+                });
+            }
+            
+            const workflowResponse = await fetch(`https://api.github.com/repos/kayacancode/mainjasonblog/actions/workflows/instagram-image-generation.yml/dispatches`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${githubToken}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ref: 'main',
+                    inputs: {
+                        week_start: week_start
+                    }
+                })
+            });
+            
+            if (workflowResponse.ok) {
+                return res.status(200).json({ 
+                    success: true, 
+                    message: 'Image generation workflow triggered successfully!',
+                    tracks_count: tracks.length,
+                    week_start: week_start,
+                    note: 'Images will be generated in the background. Check the Actions tab in your GitHub repo to see progress.'
+                });
+            } else {
+                const errorText = await workflowResponse.text();
+                console.error('GitHub API error:', errorText);
+                return res.status(500).json({ 
+                    success: false, 
+                    error: 'Failed to trigger image generation workflow',
+                    details: errorText
+                });
+            }
+            
+        } catch (error) {
+            console.error('Error triggering workflow:', error);
+            return res.status(500).json({ 
+                success: false, 
+                error: 'Failed to trigger image generation',
+                details: error.message
+            });
+        }
+
+    } catch (error) {
+        console.error('Error in generate-images API:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+}

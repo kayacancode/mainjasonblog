@@ -4,6 +4,9 @@ on:
   workflow_run:
     workflows: ["Weekly Music Update"]
     types: [completed]
+  schedule:
+    # Run 7 minutes after music update (Fridays at 4:07 AM UTC)
+    - cron: '7 14 * * 5'
   workflow_dispatch: # Allow manual triggering
     inputs:
       force_run:
@@ -11,13 +14,22 @@ on:
         required: false
         type: boolean
         default: false
+      week_start:
+        description: 'Specific week to generate images for (YYYY-MM-DD)'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   generate-images:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success' || github.event.inputs.force_run == 'true'
+    if: github.event.workflow_run.conclusion == 'success' || github.event.inputs.force_run == 'true' || github.event_name == 'workflow_dispatch'
     
     steps:
+    - name: Wait 7 minutes after music update
+      if: github.event_name == 'workflow_run'
+      run: sleep 420  # 7 minutes = 420 seconds
+      
     - name: Checkout repository
       uses: actions/checkout@v4
       
@@ -35,12 +47,31 @@ jobs:
       run: |
         mkdir -p pages/api/spotify_api/output
         
+    - name: Install additional dependencies
+      run: |
+        pip install supabase
+
     - name: Generate Instagram Images
       env:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
       run: |
         cd pages/api/spotify_api
-        python instagram_image_generator.py
+        if [ -n "${{ github.event.inputs.week_start }}" ]; then
+          python instagram_image_generator.py --week ${{ github.event.inputs.week_start }}
+        else
+          python instagram_image_generator.py
+        fi
+
+    - name: Generate Images for Existing Weeks
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      run: |
+        cd pages/api/spotify_api
+        python generate_existing_images.py
         
     - name: Upload generated images
       uses: actions/upload-artifact@v4

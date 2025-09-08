@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from typing import Any, Dict, List, Optional
 
@@ -17,6 +17,7 @@ import google.generativeai as genai
 import requests
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont
+from supabase import Client, create_client
 
 # Load environment variables from .env file (located at project root)
 load_dotenv('../../../.env')
@@ -24,6 +25,17 @@ load_dotenv('../../../.env')
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize Supabase client
+SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_KEY')
+supabase: Optional[Client] = None
+
+if SUPABASE_URL and SUPABASE_KEY:
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+    logger.info("✅ Supabase client initialized")
+else:
+    logger.warning("⚠️ Supabase credentials not found, images will only be saved locally")
 
 class InstagramImageGenerator:
     """Generate Instagram-ready images using Google Gemini AI"""
@@ -240,6 +252,87 @@ class InstagramImageGenerator:
         
         return prompt.strip()
     
+    def upload_image_to_supabase(self, image_path: str, week_start: str) -> Optional[str]:
+        """Upload image to Supabase storage and return public URL"""
+        if not supabase:
+            logger.warning("Supabase not available, skipping upload")
+            return None
+            
+        try:
+            # Read image file
+            with open(image_path, 'rb') as f:
+                image_data = f.read()
+            
+            # Create filename with week_start
+            filename = f"instagram_images/{week_start}_{os.path.basename(image_path)}"
+            
+            # Upload to Supabase storage
+            result = supabase.storage.from_('instagram-images').upload(filename, image_data)
+            
+            if result:
+                # Get public URL
+                public_url = supabase.storage.from_('instagram-images').get_public_url(filename)
+                logger.info(f"✅ Image uploaded: {public_url}")
+                return public_url
+            else:
+                logger.error(f"❌ Failed to upload image: {filename}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"❌ Error uploading image: {e}")
+            return None
+    
+    def save_image_metadata(self, week_start: str, cover_url: str, tracklist_url: str) -> bool:
+        """Save image metadata to Supabase images table"""
+        if not supabase:
+            logger.warning("Supabase not available, skipping metadata save")
+            return False
+            
+        try:
+            # Check if record exists
+            existing = supabase.table('images').select('id').eq('week_start', week_start).execute()
+            
+            if existing.data:
+                # Update existing record
+                result = supabase.table('images').update({
+                    'cover_image_url': cover_url,
+                    'tracklist_image_url': tracklist_url,
+                    'updated_at': datetime.now().isoformat()
+                }).eq('week_start', week_start).execute()
+            else:
+                # Insert new record
+                result = supabase.table('images').insert({
+                    'week_start': week_start,
+                    'cover_image_url': cover_url,
+                    'tracklist_image_url': tracklist_url
+                }).execute()
+            
+            if result.data:
+                logger.info(f"✅ Image metadata saved for week {week_start}")
+                return True
+            else:
+                logger.error(f"❌ Failed to save image metadata for week {week_start}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Error saving image metadata: {e}")
+            return False
+    
+    def get_week_start_from_tracks(self, tracks: List[Dict]) -> str:
+        """Extract week_start from tracks data"""
+        # Look for week_start in the first track
+        if tracks and 'week_start' in tracks[0]:
+            return tracks[0]['week_start']
+        
+        # Fallback: calculate from current date (assuming Friday)
+        today = datetime.now()
+        # Find the most recent Friday
+        days_since_friday = (today.weekday() - 4) % 7
+        if days_since_friday == 0 and today.hour < 4:  # If it's Friday before 4 AM, use previous Friday
+            days_since_friday = 7
+        friday = today - timedelta(days=days_since_friday)
+        return friday.strftime('%Y-%m-%d')
+    
     def generate_weekly_update_prompt(self, tracks: List[Dict], artists: List[Dict]) -> str:
         """Generate a detailed prompt for weekly update image"""
         playlist_sources = list(set([track.get('playlist_name', 'Unknown') for track in tracks]))
@@ -421,17 +514,22 @@ Requirements:
         except Exception as e:
             logger.error(f"Error creating placeholder image: {e}")
     
-    def generate_all_images(self, output_dir: str = "output") -> Dict[str, str]:
+    def generate_all_images(self, output_dir: str = "output", tracks_data: List[Dict] = None) -> Dict[str, str]:
         """Generate all Instagram images from the latest tracks data"""
         results = {}
         
-        # Find latest tracks data
-        tracks_data = self.find_latest_tracks_data(output_dir)
+        # Use provided tracks_data or find latest tracks data
+        if tracks_data is None:
+            tracks_data = self.find_latest_tracks_data(output_dir)
         if not tracks_data:
             logger.error("No tracks data found")
             return results
         
-        tracks = tracks_data.get('tracks', [])
+        # Handle both dict format (from JSON) and list format (from database)
+        if isinstance(tracks_data, list):
+            tracks = tracks_data
+        else:
+            tracks = tracks_data.get('tracks', [])
         if not tracks:
             logger.error("No tracks found in data")
             return results
@@ -466,13 +564,34 @@ Requirements:
             results['tracklist'] = tracklist_path
             logger.info(f"✅ Tracklist: {tracklist_path}")
         
-        # Save metadata for this run
+        # Get week_start for database storage
+        week_start = self.get_week_start_from_tracks(tracks)
+        logger.info(f"📅 Week start: {week_start}")
+        
+        # Upload images to Supabase if available
+        cover_url = None
+        tracklist_url = None
+        
+        if 'artist_collage' in results:
+            cover_url = self.upload_image_to_supabase(results['artist_collage'], week_start)
+        
+        if 'tracklist' in results:
+            tracklist_url = self.upload_image_to_supabase(results['tracklist'], week_start)
+        
+        # Save metadata to database
+        if cover_url and tracklist_url:
+            self.save_image_metadata(week_start, cover_url, tracklist_url)
+        
+        # Save local metadata
         metadata = {
             'timestamp': timestamp,
             'run_folder': run_folder,
+            'week_start': week_start,
             'total_tracks': len(tracks),
             'top_artists': [artist['name'] for artist in top_artists],
-            'playlist_sources': list(set([track.get('playlist_name', 'Unknown') for track in tracks]))
+            'playlist_sources': list(set([track.get('playlist_name', 'Unknown') for track in tracks])),
+            'cover_image_url': cover_url,
+            'tracklist_image_url': tracklist_url
         }
         
         metadata_path = os.path.join(run_folder, f"metadata_{timestamp}.json")
@@ -482,6 +601,58 @@ Requirements:
         logger.info(f"📄 Metadata saved: {metadata_path}")
         
         return results
+    
+    def generate_images_for_existing_weeks(self) -> List[str]:
+        """Generate images for weeks that don't have them yet"""
+        if not supabase:
+            logger.warning("Supabase not available, cannot check existing weeks")
+            return []
+        
+        try:
+            # Get all weeks with tracks
+            tracks_response = supabase.table('tracks').select('week_start').execute()
+            if not tracks_response.data:
+                logger.info("No tracks found in database")
+                return []
+            
+            # Get unique week_starts
+            week_starts = list(set([track['week_start'] for track in tracks_response.data]))
+            logger.info(f"Found {len(week_starts)} weeks with tracks: {week_starts}")
+            
+            # Get weeks that already have images
+            images_response = supabase.table('images').select('week_start').execute()
+            existing_weeks = [img['week_start'] for img in images_response.data] if images_response.data else []
+            
+            # Find weeks without images
+            missing_weeks = [week for week in week_starts if week not in existing_weeks]
+            logger.info(f"Weeks missing images: {missing_weeks}")
+            
+            generated_weeks = []
+            for week_start in missing_weeks:
+                logger.info(f"🔄 Generating images for week {week_start}")
+                
+                # Get tracks for this week
+                tracks_response = supabase.table('tracks').select('*').eq('week_start', week_start).execute()
+                if not tracks_response.data:
+                    logger.warning(f"No tracks found for week {week_start}")
+                    continue
+                
+                tracks = tracks_response.data
+                logger.info(f"Found {len(tracks)} tracks for week {week_start}")
+                
+                # Generate images for this week
+                results = self.generate_all_images('output')
+                if results:
+                    generated_weeks.append(week_start)
+                    logger.info(f"✅ Generated images for week {week_start}")
+                else:
+                    logger.error(f"❌ Failed to generate images for week {week_start}")
+            
+            return generated_weeks
+            
+        except Exception as e:
+            logger.error(f"❌ Error generating images for existing weeks: {e}")
+            return []
 
 def main():
     """Main function to run the image generator"""
@@ -496,19 +667,81 @@ def main():
     # Initialize generator
     generator = InstagramImageGenerator(gemini_api_key)
     
-    # Generate all images
-    logger.info("🚀 Starting Instagram image generation...")
-    results = generator.generate_all_images()
+    # Check command line arguments
+    import sys
+    generate_existing = '--existing' in sys.argv
     
-    if results:
-        logger.info("🎉 Image generation completed successfully!")
-        for image_type, path in results.items():
-            logger.info(f"📸 {image_type}: {path}")
+    # Check for --week parameter
+    week_start = None
+    if '--week' in sys.argv:
+        try:
+            week_index = sys.argv.index('--week')
+            if week_index + 1 < len(sys.argv):
+                week_start = sys.argv[week_index + 1]
+                logger.info(f"🎯 Generating images for specific week: {week_start}")
+            else:
+                logger.error("❌ --week parameter requires a week_start value")
+                return False
+        except (ValueError, IndexError):
+            logger.error("❌ Invalid --week parameter")
+            return False
+    
+    if week_start:
+        # Generate images for specific week
+        logger.info(f"🚀 Generating images for week {week_start}...")
+        
+        # Get tracks for this week from Supabase
+        if not supabase:
+            logger.error("❌ Supabase not available")
+            return False
+            
+        try:
+            tracks_response = supabase.table('tracks').select('*').eq('week_start', week_start).execute()
+            if not tracks_response.data:
+                logger.error(f"❌ No tracks found for week {week_start}")
+                return False
+                
+            tracks = tracks_response.data
+            logger.info(f"📊 Found {len(tracks)} tracks for week {week_start}")
+            
+            # Generate images for this week
+            results = generator.generate_all_images('output', tracks_data=tracks)
+            
+            if results:
+                logger.info("🎉 Image generation completed successfully!")
+                for image_type, path in results.items():
+                    logger.info(f"📸 {image_type}: {path}")
+                return True
+            else:
+                logger.error("❌ No images were generated")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Error generating images for week {week_start}: {e}")
+            return False
+            
+    elif generate_existing:
+        logger.info("🔄 Generating images for existing weeks...")
+        generated_weeks = generator.generate_images_for_existing_weeks()
+        if generated_weeks:
+            logger.info(f"✅ Generated images for {len(generated_weeks)} weeks: {generated_weeks}")
+            return True
+        else:
+            logger.info("ℹ️ No weeks needed image generation")
+            return True
     else:
-        logger.error("❌ No images were generated")
-        return False
-    
-    return True
+        # Generate images for current week
+        logger.info("🚀 Starting Instagram image generation...")
+        results = generator.generate_all_images()
+        
+        if results:
+            logger.info("🎉 Image generation completed successfully!")
+            for image_type, path in results.items():
+                logger.info(f"📸 {image_type}: {path}")
+            return True
+        else:
+            logger.error("❌ No images were generated")
+            return False
 
 if __name__ == "__main__":
     success = main()
