@@ -40,6 +40,8 @@ export default async function handler(req, res) {
         console.log(`Triggering GitHub Actions for week ${week_start} with ${tracks.length} tracks`);
         console.log('GITHUB_REPOSITORY:', process.env.GITHUB_REPOSITORY);
         console.log('GITHUB_TOKEN exists:', !!process.env.GITHUB_TOKEN);
+        console.log('GITHUB_TOKEN length:', process.env.GITHUB_TOKEN ? process.env.GITHUB_TOKEN.length : 0);
+        console.log('GITHUB_TOKEN starts with:', process.env.GITHUB_TOKEN ? process.env.GITHUB_TOKEN.substring(0, 10) + '...' : 'undefined');
         
         // Fallback repository name if not set
         const repository = process.env.GITHUB_REPOSITORY || 'shayanbaig/mainjasonblog';
@@ -71,10 +73,18 @@ export default async function handler(req, res) {
             } else {
                 const errorText = await response.text();
                 console.error('GitHub API error:', response.status, errorText);
+                console.error('Request URL:', `https://api.github.com/repos/${repository}/actions/workflows/instagram-image-generation.yml/dispatches`);
+                console.error('Headers sent:', {
+                    'Authorization': `token ${process.env.GITHUB_TOKEN ? '***' : 'MISSING'}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                });
                 return res.status(500).json({ 
                     success: false, 
                     error: 'Failed to trigger image generation workflow',
-                    details: errorText
+                    details: errorText,
+                    status: response.status,
+                    repository: repository
                 });
             }
             
