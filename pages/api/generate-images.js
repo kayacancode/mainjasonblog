@@ -36,63 +36,48 @@ export default async function handler(req, res) {
             return res.status(404).json({ error: 'No tracks found for this week' });
         }
 
-        // Run Python script directly (just like your music update)
-        console.log(`Generating images for week ${week_start} with ${tracks.length} tracks`);
+        // Trigger GitHub Actions workflow for image generation
+        console.log(`Triggering GitHub Actions for week ${week_start} with ${tracks.length} tracks`);
         
         try {
-            const { spawn } = require('child_process');
-            const path = require('path');
-            
-            // Run the Python script directly
-            const pythonScript = path.join(process.cwd(), 'pages', 'api', 'spotify_api', 'instagram_image_generator.py');
-            
-            const pythonProcess = spawn('python3', [pythonScript, '--week', week_start], {
-                cwd: path.join(process.cwd(), 'pages', 'api', 'spotify_api'),
-                env: {
-                    ...process.env,
-                    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
-                    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-                    SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY
-                }
+            const response = await fetch(`https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/actions/workflows/instagram-image-generation.yml/dispatches`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${process.env.GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ref: 'main',
+                    inputs: {
+                        week_start: week_start
+                    }
+                })
             });
-            
-            let output = '';
-            let errorOutput = '';
-            
-            pythonProcess.stdout.on('data', (data) => {
-                output += data.toString();
-                console.log('Python output:', data.toString());
-            });
-            
-            pythonProcess.stderr.on('data', (data) => {
-                errorOutput += data.toString();
-                console.error('Python error:', data.toString());
-            });
-            
-            pythonProcess.on('close', (code) => {
-                console.log(`Python script exited with code ${code}`);
-                if (code === 0) {
-                    return res.status(200).json({ 
-                        success: true, 
-                        message: 'Images generated successfully!',
-                        tracks_count: tracks.length,
-                        week_start: week_start,
-                        output: output
-                    });
-                } else {
-                    return res.status(500).json({ 
-                        success: false, 
-                        error: 'Image generation failed',
-                        details: errorOutput
-                    });
-                }
-            });
+
+            if (response.ok) {
+                return res.status(200).json({ 
+                    success: true, 
+                    message: 'Image generation triggered successfully! Check GitHub Actions for progress.',
+                    tracks_count: tracks.length,
+                    week_start: week_start,
+                    workflow_url: `https://github.com/${process.env.GITHUB_REPOSITORY}/actions`
+                });
+            } else {
+                const errorText = await response.text();
+                console.error('GitHub API error:', response.status, errorText);
+                return res.status(500).json({ 
+                    success: false, 
+                    error: 'Failed to trigger image generation workflow',
+                    details: errorText
+                });
+            }
             
         } catch (error) {
-            console.error('Error running Python script:', error);
+            console.error('Error triggering GitHub Actions:', error);
             return res.status(500).json({ 
                 success: false, 
-                error: 'Failed to run image generation script',
+                error: 'Failed to trigger image generation workflow',
                 details: error.message
             });
         }
