@@ -35,4 +35,4 @@ yarn-error.log*
 venv/
 
 # history folder
-/.history/
+/.history/GITHUB_TOKEN
