@@ -44,7 +44,7 @@ export default async function handler(req, res) {
         console.log('GITHUB_TOKEN starts with:', process.env.GITHUB_TOKEN ? process.env.GITHUB_TOKEN.substring(0, 10) + '...' : 'undefined');
         
         // Fallback repository name if not set
-        const repository = process.env.GITHUB_REPOSITORY || 'shayanbaig/mainjasonblog';
+        const repository = process.env.GITHUB_REPOSITORY || 'kayacancode/mainjasonblog';
         
         try {
             const response = await fetch(`https://api.github.com/repos/${repository}/actions/workflows/instagram-image-generation.yml/dispatches`, {
