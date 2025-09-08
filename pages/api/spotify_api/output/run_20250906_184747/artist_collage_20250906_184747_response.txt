@@ -1,0 +1,26 @@
+response:
+GenerateContentResponse(
+    done=True,
+    iterator=None,
+    result=protos.GenerateContentResponse({
+      "candidates": [
+        {
+          "content": {
+            "parts": [
+              {
+                "text": "I can create an Instagram post image for you, but I need to use actual artist names to generate their likenesses. \"Unknown Artist\" is a placeholder and I can't generate a specific person from it. If you provide me with the names of four real, famous music artists, I can create the collage you described with all the specified design and layout requirements."
+              }
+            ],
+            "role": "model"
+          },
+          "finish_reason": "STOP"
+        }
+      ],
+      "usage_metadata": {
+        "prompt_token_count": 334,
+        "candidates_token_count": 74,
+        "total_token_count": 408
+      },
+      "model_version": "gemini-2.5-flash-image-preview"
+    }),
+)
