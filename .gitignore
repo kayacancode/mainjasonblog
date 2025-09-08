@@ -36,3 +36,6 @@ venv/
 
 # history folder
 /.history/GITHUB_TOKEN
+
+# image generation output
+pages/api/spotify_api/output/

@@ -36,57 +36,63 @@ export default async function handler(req, res) {
             return res.status(404).json({ error: 'No tracks found for this week' });
         }
 
-        // Trigger GitHub Actions workflow for image generation (just like music update)
-        console.log(`Triggering image generation for week ${week_start} with ${tracks.length} tracks`);
+        // Run Python script directly (just like your music update)
+        console.log(`Generating images for week ${week_start} with ${tracks.length} tracks`);
         
         try {
-            // Trigger the GitHub Actions workflow
-            const githubToken = process.env.GITHUB_TOKEN;
-            if (!githubToken) {
-                return res.status(500).json({ 
-                    success: false, 
-                    error: 'GitHub token not configured. Add GITHUB_TOKEN to your environment variables.' 
-                });
-            }
+            const { spawn } = require('child_process');
+            const path = require('path');
             
-            const workflowResponse = await fetch(`https://api.github.com/repos/kayacancode/mainjasonblog/actions/workflows/instagram-image-generation.yml/dispatches`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `token ${githubToken}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    ref: 'main',
-                    inputs: {
-                        week_start: week_start
-                    }
-                })
+            // Run the Python script directly
+            const pythonScript = path.join(process.cwd(), 'pages', 'api', 'spotify_api', 'instagram_image_generator.py');
+            
+            const pythonProcess = spawn('python3', [pythonScript, '--week', week_start], {
+                cwd: path.join(process.cwd(), 'pages', 'api', 'spotify_api'),
+                env: {
+                    ...process.env,
+                    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+                    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+                    SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY
+                }
             });
             
-            if (workflowResponse.ok) {
-                return res.status(200).json({ 
-                    success: true, 
-                    message: 'Image generation workflow triggered successfully!',
-                    tracks_count: tracks.length,
-                    week_start: week_start,
-                    note: 'Images will be generated in the background. Check the Actions tab in your GitHub repo to see progress.'
-                });
-            } else {
-                const errorText = await workflowResponse.text();
-                console.error('GitHub API error:', errorText);
-                return res.status(500).json({ 
-                    success: false, 
-                    error: 'Failed to trigger image generation workflow',
-                    details: errorText
-                });
-            }
+            let output = '';
+            let errorOutput = '';
+            
+            pythonProcess.stdout.on('data', (data) => {
+                output += data.toString();
+                console.log('Python output:', data.toString());
+            });
+            
+            pythonProcess.stderr.on('data', (data) => {
+                errorOutput += data.toString();
+                console.error('Python error:', data.toString());
+            });
+            
+            pythonProcess.on('close', (code) => {
+                console.log(`Python script exited with code ${code}`);
+                if (code === 0) {
+                    return res.status(200).json({ 
+                        success: true, 
+                        message: 'Images generated successfully!',
+                        tracks_count: tracks.length,
+                        week_start: week_start,
+                        output: output
+                    });
+                } else {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Image generation failed',
+                        details: errorOutput
+                    });
+                }
+            });
             
         } catch (error) {
-            console.error('Error triggering workflow:', error);
+            console.error('Error running Python script:', error);
             return res.status(500).json({ 
                 success: false, 
-                error: 'Failed to trigger image generation',
+                error: 'Failed to run image generation script',
                 details: error.message
             });
         }

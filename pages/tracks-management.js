@@ -24,6 +24,9 @@ export default function TracksManagement() {
     const [showImageModal, setShowImageModal] = useState(false);
     const [currentWeekImages, setCurrentWeekImages] = useState(null);
     const [regenerating, setRegenerating] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [weekImageStatus, setWeekImageStatus] = useState({});
+    const [generatingWeek, setGeneratingWeek] = useState(null);
 
     // Form state for adding/editing tracks
     const [formData, setFormData] = useState({
@@ -75,10 +78,15 @@ export default function TracksManagement() {
         fetchTracks();
     }, [selectedWeek, filterPlaylist, searchTerm, showArchived, filterTags]);
 
-    // Debug selectedWeek changes
+    // Check image status for all weeks when tracks are loaded
     useEffect(() => {
-        console.log('selectedWeek changed to:', selectedWeek);
-    }, [selectedWeek]);
+        if (weeks.length > 0) {
+            weeks.forEach(week => {
+                checkWeekImageStatus(week);
+            });
+        }
+    }, [weeks]);
+
 
     // Close tag dropdown when clicking outside
     useEffect(() => {
@@ -420,29 +428,43 @@ export default function TracksManagement() {
         }
     };
 
-    const handleViewImages = async () => {
-        // Find the week that has selected tracks
-        const selectedWeekFromTracks = findWeekWithSelectedTracks();
+    const checkWeekImageStatus = async (weekStart) => {
+        const images = await fetchWeekImages(weekStart);
+        setWeekImageStatus(prev => ({
+            ...prev,
+            [weekStart]: !!images
+        }));
+        return !!images;
+    };
+
+    const handleViewImages = async (week = null) => {
+        const targetWeek = week || selectedWeek;
         
-        if (!selectedWeekFromTracks) {
-            alert('Please select tracks from a week first (use the "Select Week" checkboxes)');
+        if (!targetWeek) {
+            alert('Please select a week first');
             return;
         }
         
-        const images = await fetchWeekImages(selectedWeekFromTracks);
+        // Ensure targetWeek is a string
+        const weekString = String(targetWeek);
+        
+        const images = await fetchWeekImages(weekString);
         setCurrentWeekImages(images);
         setShowImageModal(true);
     };
 
-    const handleGenerateImages = async () => {
-        // Find the week that has selected tracks
-        const selectedWeekFromTracks = findWeekWithSelectedTracks();
+    const handleGenerateImages = async (week = null) => {
+        const targetWeek = week || selectedWeek;
         
-        if (!selectedWeekFromTracks) {
-            alert('Please select tracks from a week first (use the "Select Week" checkboxes)');
+        if (!targetWeek) {
+            alert('Please select a week first');
             return;
         }
         
+        // Ensure targetWeek is a string
+        const weekString = String(targetWeek);
+        
+        setGeneratingWeek(weekString);
         setRegenerating(true);
         try {
             const response = await fetch('/api/generate-images', {
@@ -450,16 +472,20 @@ export default function TracksManagement() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ week_start: selectedWeekFromTracks }),
+                body: JSON.stringify({ week_start: weekString }),
             });
             
             if (response.ok) {
                 const result = await response.json();
                 if (result.success) {
-                    // Refresh the images
-                    const images = await fetchWeekImages(selectedWeekFromTracks);
+                    // Refresh the images and update status
+                    const images = await fetchWeekImages(weekString);
                     setCurrentWeekImages(images);
-                    alert(`Images generated successfully for week ${selectedWeekFromTracks}!`);
+                    setWeekImageStatus(prev => ({
+                        ...prev,
+                        [weekString]: true
+                    }));
+                    alert(`Images generated successfully for week ${weekString}!`);
                 } else {
                     alert('Failed to generate images: ' + result.error);
                 }
@@ -471,6 +497,7 @@ export default function TracksManagement() {
             alert('Error generating images');
         } finally {
             setRegenerating(false);
+            setGeneratingWeek(null);
         }
     };
 
@@ -485,28 +512,35 @@ export default function TracksManagement() {
     };
 
     const handleRegenerateImages = async () => {
-        if (!selectedWeek) {
+        // Use the week from currentWeekImages if available, otherwise selectedWeek
+        const targetWeek = currentWeekImages?.week_start || selectedWeek;
+        
+        if (!targetWeek) {
             alert('Please select a week first');
             return;
         }
         
         setRegenerating(true);
         try {
-            const response = await fetch('/api/regenerate-images', {
+            const response = await fetch('/api/generate-images', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ week_start: selectedWeek }),
+                body: JSON.stringify({ week_start: targetWeek }),
             });
             
             if (response.ok) {
                 const result = await response.json();
                 if (result.success) {
-                    // Refresh the images
-                    const images = await fetchWeekImages(selectedWeek);
+                    // Refresh the images and update status
+                    const images = await fetchWeekImages(targetWeek);
                     setCurrentWeekImages(images);
-                    alert('Images regenerated successfully!');
+                    setWeekImageStatus(prev => ({
+                        ...prev,
+                        [targetWeek]: true
+                    }));
+                    alert(`Images regenerated successfully for week ${targetWeek}!`);
                 } else {
                     alert('Failed to regenerate images: ' + result.error);
                 }
@@ -627,10 +661,6 @@ export default function TracksManagement() {
                         ))}
                     </select>
 
-                    {/* Debug info - temporary */}
-                    <div className="text-xs text-gray-500 mb-2">
-                        Debug: selectedWeek = "{selectedWeek}", weeks.length = {weeks.length}
-                    </div>
                     
                     {(selectedWeek || selectedTracks.size > 0) && (
                         <div className="flex gap-2">
@@ -656,31 +686,6 @@ export default function TracksManagement() {
                         </div>
                     )}
                     
-                    {/* Always show buttons for debugging */}
-                    <div className="flex gap-2 mt-2">
-                        <button 
-                            onClick={() => {
-                                console.log('Current state:', { selectedWeek, weeks });
-                                alert(`selectedWeek: "${selectedWeek}", weeks: ${weeks.length}`);
-                            }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-300"
-                        >
-                            Debug State
-                        </button>
-                        <button 
-                            onClick={() => {
-                                if (weeks.length > 0) {
-                                    setSelectedWeek(weeks[0]);
-                                    alert(`Set selectedWeek to: ${weeks[0]}`);
-                                } else {
-                                    alert('No weeks available');
-                                }
-                            }}
-                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-300"
-                        >
-                            Set First Week
-                        </button>
-                    </div>
                 </div>
 
                 <select 
@@ -1119,6 +1124,36 @@ export default function TracksManagement() {
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <span className="text-sm text-gray-600">{weekTracks.length} tracks</span>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => handleViewImages(week)}
+                                                    className="text-blue-600 hover:text-blue-800 text-xs underline"
+                                                >
+                                                    View Images
+                                                </button>
+                                                <span className="text-gray-300">•</span>
+                                                <button
+                                                    onClick={() => handleGenerateImages(week)}
+                                                    disabled={generatingWeek === week}
+                                                    className={`text-xs underline transition-colors ${
+                                                        generatingWeek === week 
+                                                            ? 'text-gray-400 cursor-not-allowed' 
+                                                            : 'text-orange-600 hover:text-orange-800'
+                                                    }`}
+                                                >
+                                                    {generatingWeek === week ? (
+                                                        <span className="flex items-center gap-1">
+                                                            <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                            </svg>
+                                                            Generating...
+                                                        </span>
+                                                    ) : (
+                                                        weekImageStatus[week] ? 'Regenerate' : 'Generate'
+                                                    )}
+                                                </button>
+                                            </div>
                                             <div className="flex items-center gap-2">
                                                 <input
                                                     type="checkbox"
@@ -1304,107 +1339,146 @@ export default function TracksManagement() {
 
             {/* Image Modal */}
             {showImageModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-2xl font-bold text-gray-900">
-                                    Instagram Images - Week of {selectedWeek}
-                                </h2>
-                                <button
-                                    onClick={() => setShowImageModal(false)}
-                                    className="text-gray-500 hover:text-gray-700"
-                                >
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
+                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+                    <div className="relative max-w-6xl w-full max-h-[95vh]">
+                        {/* Close button */}
+                        <button
+                            onClick={() => setShowImageModal(false)}
+                            className="absolute top-4 right-4 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-all"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
 
-                            {currentWeekImages ? (
-                                <div className="space-y-6">
-                                    {/* Cover Image */}
-                                    {currentWeekImages.cover_image_url && (
-                                        <div className="text-center">
-                                            <h3 className="text-lg font-semibold mb-3">Cover Image</h3>
-                                            <div className="relative inline-block">
-                                                <img
-                                                    src={currentWeekImages.cover_image_url}
-                                                    alt="Cover Image"
-                                                    className="max-w-full h-auto rounded-lg shadow-lg"
-                                                    style={{ maxHeight: '400px' }}
-                                                />
-                                            </div>
-                                            <div className="mt-3 flex justify-center gap-2">
-                                                <button
-                                                    onClick={() => downloadImage(
-                                                        currentWeekImages.cover_image_url,
-                                                        `cover_${selectedWeek}.png`
-                                                    )}
-                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                                                >
-                                                    Download Cover
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
+                        {currentWeekImages ? (
+                            <div className="relative">
+                                {/* Navigation arrows */}
+                                {currentWeekImages.cover_image_url && currentWeekImages.tracklist_image_url && (
+                                    <>
+                                        <button
+                                            onClick={() => setCurrentImageIndex(prev => prev === 0 ? 1 : 0)}
+                                            className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentImageIndex(prev => prev === 0 ? 1 : 0)}
+                                            className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    </>
+                                )}
 
-                                    {/* Tracklist Image */}
-                                    {currentWeekImages.tracklist_image_url && (
-                                        <div className="text-center">
-                                            <h3 className="text-lg font-semibold mb-3">Tracklist Image</h3>
-                                            <div className="relative inline-block">
-                                                <img
-                                                    src={currentWeekImages.tracklist_image_url}
-                                                    alt="Tracklist Image"
-                                                    className="max-w-full h-auto rounded-lg shadow-lg"
-                                                    style={{ maxHeight: '400px' }}
-                                                />
-                                            </div>
-                                            <div className="mt-3 flex justify-center gap-2">
-                                                <button
-                                                    onClick={() => downloadImage(
-                                                        currentWeekImages.tracklist_image_url,
-                                                        `tracklist_${selectedWeek}.png`
-                                                    )}
-                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                                                >
-                                                    Download Tracklist
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
+                                {/* Image display */}
+                                <div className="text-center">
+                                    <img
+                                        src={currentImageIndex === 0 && currentWeekImages.cover_image_url 
+                                            ? currentWeekImages.cover_image_url 
+                                            : currentWeekImages.tracklist_image_url}
+                                        alt={currentImageIndex === 0 ? "Cover Image" : "Tracklist Image"}
+                                        className="max-w-full h-auto rounded-lg shadow-2xl mx-auto"
+                                        style={{ maxHeight: '80vh' }}
+                                    />
+                                    
+                                    {/* Image title */}
+                                    <div className="mt-4 text-white">
+                                        <h3 className="text-xl font-semibold">
+                                            {currentImageIndex === 0 ? "Cover Image" : "Tracklist Image"}
+                                        </h3>
+                                        <p className="text-sm opacity-75">Week of {currentWeekImages?.week_start || selectedWeek}</p>
+                                    </div>
 
-                                    {/* Regenerate Button */}
-                                    <div className="text-center pt-4 border-t">
+                                    {/* Action buttons */}
+                                    <div className="mt-6 flex justify-center gap-4">
+                                        <button
+                                            onClick={() => downloadImage(
+                                                currentImageIndex === 0 
+                                                    ? currentWeekImages.cover_image_url 
+                                                    : currentWeekImages.tracklist_image_url,
+                                                `${currentImageIndex === 0 ? 'cover' : 'tracklist'}_${currentWeekImages?.week_start || selectedWeek}.png`
+                                            )}
+                                            className="bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm text-white px-6 py-2 rounded-full text-sm font-medium transition-all border border-white border-opacity-30"
+                                        >
+                                            <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            Download
+                                        </button>
                                         <button
                                             onClick={handleRegenerateImages}
                                             disabled={regenerating}
-                                            className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors"
+                                            className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-full text-sm font-medium transition-all"
                                         >
-                                            {regenerating ? 'Regenerating...' : 'Regenerate Images'}
+                                            {regenerating ? 'Regenerating...' : 'Regenerate'}
                                         </button>
                                     </div>
+
+                                    {/* Image indicators */}
+                                    {currentWeekImages.cover_image_url && currentWeekImages.tracklist_image_url && (
+                                        <div className="mt-4 flex justify-center gap-2">
+                                            <button
+                                                onClick={() => setCurrentImageIndex(0)}
+                                                className={`w-3 h-3 rounded-full transition-all ${
+                                                    currentImageIndex === 0 ? 'bg-white' : 'bg-white bg-opacity-50'
+                                                }`}
+                                            />
+                                            <button
+                                                onClick={() => setCurrentImageIndex(1)}
+                                                className={`w-3 h-3 rounded-full transition-all ${
+                                                    currentImageIndex === 1 ? 'bg-white' : 'bg-white bg-opacity-50'
+                                                }`}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
-                            ) : (
-                                <div className="text-center py-8">
-                                    <div className="text-gray-500 mb-4">
-                                        <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </div>
+                        ) : (
+                            <div className="text-center py-16">
+                                <div className="text-white mb-8">
+                                    <div className="w-24 h-24 mx-auto mb-6 bg-white bg-opacity-10 rounded-full flex items-center justify-center">
+                                        <svg className="w-12 h-12 text-white opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
-                                        <p className="text-lg font-medium">No images found for this week</p>
-                                        <p className="text-sm text-gray-400 mt-2">Generate Instagram-ready images for this week's tracks</p>
                                     </div>
+                                    <h3 className="text-2xl font-semibold mb-2">No Images Yet</h3>
+                                    <p className="text-lg opacity-75 mb-1">Week of {currentWeekImages?.week_start || selectedWeek}</p>
+                                    <p className="text-sm opacity-60">Create stunning Instagram-ready images for this week's top tracks</p>
+                                </div>
+                                <div className="space-y-4">
                                     <button
                                         onClick={handleGenerateImages}
                                         disabled={regenerating}
-                                        className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors"
+                                        className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-8 py-3 rounded-full text-sm font-medium transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:shadow-none"
                                     >
-                                        {regenerating ? 'Generating...' : 'Generate Images'}
+                                        {regenerating ? (
+                                            <span className="flex items-center gap-2">
+                                                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Generating Images...
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center gap-2">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                </svg>
+                                                Generate Images
+                                            </span>
+                                        )}
                                     </button>
+                                    <p className="text-xs text-white text-opacity-50">
+                                        ✨ AI-powered cover art and tracklist designs
+                                    </p>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

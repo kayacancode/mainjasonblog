@@ -14,11 +14,6 @@ on:
         required: false
         type: boolean
         default: false
-      week_start:
-        description: 'Specific week to generate images for (YYYY-MM-DD)'
-        required: false
-        type: string
-        default: ''
 
 jobs:
   generate-images:
@@ -58,11 +53,7 @@ jobs:
         SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
       run: |
         cd pages/api/spotify_api
-        if [ -n "${{ github.event.inputs.week_start }}" ]; then
-          python instagram_image_generator.py --week ${{ github.event.inputs.week_start }}
-        else
-          python instagram_image_generator.py
-        fi
+        python instagram_image_generator.py
 
     - name: Generate Images for Existing Weeks
       env:
