@@ -36,7 +36,6 @@ if SUPABASE_URL and SUPABASE_KEY:
     logger.info("✅ Supabase client initialized")
 else:
     logger.warning("⚠️ Supabase credentials not found, images will only be saved locally")
-
 class InstagramImageGenerator:
     """Generate Instagram-ready images using Google Gemini AI"""
     
@@ -218,7 +217,6 @@ class InstagramImageGenerator:
         
         # Fallback to generic description
         return f"{artist_name}: Professional musician and artist with distinctive features"
-
     def generate_artist_collage_prompt(self, artists: List[Dict], tracks: List[Dict]) -> str:
         """Generate a detailed prompt for cover image featuring the top track"""
         # Get the top track (highest popularity)
@@ -498,7 +496,6 @@ class InstagramImageGenerator:
             days_since_friday = 7
         friday = today - timedelta(days=days_since_friday)
         return friday.strftime('%Y-%m-%d')
-    
     def generate_weekly_update_prompt(self, tracks: List[Dict], artists: List[Dict]) -> str:
         """Generate a detailed prompt for weekly update image"""
         playlist_sources = list(set([track.get('playlist_name', 'Unknown') for track in tracks]))
