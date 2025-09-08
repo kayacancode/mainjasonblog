@@ -1,0 +1,26 @@
+response:
+GenerateContentResponse(
+    done=True,
+    iterator=None,
+    result=protos.GenerateContentResponse({
+      "candidates": [
+        {
+          "content": {
+            "parts": [
+              {
+                "text": "I understand you'd like an Instagram post image featuring a collage of music artists. However, there seems to be a slight misunderstanding regarding the artist names provided. \"Unknown Artist\" is not a specific, famous individual.\n\nTo create the image you're envisioning, I need the actual names of famous music artists. Could you please provide the names of four real, famous music artists you'd like to feature in the collage? Once I have those, I can proceed with creating a high-quality, professional Instagram post image according to all your other specifications!"
+              }
+            ],
+            "role": "model"
+          },
+          "finish_reason": "STOP"
+        }
+      ],
+      "usage_metadata": {
+        "prompt_token_count": 326,
+        "candidates_token_count": 115,
+        "total_token_count": 441
+      },
+      "model_version": "gemini-2.5-flash-image-preview"
+    }),
+)

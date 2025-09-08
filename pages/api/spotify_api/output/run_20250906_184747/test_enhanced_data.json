@@ -1,0 +1,93 @@
+{
+  "tracks": [
+    {
+      "track_name": "God's Plan",
+      "artists": "Drake",
+      "popularity": 95,
+      "playlist_name": "New Music Friday",
+      "album": "Scorpion",
+      "spotify_url": "https://open.spotify.com/track/example1"
+    },
+    {
+      "track_name": "Runaway",
+      "artists": "Kanye West",
+      "popularity": 90,
+      "playlist_name": "New Music Friday",
+      "album": "My Beautiful Dark Twisted Fantasy",
+      "spotify_url": "https://open.spotify.com/track/example2"
+    },
+    {
+      "track_name": "L$D",
+      "artists": "A$AP Rocky",
+      "popularity": 88,
+      "playlist_name": "Release Radar",
+      "album": "AT.LONG.LAST.A$AP",
+      "spotify_url": "https://open.spotify.com/track/example3"
+    },
+    {
+      "track_name": "Blinding Lights",
+      "artists": "The Weeknd",
+      "popularity": 92,
+      "playlist_name": "Release Radar",
+      "album": "After Hours",
+      "spotify_url": "https://open.spotify.com/track/example4"
+    },
+    {
+      "track_name": "Bad Guy",
+      "artists": "Billie Eilish",
+      "popularity": 87,
+      "playlist_name": "Release Radar",
+      "album": "When We All Fall Asleep, Where Do We Go?",
+      "spotify_url": "https://open.spotify.com/track/example5"
+    },
+    {
+      "track_name": "Levitating",
+      "artists": "Dua Lipa",
+      "popularity": 85,
+      "playlist_name": "New Music Friday",
+      "album": "Future Nostalgia",
+      "spotify_url": "https://open.spotify.com/track/example6"
+    },
+    {
+      "track_name": "Watermelon Sugar",
+      "artists": "Harry Styles",
+      "popularity": 89,
+      "playlist_name": "New Music Friday",
+      "album": "Fine Line",
+      "spotify_url": "https://open.spotify.com/track/example7"
+    },
+    {
+      "track_name": "Good 4 U",
+      "artists": "Olivia Rodrigo",
+      "popularity": 91,
+      "playlist_name": "New Music Friday",
+      "album": "SOUR",
+      "spotify_url": "https://open.spotify.com/track/example8"
+    },
+    {
+      "track_name": "Industry Baby",
+      "artists": "Lil Nas X, Jack Harlow",
+      "popularity": 86,
+      "playlist_name": "New Music Friday",
+      "album": "MONTERO",
+      "spotify_url": "https://open.spotify.com/track/example9"
+    },
+    {
+      "track_name": "Heat Waves",
+      "artists": "Glass Animals",
+      "popularity": 84,
+      "playlist_name": "New Music Friday",
+      "album": "Dreamland",
+      "spotify_url": "https://open.spotify.com/track/example10"
+    }
+  ],
+  "metadata": {
+    "total_tracks": 10,
+    "playlist_sources": [
+      "New Music Friday",
+      "Release Radar"
+    ],
+    "generated_at": "2025-09-06T18:35:26.558774",
+    "source": "test_data"
+  }
+}
