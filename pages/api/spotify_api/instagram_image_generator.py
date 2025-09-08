@@ -42,6 +42,7 @@ class InstagramImageGenerator:
     def __init__(self, gemini_api_key: str):
         """Initialize the Gemini API client"""
         self.gemini_api_key = gemini_api_key
+        self.generated_images = {}  # Store generated images in memory
         genai.configure(api_key=gemini_api_key)
         # Use the image generation model
         # Try different models for image generation
@@ -356,9 +357,12 @@ class InstagramImageGenerator:
             return None
             
         try:
-            # Read image file
-            with open(image_path, 'rb') as f:
-                image_data = f.read()
+            # Get image data from memory instead of reading from file
+            if image_path not in self.generated_images:
+                logger.error(f"❌ Image not found in memory: {image_path}")
+                return None
+                
+            image_data = self.generated_images[image_path]
             
             # Create filename with week_start
             filename = f"instagram_images/{week_start}_{os.path.basename(image_path)}"
@@ -714,10 +718,10 @@ class InstagramImageGenerator:
                         # Extract image data
                         image_data = response.parts[0].inline_data.data
                         
-                        with open(output_path, 'wb') as f:
-                            f.write(image_data)
+                        # Store image data in memory instead of saving to disk
+                        self.generated_images[output_path] = image_data
                         
-                        logger.info(f"✅ Image generated and saved to: {output_path}")
+                        logger.info(f"✅ Image generated: {output_path}")
                         return True
                     else:
                         logger.warning("No image data in response, trying alternative method")
@@ -750,10 +754,10 @@ Requirements:
                             if hasattr(part, 'inline_data') and part.inline_data:
                                 image_data = part.inline_data.data
                                 
-                                with open(output_path, 'wb') as f:
-                                    f.write(image_data)
+                                # Store image data in memory instead of saving to disk
+                                self.generated_images[output_path] = image_data
                                 
-                                logger.info(f"✅ Image generated and saved to: {output_path}")
+                                logger.info(f"✅ Image generated: {output_path}")
                                 return True
                     
                     # If no image data, save the response as text for debugging
@@ -1056,5 +1060,9 @@ def main():
             return False
 
 if __name__ == "__main__":
+    success = main()
+    exit(0 if success else 1)
+    success = main()
+    exit(0 if success else 1)
     success = main()
     exit(0 if success else 1)
