@@ -478,16 +478,14 @@ export default function TracksManagement() {
             if (response.ok) {
                 const result = await response.json();
                 if (result.success) {
-                    // Refresh the images and update status
-                    const images = await fetchWeekImages(weekString);
-                    setCurrentWeekImages(images);
+                    // Update status to show generation is in progress
                     setWeekImageStatus(prev => ({
                         ...prev,
-                        [weekString]: true
+                        [weekString]: 'generating'
                     }));
-                    alert(`Images generated successfully for week ${weekString}!`);
+                    alert(`Image generation triggered successfully! Check GitHub Actions for progress. This may take a few minutes.`);
                 } else {
-                    alert('Failed to generate images: ' + result.error);
+                    alert('Failed to trigger image generation: ' + result.error);
                 }
             } else {
                 alert('Failed to generate images');
