@@ -34,5 +34,5 @@ yarn-error.log*
 # python virtual environment
 venv/
 
-# history folder
-/.history/
+# image generation output
+# pages/api/spotify_api/output/

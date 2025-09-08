@@ -21,6 +21,12 @@ export default function TracksManagement() {
     const [filterTags, setFilterTags] = useState([]);
     const [availableTags, setAvailableTags] = useState([]);
     const [showTagDropdown, setShowTagDropdown] = useState(false);
+    const [showImageModal, setShowImageModal] = useState(false);
+    const [currentWeekImages, setCurrentWeekImages] = useState(null);
+    const [regenerating, setRegenerating] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [weekImageStatus, setWeekImageStatus] = useState({});
+    const [generatingWeek, setGeneratingWeek] = useState(null);
 
     // Form state for adding/editing tracks
     const [formData, setFormData] = useState({
@@ -71,6 +77,16 @@ export default function TracksManagement() {
     useEffect(() => {
         fetchTracks();
     }, [selectedWeek, filterPlaylist, searchTerm, showArchived, filterTags]);
+
+    // Check image status for all weeks when tracks are loaded
+    useEffect(() => {
+        if (weeks.length > 0) {
+            weeks.forEach(week => {
+                checkWeekImageStatus(week);
+            });
+        }
+    }, [weeks]);
+
 
     // Close tag dropdown when clicking outside
     useEffect(() => {
@@ -388,6 +404,167 @@ export default function TracksManagement() {
         }
     };
 
+    // Image management functions
+    const fetchWeekImages = async (weekStart) => {
+        try {
+            console.log('Fetching images for week:', weekStart);
+            const { data, error } = await supabase
+                .from('images')
+                .select('*')
+                .eq('week_start', weekStart);
+            
+            console.log('Images query result:', { data, error });
+            
+            if (error) {
+                console.error('Error fetching images:', error);
+                return null;
+            }
+            
+            // Return the first result or null
+            return data && data.length > 0 ? data[0] : null;
+        } catch (error) {
+            console.error('Error fetching images:', error);
+            return null;
+        }
+    };
+
+    const checkWeekImageStatus = async (weekStart) => {
+        const images = await fetchWeekImages(weekStart);
+        setWeekImageStatus(prev => ({
+            ...prev,
+            [weekStart]: !!images
+        }));
+        return !!images;
+    };
+
+    const handleViewImages = async (week = null) => {
+        const targetWeek = week || selectedWeek;
+        
+        if (!targetWeek) {
+            alert('Please select a week first');
+            return;
+        }
+        
+        // Ensure targetWeek is a string
+        const weekString = String(targetWeek);
+        
+        const images = await fetchWeekImages(weekString);
+        setCurrentWeekImages(images);
+        setShowImageModal(true);
+    };
+
+    const handleGenerateImages = async (week = null) => {
+        const targetWeek = week || selectedWeek;
+        
+        if (!targetWeek) {
+            alert('Please select a week first');
+            return;
+        }
+        
+        // Ensure targetWeek is a string
+        const weekString = String(targetWeek);
+        
+        setGeneratingWeek(weekString);
+        setRegenerating(true);
+        try {
+            const response = await fetch('/api/generate-images', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ week_start: weekString }),
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    // Refresh the images and update status
+                    const images = await fetchWeekImages(weekString);
+                    setCurrentWeekImages(images);
+                    setWeekImageStatus(prev => ({
+                        ...prev,
+                        [weekString]: true
+                    }));
+                    alert(`Images generated successfully for week ${weekString}!`);
+                } else {
+                    alert('Failed to generate images: ' + result.error);
+                }
+            } else {
+                alert('Failed to generate images');
+            }
+        } catch (error) {
+            console.error('Error generating images:', error);
+            alert('Error generating images');
+        } finally {
+            setRegenerating(false);
+            setGeneratingWeek(null);
+        }
+    };
+
+    const findWeekWithSelectedTracks = () => {
+        // Find which week has selected tracks
+        for (const [week, weekTracks] of Object.entries(groupedTracks)) {
+            if (weekTracks.some(track => selectedTracks.has(track.id))) {
+                return week;
+            }
+        }
+        return null;
+    };
+
+    const handleRegenerateImages = async () => {
+        // Use the week from currentWeekImages if available, otherwise selectedWeek
+        const targetWeek = currentWeekImages?.week_start || selectedWeek;
+        
+        if (!targetWeek) {
+            alert('Please select a week first');
+            return;
+        }
+        
+        setRegenerating(true);
+        try {
+            const response = await fetch('/api/generate-images', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ week_start: targetWeek }),
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    // Refresh the images and update status
+                    const images = await fetchWeekImages(targetWeek);
+                    setCurrentWeekImages(images);
+                    setWeekImageStatus(prev => ({
+                        ...prev,
+                        [targetWeek]: true
+                    }));
+                    alert(`Images regenerated successfully for week ${targetWeek}!`);
+                } else {
+                    alert('Failed to regenerate images: ' + result.error);
+                }
+            } else {
+                alert('Failed to regenerate images');
+            }
+        } catch (error) {
+            console.error('Error regenerating images:', error);
+            alert('Error regenerating images');
+        } finally {
+            setRegenerating(false);
+        }
+    };
+
+    const downloadImage = (url, filename) => {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+
     const groupedTracks = groupTracksByWeek(tracks);
 
     // Show loading state while checking authentication
@@ -454,31 +631,62 @@ export default function TracksManagement() {
 
             {/* Filters */}
             <div className="flex flex-col gap-3 mb-6 sm:mb-8">
-                <select 
-                    value={selectedWeek} 
-                    onChange={(e) => setSelectedWeek(e.target.value)}
-                    className="px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm bg-white transition-colors duration-300 focus:outline-none focus:border-indigo-500"
-                >
-                    <option value="">All Weeks</option>
-                    {weeks.map(week => (
-                        <option key={week} value={week}>
-                            Friday, {(() => {
-                                try {
-                                    // Parse the date string properly to avoid timezone issues
-                                    const [year, month, day] = week.split('-').map(Number);
-                                    const date = new Date(year, month - 1, day); // month is 0-indexed
-                                    return date.toLocaleDateString('en-US', {
-                                        month: 'long',
-                                        day: 'numeric',
-                                        year: 'numeric'
-                                    });
-                                } catch (e) {
-                                    return week;
-                                }
-                            })()}
-                        </option>
-                    ))}
-                </select>
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                    <select 
+                        value={selectedWeek} 
+                        onChange={(e) => {
+                            console.log('Dropdown changed:', e.target.value);
+                            setSelectedWeek(e.target.value);
+                        }}
+                        className="px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm bg-white transition-colors duration-300 focus:outline-none focus:border-indigo-500 flex-1"
+                    >
+                        <option value="">All Weeks</option>
+                        {weeks.map(week => (
+                            <option key={week} value={week}>
+                                Friday, {(() => {
+                                    try {
+                                        // Parse the date string properly to avoid timezone issues
+                                        const [year, month, day] = week.split('-').map(Number);
+                                        const date = new Date(year, month - 1, day); // month is 0-indexed
+                                        return date.toLocaleDateString('en-US', {
+                                            month: 'long',
+                                            day: 'numeric',
+                                            year: 'numeric'
+                                        });
+                                    } catch (e) {
+                                        return week;
+                                    }
+                                })()}
+                            </option>
+                        ))}
+                    </select>
+
+                    
+                    {(selectedWeek || selectedTracks.size > 0) && (
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={handleViewImages}
+                                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-300 flex items-center gap-2 whitespace-nowrap"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                View Images
+                            </button>
+                            <button 
+                                onClick={handleGenerateImages}
+                                disabled={regenerating}
+                                className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-300 flex items-center gap-2 whitespace-nowrap"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                {regenerating ? 'Generating...' : 'Generate Images'}
+                            </button>
+                        </div>
+                    )}
+                    
+                </div>
 
                 <select 
                     value={filterPlaylist} 
@@ -916,24 +1124,62 @@ export default function TracksManagement() {
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <span className="text-sm text-gray-600">{weekTracks.length} tracks</span>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => handleViewImages(week)}
+                                                    className="text-blue-600 hover:text-blue-800 text-xs underline"
+                                                >
+                                                    View Images
+                                                </button>
+                                                <span className="text-gray-300">•</span>
+                                                <button
+                                                    onClick={() => handleGenerateImages(week)}
+                                                    disabled={generatingWeek === week}
+                                                    className={`text-xs underline transition-colors ${
+                                                        generatingWeek === week 
+                                                            ? 'text-gray-400 cursor-not-allowed' 
+                                                            : 'text-orange-600 hover:text-orange-800'
+                                                    }`}
+                                                >
+                                                    {generatingWeek === week ? (
+                                                        <span className="flex items-center gap-1">
+                                                            <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                            </svg>
+                                                            Generating...
+                                                        </span>
+                                                    ) : (
+                                                        weekImageStatus[week] ? 'Regenerate' : 'Generate'
+                                                    )}
+                                                </button>
+                                            </div>
                                             <div className="flex items-center gap-2">
                                                 <input
                                                     type="checkbox"
                                                     checked={weekTracks.every(track => selectedTracks.has(track.id))}
                                                     onChange={() => {
+                                                        console.log('Week checkbox clicked for week:', week);
                                                         const weekTrackIds = weekTracks.map(t => t.id);
+                                                        console.log('Week track IDs:', weekTrackIds);
+                                                        console.log('Current selectedTracks:', Array.from(selectedTracks));
+                                                        
                                                         if (weekTracks.every(track => selectedTracks.has(track.id))) {
+                                                            console.log('Deselecting all week tracks');
                                                             // Deselect all week tracks
                                                             setSelectedTracks(prev => {
                                                                 const newSet = new Set(prev);
                                                                 weekTrackIds.forEach(id => newSet.delete(id));
+                                                                console.log('New selectedTracks after deselect:', Array.from(newSet));
                                                                 return newSet;
                                                             });
                                                         } else {
+                                                            console.log('Selecting all week tracks');
                                                             // Select all week tracks
                                                             setSelectedTracks(prev => {
                                                                 const newSet = new Set(prev);
                                                                 weekTrackIds.forEach(id => newSet.add(id));
+                                                                console.log('New selectedTracks after select:', Array.from(newSet));
                                                                 return newSet;
                                                             });
                                                         }
@@ -1090,6 +1336,153 @@ export default function TracksManagement() {
                     ))
                 )}
             </div>
+
+            {/* Image Modal */}
+            {showImageModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+                    <div className="relative max-w-6xl w-full max-h-[95vh]">
+                        {/* Close button */}
+                        <button
+                            onClick={() => setShowImageModal(false)}
+                            className="absolute top-4 right-4 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-all"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+
+                        {currentWeekImages ? (
+                            <div className="relative">
+                                {/* Navigation arrows */}
+                                {currentWeekImages.cover_image_url && currentWeekImages.tracklist_image_url && (
+                                    <>
+                                        <button
+                                            onClick={() => setCurrentImageIndex(prev => prev === 0 ? 1 : 0)}
+                                            className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentImageIndex(prev => prev === 0 ? 1 : 0)}
+                                            className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all"
+                                        >
+                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+                                    </>
+                                )}
+
+                                {/* Image display */}
+                                <div className="text-center">
+                                    <img
+                                        src={currentImageIndex === 0 && currentWeekImages.cover_image_url 
+                                            ? currentWeekImages.cover_image_url 
+                                            : currentWeekImages.tracklist_image_url}
+                                        alt={currentImageIndex === 0 ? "Cover Image" : "Tracklist Image"}
+                                        className="max-w-full h-auto rounded-lg shadow-2xl mx-auto"
+                                        style={{ maxHeight: '80vh' }}
+                                    />
+                                
+                                    
+                                    {/* Image title */}
+                                    <div className="mt-4 text-white">
+                                        <h3 className="text-xl font-semibold">
+                                            {currentImageIndex === 0 ? "Cover Image" : "Tracklist Image"}
+                                        </h3>
+                                        <p className="text-sm opacity-75">Week of {currentWeekImages?.week_start || selectedWeek}</p>
+                                    </div>
+
+                                    {/* Action buttons */}
+                                    <div className="mt-6 flex justify-center gap-4">
+                                        <button
+                                            onClick={() => downloadImage(
+                                                currentImageIndex === 0 
+                                                    ? currentWeekImages.cover_image_url 
+                                                    : currentWeekImages.tracklist_image_url,
+                                                `${currentImageIndex === 0 ? 'cover' : 'tracklist'}_${currentWeekImages?.week_start || selectedWeek}.png`
+                                            )}
+                                            className="bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm text-white px-6 py-2 rounded-full text-sm font-medium transition-all border border-white border-opacity-30"
+                                        >
+                                            <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            Download
+                                        </button>
+                                        <button
+                                            onClick={handleRegenerateImages}
+                                            disabled={regenerating}
+                                            className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-full text-sm font-medium transition-all"
+                                        >
+                                            {regenerating ? 'Regenerating...' : 'Regenerate'}
+                                        </button>
+                                    </div>
+
+                                    {/* Image indicators */}
+                                    {currentWeekImages.cover_image_url && currentWeekImages.tracklist_image_url && (
+                                        <div className="mt-4 flex justify-center gap-2">
+                                            <button
+                                                onClick={() => setCurrentImageIndex(0)}
+                                                className={`w-3 h-3 rounded-full transition-all ${
+                                                    currentImageIndex === 0 ? 'bg-white' : 'bg-white bg-opacity-50'
+                                                }`}
+                                            />
+                                            <button
+                                                onClick={() => setCurrentImageIndex(1)}
+                                                className={`w-3 h-3 rounded-full transition-all ${
+                                                    currentImageIndex === 1 ? 'bg-white' : 'bg-white bg-opacity-50'
+                                                }`}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-16">
+                                <div className="text-white mb-8">
+                                    <div className="w-24 h-24 mx-auto mb-6 bg-white bg-opacity-10 rounded-full flex items-center justify-center">
+                                        <svg className="w-12 h-12 text-white opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-2xl font-semibold mb-2">No Images Yet</h3>
+                                    <p className="text-lg opacity-75 mb-1">Week of {currentWeekImages?.week_start || selectedWeek}</p>
+                                    <p className="text-sm opacity-60">Create stunning Instagram-ready images for this week's top tracks</p>
+                                </div>
+                                <div className="space-y-4">
+                                    <button
+                                        onClick={handleGenerateImages}
+                                        disabled={regenerating}
+                                        className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-8 py-3 rounded-full text-sm font-medium transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:shadow-none"
+                                    >
+                                        {regenerating ? (
+                                            <span className="flex items-center gap-2">
+                                                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Generating Images...
+                                            </span>
+                                        ) : (
+                                            <span className="flex items-center gap-2">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                </svg>
+                                                Generate Images
+                                            </span>
+                                        )}
+                                    </button>
+                                    <p className="text-xs text-white text-opacity-50">
+                                        ✨ AI-powered cover art and tracklist designs
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
         </div>
     );
