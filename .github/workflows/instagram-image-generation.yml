@@ -52,9 +52,9 @@ jobs:
 
     - name: Generate Instagram Images
       env:
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-        SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        GEMINI_API_KEY: "AIzaSyAmmCp3sjNwDaYOedhHx8aLNxWq9jpJ2ZE"
+        NEXT_PUBLIC_SUPABASE_URL: "https://yxziaumwnvyswnqfyosh.supabase.co"
+        SUPABASE_SERVICE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"
       run: |
         cd pages/api/spotify_api
         if [ -n "${{ github.event.inputs.week_start }}" ]; then
@@ -67,9 +67,9 @@ jobs:
 
     - name: Generate Images for Existing Weeks
       env:
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-        SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        GEMINI_API_KEY: "AIzaSyB_your_actual_gemini_key_here"
+        NEXT_PUBLIC_SUPABASE_URL: "https://yxziaumwnvyswnqfyosh.supabase.co"
+        SUPABASE_SERVICE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.your_actual_service_key_here"
       run: |
         cd pages/api/spotify_api
         python generate_existing_images.py
