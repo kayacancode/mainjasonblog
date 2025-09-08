@@ -1385,6 +1385,7 @@ export default function TracksManagement() {
                                         className="max-w-full h-auto rounded-lg shadow-2xl mx-auto"
                                         style={{ maxHeight: '80vh' }}
                                     />
+                                
                                     
                                     {/* Image title */}
                                     <div className="mt-4 text-white">
