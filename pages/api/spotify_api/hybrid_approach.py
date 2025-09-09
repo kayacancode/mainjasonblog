@@ -105,11 +105,13 @@ class HybridSpotifyFetcher:
                         
                         # Extract artists
                         artists = ', '.join([artist['name'] for artist in track.get('artists', []) if artist.get('name')])
+                        artist_ids = [artist['id'] for artist in track.get('artists', []) if artist.get('id')]
                         
                         track_data = {
                             'id': track.get('id', ''),
                             'name': track.get('name', ''),
                             'artist': artists,
+                            'artist_ids': artist_ids,
                             'album': track.get('album', {}).get('name', ''),
                             'popularity': track.get('popularity', 0),
                             'album_art_url': album_art_url,

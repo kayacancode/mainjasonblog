@@ -11,10 +11,24 @@ from typing import Dict, List, Optional, Tuple
 
 import requests
 import spotipy
-from config import SpotifyConfig
 from hybrid_approach import HybridSpotifyFetcher
 from PIL import Image, ImageDraw, ImageFont
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
+
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    # Load .env file from the main project directory (three levels up from this file)
+    env_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '.env')
+    load_dotenv(env_path)
+    # Reload the config after loading environment variables
+    import importlib
+    import config
+    importlib.reload(config)
+    from config import SpotifyConfig
+except ImportError:
+    # If python-dotenv is not installed, continue without it
+    from config import SpotifyConfig
 
 # Set up logging
 logging.basicConfig(
@@ -130,6 +144,7 @@ class SpotifyNewMusicAutomation:
                 'id': track['id'],
                 'name': track['name'],
                 'artist': ', '.join([artist['name'] for artist in track.get('artists', [])]),
+                'artist_ids': [artist['id'] for artist in track.get('artists', [])],
                 'album': track.get('album', {}).get('name', ''),
                 'popularity': track.get('popularity', 0),
                 'album_art_url': album_art_url,
@@ -167,9 +182,244 @@ class SpotifyNewMusicAutomation:
             logger.warning(f"⚠️ Failed to download album art: {e}")
             return None
     
+    def get_artist_image_url(self, artist_id: str, spotify_client) -> Optional[str]:
+        """
+        Get artist image URL from Spotify API
+        
+        Args:
+            artist_id: Spotify artist ID
+            spotify_client: Spotify client instance
+            
+        Returns:
+            Artist image URL if found, None otherwise
+        """
+        try:
+            artist = spotify_client.artist(artist_id)
+            images = artist.get('images', [])
+            
+            # Get the largest image available
+            if images:
+                # Sort by width (largest first)
+                images.sort(key=lambda x: x.get('width', 0), reverse=True)
+                return images[0]['url']
+            
+            return None
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to get artist image for {artist_id}: {e}")
+            return None
+    
+    def download_artist_image(self, url: str, filename: str) -> Optional[str]:
+        """
+        Download artist image from URL
+        
+        Args:
+            url: Artist image URL
+            filename: Local filename to save to
+            
+        Returns:
+            Local file path if successful, None otherwise
+        """
+        if not url:
+            return None
+            
+        try:
+            response = requests.get(url, timeout=self.config.REQUEST_TIMEOUT)
+            response.raise_for_status()
+            
+            filepath = os.path.join(self.config.OUTPUT_DIR, filename)
+            with open(filepath, 'wb') as f:
+                f.write(response.content)
+            
+            return filepath
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to download artist image: {e}")
+            return None
+    
+    def create_single_artist_image(self, track: Dict, spotify_client, output_filename: str = "nmf_single_artist.png") -> str:
+        """
+        Create a single artist image with "New Music Friday" overlay
+        
+        Args:
+            track: Track dictionary with artist information
+            output_filename: Output filename for the image
+            
+        Returns:
+            Path to the generated image
+        """
+        if not track.get('artist_ids') or not track['artist_ids']:
+            logger.warning("⚠️ No artist IDs found for track")
+            return None
+            
+        # Get the first artist's image
+        artist_id = track['artist_ids'][0]
+        artist_image_url = self.get_artist_image_url(artist_id, spotify_client)
+        
+        if not artist_image_url:
+            logger.warning(f"⚠️ No artist image found for artist ID: {artist_id}")
+            return None
+        
+        try:
+            # Download artist image
+            art_filename = f"artist_{artist_id}.jpg"
+            art_path = self.download_artist_image(artist_image_url, art_filename)
+            
+            if not art_path or not os.path.exists(art_path):
+                logger.warning(f"⚠️ Failed to download artist image for {track['name']}")
+                return None
+            
+            # Open and process the artist image
+            artist_image = Image.open(art_path)
+            
+            # Resize to Instagram-friendly dimensions (1080x1080)
+            target_size = (1080, 1080)
+            artist_image = artist_image.resize(target_size, Image.Resampling.LANCZOS)
+            
+            # Create overlay with branding similar to the reference
+            overlay = Image.new('RGBA', target_size, (0, 0, 0, 0))
+            draw_overlay = ImageDraw.Draw(overlay)
+
+            # Colors
+            off_white = (232, 220, 207, 255)  # beige/cream title color
+            light_gray = (210, 210, 210, 255)
+            pure_white = (255, 255, 255, 255)
+            brand_red = (226, 62, 54, 255)
+
+            # Fonts (prefer Helvetica Neue Bold / Condensed Bold on macOS)
+            def load_font_prefer_helvetica(size: int, condensed: bool = False):
+                candidates = [
+                    ("/System/Library/Fonts/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6, 7, 8]),
+                    ("/System/Library/Fonts/Helvetica.ttc", [0, 1, 2, 3, 4, 5]),
+                    ("/Library/Fonts/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6]),
+                    ("/System/Library/Fonts/Supplemental/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6]),
+                    ("/Library/Fonts/Arial Bold.ttf", [0]),
+                    ("Arial.ttf", [0])
+                ]
+                # Try specific TTC indexes first (heuristics)
+                # For bold fonts: prioritize Bold (index 2), then Heavy (index 3), then Medium (index 1)
+                index_order = [6, 7, 5, 4, 3, 2, 1, 0] if condensed else [2, 3, 1, 4, 5, 0]
+                for path, idxs in candidates:
+                    if os.path.exists(path):
+                        for idx in index_order:
+                            if idx in idxs:
+                                try:
+                                    return ImageFont.truetype(path, size=size, index=idx)
+                                except Exception:
+                                    continue
+                        try:
+                            return ImageFont.truetype(path, size=size)
+                        except Exception:
+                            continue
+                return ImageFont.load_default()
+
+            # Larger/bolder sizes
+            title_font = load_font_prefer_helvetica(150, condensed=False)   # top artist name
+            name_font = load_font_prefer_helvetica(92, condensed=False)     # bottom-left lines
+            stacked_font_big = load_font_prefer_helvetica(92, condensed=False)   # NEW - bold not condensed
+            stacked_font_small = load_font_prefer_helvetica(92, condensed=False) # MUSIC/FRIDAY - bold not condensed
+
+            # Rounded white border
+            radius = 40
+            margin = 28
+            draw_overlay.rounded_rectangle(
+                [(margin, margin), (target_size[0]-margin, target_size[1]-margin)],
+                radius=radius,
+                outline=pure_white,
+                width=18
+            )
+
+            # Top artist name (uppercase, centered)
+            artist_name = (track['artist'] or "").upper()
+            if len(artist_name) > 18:
+                artist_name = artist_name[:18] + "…"
+            name_bbox = draw_overlay.textbbox((0, 0), artist_name, font=title_font)
+            name_w = name_bbox[2] - name_bbox[0]
+            name_x = (target_size[0] - name_w) // 2
+            name_y = margin + 20
+            # Slight shadow for readability
+            draw_overlay.text((name_x, name_y), artist_name, fill=off_white, font=title_font, stroke_width=3, stroke_fill=(0,0,0,160))
+
+            # Bottom-left track title in 2 lines, uppercase
+            track_title = (track['name'] or "").upper()
+            words = track_title.split()
+            line1, line2 = "", ""
+            for word in words:
+                candidate = (line1 + ' ' + word).strip()
+                # keep line1 relatively short for bold look
+                if len(candidate) <= 10:
+                    line1 = candidate
+                else:
+                    line2 = (line2 + ' ' + word).strip()
+            if not line2:
+                # distribute if single line
+                half = max(1, len(words)//2)
+                line1 = " ".join(words[:half])
+                line2 = " ".join(words[half:])
+            if not line2:
+                line2 = line1
+
+            # Measure using name_font for subtitle sizing
+            l_margin = margin + 40
+            b_margin = margin + 46
+            # Second line positioned above the very bottom
+            l2_bbox = draw_overlay.textbbox((0,0), line2, font=name_font)
+            l2_y = target_size[1] - b_margin - (l2_bbox[3]-l2_bbox[1])
+            draw_overlay.text((l_margin, l2_y), line2, fill=off_white, font=name_font, stroke_width=2, stroke_fill=(0,0,0,150))
+
+            l1_bbox = draw_overlay.textbbox((0,0), line1, font=name_font)
+            l1_y = l2_y - 12 - (l1_bbox[3]-l1_bbox[1])
+            draw_overlay.text((l_margin, l1_y), line1, fill=off_white, font=name_font, stroke_width=2, stroke_fill=(0,0,0,150))
+
+            # Bottom-right stacked NEW / MUSIC / FRIDAY
+            r_margin = margin + 40
+            # Right align by measuring widest word
+            words_stack = [
+                ("NEW", brand_red, stacked_font_big),
+                ("MUSIC", light_gray, stacked_font_small),
+                ("FRIDAY", light_gray, stacked_font_small),
+            ]
+            # Compute x based on widest word width
+            max_w = 0
+            heights = []
+            for w, color, fnt in words_stack:
+                bbox = draw_overlay.textbbox((0,0), w, font=fnt)
+                max_w = max(max_w, bbox[2]-bbox[0])
+                heights.append(bbox[3]-bbox[1])
+            x_right = target_size[0] - r_margin
+            y_start = target_size[1] - b_margin - sum(heights) - 16*2
+            y = y_start
+            for (w, color, fnt), h in zip(words_stack, heights):
+                bbox = draw_overlay.textbbox((0,0), w, font=fnt)
+                w_px = bbox[2]-bbox[0]
+                x = x_right - w_px
+                draw_overlay.text((x, y), w, fill=color, font=fnt, stroke_width=2, stroke_fill=(0,0,0,150))
+                y += h + 16
+            
+            # Composite the overlay onto the artist image
+            artist_image = artist_image.convert('RGBA')
+            final_image = Image.alpha_composite(artist_image, overlay)
+            final_image = final_image.convert('RGB')
+            
+            # Save the final image
+            output_path = os.path.join(self.config.OUTPUT_DIR, output_filename)
+            final_image.save(output_path, 'PNG', quality=95)
+            
+            # Clean up downloaded file
+            os.remove(art_path)
+            
+            logger.info(f"✅ Single artist image saved to: {output_path}")
+            return output_path
+            
+        except Exception as e:
+            logger.error(f"❌ Error creating single artist image: {e}")
+            if art_path and os.path.exists(art_path):
+                os.remove(art_path)
+            return None
+
     def create_collage(self, tracks: List[Dict], output_filename: str = "nmf_collage.png") -> str:
         """
-        Create a collage of album art from tracks
+        Create a collage of artist images with "New Music Friday" overlay from tracks
         
         Args:
             tracks: List of track dictionaries
@@ -219,23 +469,56 @@ class SpotifyNewMusicAutomation:
             x = margin_x + col * album_size
             y = margin_y + row * album_size
             
-            # Download and process album art
-            album_image = placeholder.copy()
-            if track.get('album_art_url'):
-                art_filename = f"art_{track['id']}.jpg"
-                art_path = self.download_album_art(track['album_art_url'], art_filename)
+            # Download and process artist image
+            artist_image = placeholder.copy()
+            if track.get('artist_ids') and track['artist_ids']:
+                # Get the first artist's image
+                artist_id = track['artist_ids'][0]
+                artist_image_url = self.get_artist_image_url(artist_id)
                 
-                if art_path and os.path.exists(art_path):
-                    try:
-                        album_image = Image.open(art_path)
-                        album_image = album_image.resize((album_size, album_size), Image.Resampling.LANCZOS)
-                        # Clean up downloaded file
-                        os.remove(art_path)
-                    except Exception as e:
-                        logger.warning(f"⚠️ Error processing album art for {track['name']}: {e}")
+                if artist_image_url:
+                    art_filename = f"artist_{artist_id}.jpg"
+                    art_path = self.download_artist_image(artist_image_url, art_filename)
+                    
+                    if art_path and os.path.exists(art_path):
+                        try:
+                            artist_image = Image.open(art_path)
+                            artist_image = artist_image.resize((album_size, album_size), Image.Resampling.LANCZOS)
+                            
+                            # Create overlay with "New Music Friday" text
+                            overlay = Image.new('RGBA', (album_size, album_size), (0, 0, 0, 0))
+                            draw_overlay = ImageDraw.Draw(overlay)
+                            
+                            # Create semi-transparent background for text
+                            text_bg = Image.new('RGBA', (album_size, 40), (0, 0, 0, 150))
+                            overlay.paste(text_bg, (0, album_size - 40))
+                            
+                            # Add "New Music Friday" text
+                            try:
+                                text_font = ImageFont.truetype("Arial.ttf", 12) if os.name == 'nt' else ImageFont.load_default()
+                            except:
+                                text_font = ImageFont.load_default()
+                            
+                            text = "New Music Friday"
+                            text_bbox = draw_overlay.textbbox((0, 0), text, font=text_font)
+                            text_width = text_bbox[2] - text_bbox[0]
+                            text_x = (album_size - text_width) // 2
+                            text_y = album_size - 35
+                            
+                            draw_overlay.text((text_x, text_y), text, fill=(255, 255, 255, 255), font=text_font)
+                            
+                            # Composite the overlay onto the artist image
+                            artist_image = artist_image.convert('RGBA')
+                            artist_image = Image.alpha_composite(artist_image, overlay)
+                            artist_image = artist_image.convert('RGB')
+                            
+                            # Clean up downloaded file
+                            os.remove(art_path)
+                        except Exception as e:
+                            logger.warning(f"⚠️ Error processing artist image for {track['name']}: {e}")
             
-            # Paste album art onto canvas
-            canvas.paste(album_image, (x, y))
+            # Paste artist image onto canvas
+            canvas.paste(artist_image, (x, y))
         
         # Add title
         try:
@@ -498,9 +781,12 @@ class SpotifyNewMusicAutomation:
         # Generate timestamp for files
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        # Create collage
-        collage_filename = f"nmf_collage_{timestamp}.png"
-        collage_path = self.create_collage(unique_tracks, collage_filename)
+        # Create single artist image (using the first track)
+        if unique_tracks:
+            single_artist_filename = f"nmf_single_artist_{timestamp}.png"
+            single_artist_path = self.create_single_artist_image(unique_tracks[0], hybrid_fetcher.spotify, single_artist_filename)
+        else:
+            single_artist_path = None
         
         # Create tracklist
         tracklist_filename = f"nmf_tracklist_{timestamp}.png"
@@ -521,7 +807,7 @@ class SpotifyNewMusicAutomation:
         
         results = {
             'track_count': len(unique_tracks),
-            'collage_image': collage_path,
+            'single_artist_image': single_artist_path,
             'tracklist_image': tracklist_path,
             'caption': caption,
             'caption_file': caption_path,
@@ -530,7 +816,7 @@ class SpotifyNewMusicAutomation:
         }
         
         logger.info("🎉 Automation completed successfully!")
-        logger.info(f"📸 Collage: {collage_path}")
+        logger.info(f"🎨 Single Artist Image: {single_artist_path}")
         logger.info(f"📋 Tracklist: {tracklist_path}")
         logger.info(f"📝 Caption: {caption_path}")
         logger.info(f"💾 Data: {data_path}")
@@ -561,7 +847,7 @@ def main():
         
         if results:
             print("\n🎉 Success! Generated content:")
-            print(f"📸 Collage: {results['collage_image']}")
+            print(f"🎨 Single Artist Image: {results['single_artist_image']}")
             print(f"📋 Tracklist: {results['tracklist_image']}")
             print(f"📝 Caption: {results['caption_file']}")
             print(f"\n📱 Ready for Instagram! Check the 'output' folder.")
