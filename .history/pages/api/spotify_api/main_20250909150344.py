@@ -298,8 +298,7 @@ class SpotifyNewMusicAutomation:
                 ]
                 # Try specific TTC indexes first (heuristics)
                 # For bold fonts: prioritize Bold (index 2), then Heavy (index 3), then Medium (index 1)
-                # Avoid italic fonts (typically higher indexes like 6, 7, 8)
-                index_order = [2, 3, 1, 4, 5, 0] if condensed else [2, 3, 1, 4, 5, 0]
+                index_order = [6, 7, 5, 4, 3, 2, 1, 0] if condensed else [2, 3, 1, 4, 5, 0]
                 for path, idxs in candidates:
                     if os.path.exists(path):
                         for idx in index_order:
@@ -577,8 +576,7 @@ class SpotifyNewMusicAutomation:
             ]
             # Try specific TTC indexes first (heuristics)
             # For bold fonts: prioritize Bold (index 2), then Heavy (index 3), then Medium (index 1)
-            # Avoid italic fonts (typically higher indexes like 6, 7, 8)
-            index_order = [2, 3, 1, 4, 5, 0] if condensed else [2, 3, 1, 4, 5, 0]
+            index_order = [6, 7, 5, 4, 3, 2, 1, 0] if condensed else [2, 3, 1, 4, 5, 0]
             for path, idxs in candidates:
                 if os.path.exists(path):
                     for idx in index_order:
@@ -595,8 +593,8 @@ class SpotifyNewMusicAutomation:
 
         # Bigger font sizes for tracklist
         title_font = load_font_prefer_helvetica(48, condensed=False)    # Main title - bigger
-        track_font = load_font_prefer_helvetica(36, condensed=False)    # Track names - much bigger
-        artist_font = load_font_prefer_helvetica(28, condensed=False)   # Artist names - bigger
+        track_font = load_font_prefer_helvetica(28, condensed=False)    # Track names - bigger
+        artist_font = load_font_prefer_helvetica(22, condensed=False)   # Artist names - bigger
         
         # Title section
         title = f"Top {len(sorted_tracks)} Tracks"
@@ -619,9 +617,9 @@ class SpotifyNewMusicAutomation:
         draw.text((title_x, 20), title, fill=self.config.SPOTIFY_WHITE, font=title_font)
         draw.text((subtitle_x, 60), subtitle, fill=self.config.SPOTIFY_WHITE, font=artist_font)
         
-        # Track list - add more padding under title
-        y_offset = title_height + 50  # More padding under title
-        line_height = 60  # Bigger line height for more space
+        # Track list
+        y_offset = title_height + 30
+        line_height = 50  # Increased for bigger fonts
         margin = 30
         
         for i, track in enumerate(sorted_tracks):  # Only top 10 tracks
@@ -646,8 +644,8 @@ class SpotifyNewMusicAutomation:
             if len(artist_name) > 30:
                 artist_name = artist_name[:30] + "..."
             
-            # Add much more spacing between track and artist name
-            draw.text((margin + 40, track_y + 40), artist_name, fill=self.config.SPOTIFY_GRAY, font=artist_font)
+            # Add more spacing between track and artist name
+            draw.text((margin + 40, track_y + 30), artist_name, fill=self.config.SPOTIFY_GRAY, font=artist_font)
         
         # Footer
         footer_text = "Suave's new music friday recap"

@@ -298,8 +298,7 @@ class SpotifyNewMusicAutomation:
                 ]
                 # Try specific TTC indexes first (heuristics)
                 # For bold fonts: prioritize Bold (index 2), then Heavy (index 3), then Medium (index 1)
-                # Avoid italic fonts (typically higher indexes like 6, 7, 8)
-                index_order = [2, 3, 1, 4, 5, 0] if condensed else [2, 3, 1, 4, 5, 0]
+                index_order = [6, 7, 5, 4, 3, 2, 1, 0] if condensed else [2, 3, 1, 4, 5, 0]
                 for path, idxs in candidates:
                     if os.path.exists(path):
                         for idx in index_order:
@@ -561,8 +560,8 @@ class SpotifyNewMusicAutomation:
         canvas = Image.new('RGB', (canvas_width, canvas_height), self.config.SPOTIFY_BLACK)
         draw = ImageDraw.Draw(canvas)
         
-        # Sort tracks by popularity - limit to top 10
-        sorted_tracks = sorted(tracks[:10], 
+        # Sort tracks by popularity
+        sorted_tracks = sorted(tracks[:self.config.TRACK_LIMIT], 
                              key=lambda x: x.get('popularity', 0), reverse=True)
         
         # Load fonts using same Helvetica Neue Bold as single artist image
@@ -577,8 +576,7 @@ class SpotifyNewMusicAutomation:
             ]
             # Try specific TTC indexes first (heuristics)
             # For bold fonts: prioritize Bold (index 2), then Heavy (index 3), then Medium (index 1)
-            # Avoid italic fonts (typically higher indexes like 6, 7, 8)
-            index_order = [2, 3, 1, 4, 5, 0] if condensed else [2, 3, 1, 4, 5, 0]
+            index_order = [6, 7, 5, 4, 3, 2, 1, 0] if condensed else [2, 3, 1, 4, 5, 0]
             for path, idxs in candidates:
                 if os.path.exists(path):
                     for idx in index_order:
@@ -595,17 +593,16 @@ class SpotifyNewMusicAutomation:
 
         # Bigger font sizes for tracklist
         title_font = load_font_prefer_helvetica(48, condensed=False)    # Main title - bigger
-        track_font = load_font_prefer_helvetica(36, condensed=False)    # Track names - much bigger
-        artist_font = load_font_prefer_helvetica(28, condensed=False)   # Artist names - bigger
+        track_font = load_font_prefer_helvetica(28, condensed=False)    # Track names - bigger
+        artist_font = load_font_prefer_helvetica(22, condensed=False)   # Artist names - bigger
         
         # Title section
         title = f"Top {len(sorted_tracks)} Tracks"
         subtitle = f"New Music Friday - {datetime.now().strftime('%B %d, %Y')}"
         
-        # Title background - use same red as "NEW" from artist image
-        brand_red = (226, 62, 54)
+        # Title background
         title_height = 100
-        draw.rectangle([0, 0, canvas_width, title_height], fill=brand_red)
+        draw.rectangle([0, 0, canvas_width, title_height], fill=self.config.SPOTIFY_GREEN)
         
         # Center title text
         title_bbox = draw.textbbox((0, 0), title, font=title_font)
@@ -619,12 +616,12 @@ class SpotifyNewMusicAutomation:
         draw.text((title_x, 20), title, fill=self.config.SPOTIFY_WHITE, font=title_font)
         draw.text((subtitle_x, 60), subtitle, fill=self.config.SPOTIFY_WHITE, font=artist_font)
         
-        # Track list - add more padding under title
-        y_offset = title_height + 50  # More padding under title
-        line_height = 60  # Bigger line height for more space
+        # Track list
+        y_offset = title_height + 30
+        line_height = 35
         margin = 30
         
-        for i, track in enumerate(sorted_tracks):  # Only top 10 tracks
+        for i, track in enumerate(sorted_tracks[:20]):  # Limit to top 20
             track_y = y_offset + i * line_height
             
             # Track number
@@ -640,17 +637,16 @@ class SpotifyNewMusicAutomation:
             
             draw.text((margin + 40, track_y), track_name, fill=self.config.SPOTIFY_WHITE, font=track_font)
             
-            # Artist name (clean encoding) - add spacing from track name
+            # Artist name (clean encoding)
             artist_name = track['artist']
             artist_name = artist_name.replace('\u201c', '"').replace('\u201d', '"').replace('\u2018', "'").replace('\u2019', "'")
             if len(artist_name) > 30:
                 artist_name = artist_name[:30] + "..."
             
-            # Add much more spacing between track and artist name
-            draw.text((margin + 40, track_y + 40), artist_name, fill=self.config.SPOTIFY_GRAY, font=artist_font)
+            draw.text((margin + 40, track_y + 18), artist_name, fill=self.config.SPOTIFY_GRAY, font=artist_font)
         
         # Footer
-        footer_text = "Suave's new music friday recap"
+        footer_text = f"Generated with love - {len(tracks)} tracks total"
         footer_bbox = draw.textbbox((0, 0), footer_text, font=artist_font)
         footer_width = footer_bbox[2] - footer_bbox[0]
         footer_x = (canvas_width - footer_width) // 2

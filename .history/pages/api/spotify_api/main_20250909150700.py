@@ -298,8 +298,7 @@ class SpotifyNewMusicAutomation:
                 ]
                 # Try specific TTC indexes first (heuristics)
                 # For bold fonts: prioritize Bold (index 2), then Heavy (index 3), then Medium (index 1)
-                # Avoid italic fonts (typically higher indexes like 6, 7, 8)
-                index_order = [2, 3, 1, 4, 5, 0] if condensed else [2, 3, 1, 4, 5, 0]
+                index_order = [6, 7, 5, 4, 3, 2, 1, 0] if condensed else [2, 3, 1, 4, 5, 0]
                 for path, idxs in candidates:
                     if os.path.exists(path):
                         for idx in index_order:
