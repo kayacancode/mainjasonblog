@@ -276,126 +276,43 @@ class SpotifyNewMusicAutomation:
             target_size = (1080, 1080)
             artist_image = artist_image.resize(target_size, Image.Resampling.LANCZOS)
             
-            # Create overlay with branding similar to the reference
+            # Create overlay with "New Music Friday" text
             overlay = Image.new('RGBA', target_size, (0, 0, 0, 0))
             draw_overlay = ImageDraw.Draw(overlay)
-
-            # Colors
-            off_white = (232, 220, 207, 255)  # beige/cream title color
-            light_gray = (210, 210, 210, 255)
-            pure_white = (255, 255, 255, 255)
-            brand_red = (226, 62, 54, 255)
-
-            # Fonts (prefer Helvetica Neue Bold / Condensed Bold on macOS)
-            def load_font_prefer_helvetica(size: int, condensed: bool = False):
-                candidates = [
-                    ("/System/Library/Fonts/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6, 7, 8]),
-                    ("/System/Library/Fonts/Helvetica.ttc", [0, 1, 2, 3, 4, 5]),
-                    ("/Library/Fonts/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6]),
-                    ("/System/Library/Fonts/Supplemental/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6]),
-                    ("/Library/Fonts/Arial Bold.ttf", [0]),
-                    ("Arial.ttf", [0])
-                ]
-                # Try specific TTC indexes first (heuristics)
-                # For bold fonts: prioritize Bold (index 2), then Heavy (index 3), then Medium (index 1)
-                # Avoid italic fonts (typically higher indexes like 6, 7, 8)
-                index_order = [2, 3, 1, 4, 5, 0] if condensed else [2, 3, 1, 4, 5, 0]
-                for path, idxs in candidates:
-                    if os.path.exists(path):
-                        for idx in index_order:
-                            if idx in idxs:
-                                try:
-                                    return ImageFont.truetype(path, size=size, index=idx)
-                                except Exception:
-                                    continue
-                        try:
-                            return ImageFont.truetype(path, size=size)
-                        except Exception:
-                            continue
-                return ImageFont.load_default()
-
-            # Larger/bolder sizes
-            title_font = load_font_prefer_helvetica(150, condensed=False)   # top artist name
-            name_font = load_font_prefer_helvetica(92, condensed=False)     # bottom-left lines
-            stacked_font_big = load_font_prefer_helvetica(92, condensed=False)   # NEW - bold not condensed
-            stacked_font_small = load_font_prefer_helvetica(92, condensed=False) # MUSIC/FRIDAY - bold not condensed
-
-            # Rounded white border
-            radius = 40
-            margin = 28
-            draw_overlay.rounded_rectangle(
-                [(margin, margin), (target_size[0]-margin, target_size[1]-margin)],
-                radius=radius,
-                outline=pure_white,
-                width=18
-            )
-
-            # Top artist name (uppercase, centered)
-            artist_name = (track['artist'] or "").upper()
-            if len(artist_name) > 18:
-                artist_name = artist_name[:18] + "…"
-            name_bbox = draw_overlay.textbbox((0, 0), artist_name, font=title_font)
-            name_w = name_bbox[2] - name_bbox[0]
-            name_x = (target_size[0] - name_w) // 2
-            name_y = margin + 20
-            # Slight shadow for readability
-            draw_overlay.text((name_x, name_y), artist_name, fill=off_white, font=title_font, stroke_width=3, stroke_fill=(0,0,0,160))
-
-            # Bottom-left track title in 2 lines, uppercase
-            track_title = (track['name'] or "").upper()
-            words = track_title.split()
-            line1, line2 = "", ""
-            for word in words:
-                candidate = (line1 + ' ' + word).strip()
-                # keep line1 relatively short for bold look
-                if len(candidate) <= 10:
-                    line1 = candidate
-                else:
-                    line2 = (line2 + ' ' + word).strip()
-            if not line2:
-                # distribute if single line
-                half = max(1, len(words)//2)
-                line1 = " ".join(words[:half])
-                line2 = " ".join(words[half:])
-            if not line2:
-                line2 = line1
-
-            # Measure using name_font for subtitle sizing
-            l_margin = margin + 40
-            b_margin = margin + 46
-            # Second line positioned above the very bottom
-            l2_bbox = draw_overlay.textbbox((0,0), line2, font=name_font)
-            l2_y = target_size[1] - b_margin - (l2_bbox[3]-l2_bbox[1])
-            draw_overlay.text((l_margin, l2_y), line2, fill=off_white, font=name_font, stroke_width=2, stroke_fill=(0,0,0,150))
-
-            l1_bbox = draw_overlay.textbbox((0,0), line1, font=name_font)
-            l1_y = l2_y - 12 - (l1_bbox[3]-l1_bbox[1])
-            draw_overlay.text((l_margin, l1_y), line1, fill=off_white, font=name_font, stroke_width=2, stroke_fill=(0,0,0,150))
-
-            # Bottom-right stacked NEW / MUSIC / FRIDAY
-            r_margin = margin + 40
-            # Right align by measuring widest word
-            words_stack = [
-                ("NEW", brand_red, stacked_font_big),
-                ("MUSIC", light_gray, stacked_font_small),
-                ("FRIDAY", light_gray, stacked_font_small),
-            ]
-            # Compute x based on widest word width
-            max_w = 0
-            heights = []
-            for w, color, fnt in words_stack:
-                bbox = draw_overlay.textbbox((0,0), w, font=fnt)
-                max_w = max(max_w, bbox[2]-bbox[0])
-                heights.append(bbox[3]-bbox[1])
-            x_right = target_size[0] - r_margin
-            y_start = target_size[1] - b_margin - sum(heights) - 16*2
-            y = y_start
-            for (w, color, fnt), h in zip(words_stack, heights):
-                bbox = draw_overlay.textbbox((0,0), w, font=fnt)
-                w_px = bbox[2]-bbox[0]
-                x = x_right - w_px
-                draw_overlay.text((x, y), w, fill=color, font=fnt, stroke_width=2, stroke_fill=(0,0,0,150))
-                y += h + 16
+            
+            # Create semi-transparent background for text
+            text_bg_height = 120
+            text_bg = Image.new('RGBA', (target_size[0], text_bg_height), (0, 0, 0, 180))
+            overlay.paste(text_bg, (0, target_size[1] - text_bg_height))
+            
+            # Add "New Music Friday" text
+            try:
+                title_font = ImageFont.truetype("Arial.ttf", 48) if os.name == 'nt' else ImageFont.load_default()
+                subtitle_font = ImageFont.truetype("Arial.ttf", 24) if os.name == 'nt' else ImageFont.load_default()
+            except:
+                title_font = ImageFont.load_default()
+                subtitle_font = ImageFont.load_default()
+            
+            # Main title
+            title_text = "New Music Friday"
+            title_bbox = draw_overlay.textbbox((0, 0), title_text, font=title_font)
+            title_width = title_bbox[2] - title_bbox[0]
+            title_x = (target_size[0] - title_width) // 2
+            title_y = target_size[1] - text_bg_height + 20
+            
+            draw_overlay.text((title_x, title_y), title_text, fill=(255, 255, 255, 255), font=title_font)
+            
+            # Artist name subtitle
+            artist_name = track['artist']
+            if len(artist_name) > 40:
+                artist_name = artist_name[:40] + "..."
+            
+            artist_bbox = draw_overlay.textbbox((0, 0), artist_name, font=subtitle_font)
+            artist_width = artist_bbox[2] - artist_bbox[0]
+            artist_x = (target_size[0] - artist_width) // 2
+            artist_y = title_y + 50
+            
+            draw_overlay.text((artist_x, artist_y), artist_name, fill=(255, 255, 255, 200), font=subtitle_font)
             
             # Composite the overlay onto the artist image
             artist_image = artist_image.convert('RGBA')
@@ -561,51 +478,27 @@ class SpotifyNewMusicAutomation:
         canvas = Image.new('RGB', (canvas_width, canvas_height), self.config.SPOTIFY_BLACK)
         draw = ImageDraw.Draw(canvas)
         
-        # Sort tracks by popularity - limit to top 10
-        sorted_tracks = sorted(tracks[:10], 
+        # Sort tracks by popularity
+        sorted_tracks = sorted(tracks[:self.config.TRACK_LIMIT], 
                              key=lambda x: x.get('popularity', 0), reverse=True)
         
-        # Load fonts using same Helvetica Neue Bold as single artist image
-        def load_font_prefer_helvetica(size: int, condensed: bool = False):
-            candidates = [
-                ("/System/Library/Fonts/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6, 7, 8]),
-                ("/System/Library/Fonts/Helvetica.ttc", [0, 1, 2, 3, 4, 5]),
-                ("/Library/Fonts/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6]),
-                ("/System/Library/Fonts/Supplemental/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6]),
-                ("/Library/Fonts/Arial Bold.ttf", [0]),
-                ("Arial.ttf", [0])
-            ]
-            # Try specific TTC indexes first (heuristics)
-            # For bold fonts: prioritize Bold (index 2), then Heavy (index 3), then Medium (index 1)
-            # Avoid italic fonts (typically higher indexes like 6, 7, 8)
-            index_order = [2, 3, 1, 4, 5, 0] if condensed else [2, 3, 1, 4, 5, 0]
-            for path, idxs in candidates:
-                if os.path.exists(path):
-                    for idx in index_order:
-                        if idx in idxs:
-                            try:
-                                return ImageFont.truetype(path, size=size, index=idx)
-                            except Exception:
-                                continue
-                    try:
-                        return ImageFont.truetype(path, size=size)
-                    except Exception:
-                        continue
-            return ImageFont.load_default()
-
-        # Bigger font sizes for tracklist
-        title_font = load_font_prefer_helvetica(48, condensed=False)    # Main title - bigger
-        track_font = load_font_prefer_helvetica(36, condensed=False)    # Track names - much bigger
-        artist_font = load_font_prefer_helvetica(28, condensed=False)   # Artist names - bigger
+        # Load fonts
+        try:
+            title_font = ImageFont.truetype("Arial.ttf", 32) if os.name == 'nt' else ImageFont.load_default()
+            track_font = ImageFont.truetype("Arial.ttf", 18) if os.name == 'nt' else ImageFont.load_default()
+            artist_font = ImageFont.truetype("Arial.ttf", 14) if os.name == 'nt' else ImageFont.load_default()
+        except:
+            title_font = ImageFont.load_default()
+            track_font = ImageFont.load_default()
+            artist_font = ImageFont.load_default()
         
         # Title section
         title = f"Top {len(sorted_tracks)} Tracks"
         subtitle = f"New Music Friday - {datetime.now().strftime('%B %d, %Y')}"
         
-        # Title background - use same red as "NEW" from artist image
-        brand_red = (226, 62, 54)
+        # Title background
         title_height = 100
-        draw.rectangle([0, 0, canvas_width, title_height], fill=brand_red)
+        draw.rectangle([0, 0, canvas_width, title_height], fill=self.config.SPOTIFY_GREEN)
         
         # Center title text
         title_bbox = draw.textbbox((0, 0), title, font=title_font)
@@ -619,12 +512,12 @@ class SpotifyNewMusicAutomation:
         draw.text((title_x, 20), title, fill=self.config.SPOTIFY_WHITE, font=title_font)
         draw.text((subtitle_x, 60), subtitle, fill=self.config.SPOTIFY_WHITE, font=artist_font)
         
-        # Track list - add more padding under title
-        y_offset = title_height + 50  # More padding under title
-        line_height = 60  # Bigger line height for more space
+        # Track list
+        y_offset = title_height + 30
+        line_height = 35
         margin = 30
         
-        for i, track in enumerate(sorted_tracks):  # Only top 10 tracks
+        for i, track in enumerate(sorted_tracks[:20]):  # Limit to top 20
             track_y = y_offset + i * line_height
             
             # Track number
@@ -640,17 +533,16 @@ class SpotifyNewMusicAutomation:
             
             draw.text((margin + 40, track_y), track_name, fill=self.config.SPOTIFY_WHITE, font=track_font)
             
-            # Artist name (clean encoding) - add spacing from track name
+            # Artist name (clean encoding)
             artist_name = track['artist']
             artist_name = artist_name.replace('\u201c', '"').replace('\u201d', '"').replace('\u2018', "'").replace('\u2019', "'")
             if len(artist_name) > 30:
                 artist_name = artist_name[:30] + "..."
             
-            # Add much more spacing between track and artist name
-            draw.text((margin + 40, track_y + 40), artist_name, fill=self.config.SPOTIFY_GRAY, font=artist_font)
+            draw.text((margin + 40, track_y + 18), artist_name, fill=self.config.SPOTIFY_GRAY, font=artist_font)
         
         # Footer
-        footer_text = "Suave's new music friday recap"
+        footer_text = f"Generated with love - {len(tracks)} tracks total"
         footer_bbox = draw.textbbox((0, 0), footer_text, font=artist_font)
         footer_width = footer_bbox[2] - footer_bbox[0]
         footer_x = (canvas_width - footer_width) // 2
@@ -810,7 +702,7 @@ class SpotifyNewMusicAutomation:
         # Create single artist image (using the first track)
         if unique_tracks:
             single_artist_filename = f"nmf_single_artist_{timestamp}.png"
-            single_artist_path = self.create_single_artist_image(unique_tracks[0], hybrid_fetcher.spotify, single_artist_filename)
+            single_artist_path = self.create_single_artist_image(unique_tracks[0], single_artist_filename)
         else:
             single_artist_path = None
         
