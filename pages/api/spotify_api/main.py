@@ -41,13 +41,25 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Initialize Supabase client
+# Try environment variables first, then fall back to hardcoded credentials
 SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_KEY')
+
+# Fallback to hardcoded credentials if environment variables are not available
+if not SUPABASE_URL or not SUPABASE_KEY:
+    SUPABASE_URL = "https://yxziaumwnvyswnqfyosh.supabase.co"
+    SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"
+    logger.info("🔍 Using hardcoded Supabase credentials for consistency")
+
 supabase: Optional[Client] = None
 
 if SUPABASE_URL and SUPABASE_KEY:
-    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-    logger.info("✅ Supabase client initialized")
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        logger.info("✅ Supabase client initialized")
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to initialize Supabase: {e}")
+        supabase = None
 else:
     logger.warning("⚠️ Supabase credentials not found, images will only be saved locally")
 
@@ -533,8 +545,14 @@ class SpotifyNewMusicAutomation:
                 draw_overlay.text((x, y), w, fill=color, font=fnt, stroke_width=2, stroke_fill=(0,0,0,150))
                 y += h + 15
             
-            # Composite the overlay onto the artist image
+            # Create a translucent black overlay to improve text readability
+            black_overlay = Image.new('RGBA', target_size, (0, 0, 0, 80))  # 80/255 = ~31% opacity
+            
+            # Composite the overlays onto the artist image
             artist_image = artist_image.convert('RGBA')
+            # First apply the black overlay
+            artist_image = Image.alpha_composite(artist_image, black_overlay)
+            # Then apply the text overlay
             final_image = Image.alpha_composite(artist_image, overlay)
             final_image = final_image.convert('RGB')
             
