@@ -6,7 +6,7 @@ Main automation script for generating Instagram content from Spotify playlists
 import json
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 import requests
@@ -14,18 +14,15 @@ import spotipy
 from hybrid_approach import HybridSpotifyFetcher
 from PIL import Image, ImageDraw, ImageFont
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
-from supabase import Client, create_client
 
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
-
     # Load .env file from the main project directory (three levels up from this file)
     env_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '.env')
     load_dotenv(env_path)
     # Reload the config after loading environment variables
     import importlib
-
     import config
     importlib.reload(config)
     from config import SpotifyConfig
@@ -39,17 +36,6 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-# Initialize Supabase client
-SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
-SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_KEY')
-supabase: Optional[Client] = None
-
-if SUPABASE_URL and SUPABASE_KEY:
-    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-    logger.info("✅ Supabase client initialized")
-else:
-    logger.warning("⚠️ Supabase credentials not found, images will only be saved locally")
 
 class SpotifyNewMusicAutomation:
     """Main automation class for New Music Friday Instagram content generation"""
@@ -262,26 +248,12 @@ class SpotifyNewMusicAutomation:
         Returns:
             Path to the generated image
         """
-        # Try to get artist ID from track, fallback to searching by name
-        artist_id = None
-        if track.get('artist_ids') and track['artist_ids']:
-            artist_id = track['artist_ids'][0]
-        else:
-            # If no artist_ids, try to search for the artist by name
-            try:
-                artist_name = track.get('artist', '').split(',')[0].strip()  # Get first artist if multiple
-                search_results = spotify_client.search(q=f'artist:"{artist_name}"', type='artist', limit=1)
-                if search_results['artists']['items']:
-                    artist_id = search_results['artists']['items'][0]['id']
-                    logger.info(f"Found artist ID for {artist_name}: {artist_id}")
-            except Exception as e:
-                logger.warning(f"Could not find artist ID for {track.get('artist', 'Unknown')}: {e}")
-        
-        if not artist_id:
-            logger.warning("⚠️ No artist ID found for track")
+        if not track.get('artist_ids') or not track['artist_ids']:
+            logger.warning("⚠️ No artist IDs found for track")
             return None
             
-        # Get the artist's image
+        # Get the first artist's image
+        artist_id = track['artist_ids'][0]
         artist_image_url = self.get_artist_image_url(artist_id, spotify_client)
         
         if not artist_image_url:
@@ -326,8 +298,7 @@ class SpotifyNewMusicAutomation:
                 ]
                 # Try specific TTC indexes first (heuristics)
                 # For bold fonts: prioritize Bold (index 2), then Heavy (index 3), then Medium (index 1)
-                # Avoid italic fonts (typically higher indexes like 6, 7, 8)
-                index_order = [2, 3, 1, 4, 5, 0] if condensed else [2, 3, 1, 4, 5, 0]
+                index_order = [6, 7, 5, 4, 3, 2, 1, 0] if condensed else [2, 3, 1, 4, 5, 0]
                 for path, idxs in candidates:
                     if os.path.exists(path):
                         for idx in index_order:
@@ -358,180 +329,72 @@ class SpotifyNewMusicAutomation:
                 width=18
             )
 
-            # Artist name at top - Smart dynamic sizing with proper line breaking
+            # Top artist name (uppercase, centered)
             artist_name = (track['artist'] or "").upper()
-            
-            # Calculate available width for artist name (full width minus margins)
-            available_width = target_size[0] - (margin * 2) - 40  # Leave 40px margin on each side
-            artist_font_size = 120
-            
-            # Find the optimal font size that fits
-            while artist_font_size > 60:  # Minimum font size
-                test_font = load_font_prefer_helvetica(artist_font_size, condensed=False)
-                test_bbox = draw_overlay.textbbox((0, 0), artist_name, font=test_font)
-                test_width = test_bbox[2] - test_bbox[0]
-                
-                if test_width <= available_width:
-                    break
-                artist_font_size -= 10
-            
-            # If still too long, try two lines with proper word breaking
-            if artist_font_size <= 60:
-                artist_font_size = 80
-                words = artist_name.split()
-                lines = []
-                current_line = ""
-                
-                for word in words:
-                    test_line = current_line + (" " if current_line else "") + word
-                    test_font = load_font_prefer_helvetica(artist_font_size, condensed=False)
-                    test_bbox = draw_overlay.textbbox((0, 0), test_line, font=test_font)
-                    test_width = test_bbox[2] - test_bbox[0]
-                    
-                    if test_width <= available_width:
-                        current_line = test_line
-                    else:
-                        if current_line:
-                            lines.append(current_line)
-                            current_line = word
-                        else:
-                            # Single word too long, truncate it
-                            lines.append(word[:20] + "...")
-                            current_line = ""
-                
-                if current_line:
-                    lines.append(current_line)
-            else:
-                lines = [artist_name]
-            
-            # Create final font
-            dynamic_title_font = load_font_prefer_helvetica(artist_font_size, condensed=False)
-            
-            # Position artist name at top, centered
-            if len(lines) == 1:
-                # Single line - center it
-                name_bbox = draw_overlay.textbbox((0, 0), lines[0], font=dynamic_title_font)
-                name_w = name_bbox[2] - name_bbox[0]
-                name_x = (target_size[0] - name_w) // 2
-                name_y = margin + 40
-                draw_overlay.text((name_x, name_y), lines[0], fill=off_white, font=dynamic_title_font, stroke_width=3, stroke_fill=(0,0,0,160))
-            else:
-                # Multiple lines - center each line
-                line_height = 0
-                for line in lines:
-                    bbox = draw_overlay.textbbox((0, 0), line, font=dynamic_title_font)
-                    line_height = max(line_height, bbox[3] - bbox[1])
-                
-                total_height = (line_height + 15) * len(lines)
-                start_y = margin + 40
-                
-                for i, line in enumerate(lines):
-                    line_bbox = draw_overlay.textbbox((0, 0), line, font=dynamic_title_font)
-                    line_w = line_bbox[2] - line_bbox[0]
-                    line_x = (target_size[0] - line_w) // 2
-                    line_y = start_y + (i * (line_height + 15))
-                    draw_overlay.text((line_x, line_y), line, fill=off_white, font=dynamic_title_font, stroke_width=3, stroke_fill=(0,0,0,160))
+            if len(artist_name) > 18:
+                artist_name = artist_name[:18] + "…"
+            name_bbox = draw_overlay.textbbox((0, 0), artist_name, font=title_font)
+            name_w = name_bbox[2] - name_bbox[0]
+            name_x = (target_size[0] - name_w) // 2
+            name_y = margin + 20
+            # Slight shadow for readability
+            draw_overlay.text((name_x, name_y), artist_name, fill=off_white, font=title_font, stroke_width=3, stroke_fill=(0,0,0,160))
 
-            # Track title in bottom left - Smart sizing and line breaking
+            # Bottom-left track title in 2 lines, uppercase
             track_title = (track['name'] or "").upper()
-            
-            # Calculate available space for track title (left side)
-            available_width = (target_size[0] // 2) - margin - 20  # Left half minus margin
-            track_font_size = 90
-            
-            # Find optimal font size that fits
-            while track_font_size > 50:  # Minimum font size
-                test_font = load_font_prefer_helvetica(track_font_size, condensed=False)
-                test_bbox = draw_overlay.textbbox((0, 0), track_title, font=test_font)
-                test_width = test_bbox[2] - test_bbox[0]
-                
-                if test_width <= available_width:
-                    break
-                track_font_size -= 5
-            
-            # If still too long, try two lines with proper word breaking
-            if track_font_size <= 50:
-                track_font_size = 70
-                words = track_title.split()
-                lines = []
-                current_line = ""
-                
-                for word in words:
-                    test_line = current_line + (" " if current_line else "") + word
-                    test_font = load_font_prefer_helvetica(track_font_size, condensed=False)
-                    test_bbox = draw_overlay.textbbox((0, 0), test_line, font=test_font)
-                    test_width = test_bbox[2] - test_bbox[0]
-                    
-                    if test_width <= available_width:
-                        current_line = test_line
-                    else:
-                        if current_line:
-                            lines.append(current_line)
-                            current_line = word
-                        else:
-                            # Single word too long, truncate it
-                            lines.append(word[:15] + "...")
-                            current_line = ""
-                
-                if current_line:
-                    lines.append(current_line)
-            else:
-                lines = [track_title]
-            
-            # Create final font
-            dynamic_track_font = load_font_prefer_helvetica(track_font_size, condensed=False)
+            words = track_title.split()
+            line1, line2 = "", ""
+            for word in words:
+                candidate = (line1 + ' ' + word).strip()
+                # keep line1 relatively short for bold look
+                if len(candidate) <= 10:
+                    line1 = candidate
+                else:
+                    line2 = (line2 + ' ' + word).strip()
+            if not line2:
+                # distribute if single line
+                half = max(1, len(words)//2)
+                line1 = " ".join(words[:half])
+                line2 = " ".join(words[half:])
+            if not line2:
+                line2 = line1
 
-            # Position track title in bottom left
-            l_margin = margin + 20
-            b_margin = margin + 100  # Space from bottom
-            
-            # Calculate total height needed for all lines
-            line_height = 0
-            for line in lines:
-                bbox = draw_overlay.textbbox((0, 0), line, font=dynamic_track_font)
-                line_height = max(line_height, bbox[3] - bbox[1])
-            
-            total_height = (line_height + 20) * len(lines)  # 20px spacing between lines
-            start_y = target_size[1] - b_margin - total_height
-            
-            # Draw each line
-            for i, line in enumerate(lines):
-                y_pos = start_y + (i * (line_height + 20))
-                draw_overlay.text((l_margin, y_pos), line, fill=off_white, font=dynamic_track_font, stroke_width=2, stroke_fill=(0,0,0,150))
+            # Measure using name_font for subtitle sizing
+            l_margin = margin + 40
+            b_margin = margin + 46
+            # Second line positioned above the very bottom
+            l2_bbox = draw_overlay.textbbox((0,0), line2, font=name_font)
+            l2_y = target_size[1] - b_margin - (l2_bbox[3]-l2_bbox[1])
+            draw_overlay.text((l_margin, l2_y), line2, fill=off_white, font=name_font, stroke_width=2, stroke_fill=(0,0,0,150))
 
-            # Bottom-right stacked NEW / MUSIC / FRIDAY - Positioned in bottom right
+            l1_bbox = draw_overlay.textbbox((0,0), line1, font=name_font)
+            l1_y = l2_y - 12 - (l1_bbox[3]-l1_bbox[1])
+            draw_overlay.text((l_margin, l1_y), line1, fill=off_white, font=name_font, stroke_width=2, stroke_fill=(0,0,0,150))
+
+            # Bottom-right stacked NEW / MUSIC / FRIDAY
             r_margin = margin + 40
-            
-            # Use appropriate fonts for bottom positioning
-            stacked_font_big = load_font_prefer_helvetica(65, condensed=False)
-            stacked_font_small = load_font_prefer_helvetica(55, condensed=False)
-            
+            # Right align by measuring widest word
             words_stack = [
                 ("NEW", brand_red, stacked_font_big),
                 ("MUSIC", light_gray, stacked_font_small),
                 ("FRIDAY", light_gray, stacked_font_small),
             ]
-            
-            # Calculate total height needed
-            total_height = 0
+            # Compute x based on widest word width
+            max_w = 0
             heights = []
             for w, color, fnt in words_stack:
                 bbox = draw_overlay.textbbox((0,0), w, font=fnt)
-                h = bbox[3] - bbox[1]
-                heights.append(h)
-                total_height += h + 15  # 15px spacing between words
-            
-            # Position in bottom right corner
+                max_w = max(max_w, bbox[2]-bbox[0])
+                heights.append(bbox[3]-bbox[1])
             x_right = target_size[0] - r_margin
-            y_start = target_size[1] - margin - total_height - 30  # Space from bottom
-            
+            y_start = target_size[1] - b_margin - sum(heights) - 16*2
             y = y_start
             for (w, color, fnt), h in zip(words_stack, heights):
                 bbox = draw_overlay.textbbox((0,0), w, font=fnt)
                 w_px = bbox[2]-bbox[0]
                 x = x_right - w_px
                 draw_overlay.text((x, y), w, fill=color, font=fnt, stroke_width=2, stroke_fill=(0,0,0,150))
-                y += h + 15
+                y += h + 16
             
             # Composite the overlay onto the artist image
             artist_image = artist_image.convert('RGBA')
@@ -697,8 +560,8 @@ class SpotifyNewMusicAutomation:
         canvas = Image.new('RGB', (canvas_width, canvas_height), self.config.SPOTIFY_BLACK)
         draw = ImageDraw.Draw(canvas)
         
-        # Sort tracks by popularity - limit to top 10
-        sorted_tracks = sorted(tracks[:10], 
+        # Sort tracks by popularity
+        sorted_tracks = sorted(tracks[:self.config.TRACK_LIMIT], 
                              key=lambda x: x.get('popularity', 0), reverse=True)
         
         # Load fonts using same Helvetica Neue Bold as single artist image
@@ -713,8 +576,7 @@ class SpotifyNewMusicAutomation:
             ]
             # Try specific TTC indexes first (heuristics)
             # For bold fonts: prioritize Bold (index 2), then Heavy (index 3), then Medium (index 1)
-            # Avoid italic fonts (typically higher indexes like 6, 7, 8)
-            index_order = [2, 3, 1, 4, 5, 0] if condensed else [2, 3, 1, 4, 5, 0]
+            index_order = [6, 7, 5, 4, 3, 2, 1, 0] if condensed else [2, 3, 1, 4, 5, 0]
             for path, idxs in candidates:
                 if os.path.exists(path):
                     for idx in index_order:
@@ -731,17 +593,16 @@ class SpotifyNewMusicAutomation:
 
         # Bigger font sizes for tracklist
         title_font = load_font_prefer_helvetica(48, condensed=False)    # Main title - bigger
-        track_font = load_font_prefer_helvetica(36, condensed=False)    # Track names - much bigger
-        artist_font = load_font_prefer_helvetica(28, condensed=False)   # Artist names - bigger
+        track_font = load_font_prefer_helvetica(28, condensed=False)    # Track names - bigger
+        artist_font = load_font_prefer_helvetica(22, condensed=False)   # Artist names - bigger
         
         # Title section
         title = f"Top {len(sorted_tracks)} Tracks"
         subtitle = f"New Music Friday - {datetime.now().strftime('%B %d, %Y')}"
         
-        # Title background - use same red as "NEW" from artist image
-        brand_red = (226, 62, 54)
+        # Title background
         title_height = 100
-        draw.rectangle([0, 0, canvas_width, title_height], fill=brand_red)
+        draw.rectangle([0, 0, canvas_width, title_height], fill=self.config.SPOTIFY_GREEN)
         
         # Center title text
         title_bbox = draw.textbbox((0, 0), title, font=title_font)
@@ -755,67 +616,37 @@ class SpotifyNewMusicAutomation:
         draw.text((title_x, 20), title, fill=self.config.SPOTIFY_WHITE, font=title_font)
         draw.text((subtitle_x, 60), subtitle, fill=self.config.SPOTIFY_WHITE, font=artist_font)
         
-        # Track list - balanced padding
-        y_offset = title_height + 50  # Moderate padding under title
-        line_height = 70  # Balanced line height for good spacing
-        margin = 40  # Standard margin
+        # Track list
+        y_offset = title_height + 30
+        line_height = 35
+        margin = 30
         
-        for i, track in enumerate(sorted_tracks):  # Only top 10 tracks
+        for i, track in enumerate(sorted_tracks[:20]):  # Limit to top 20
             track_y = y_offset + i * line_height
             
-            # Track number - larger and better positioned
+            # Track number
             number_text = f"{i+1:2d}."
             draw.text((margin, track_y), number_text, fill=self.config.SPOTIFY_GRAY, font=track_font)
             
-            # Track name (truncate if too long and clean encoding) - Dynamic sizing
+            # Track name (truncate if too long and clean encoding)
             track_name = track['name']
             # Replace problematic characters
             track_name = track_name.replace('\u201c', '"').replace('\u201d', '"').replace('\u2018', "'").replace('\u2019', "'")
+            if len(track_name) > 25:
+                track_name = track_name[:25] + "..."
             
-            # Dynamic font sizing for track names
-            if len(track_name) > 30:
-                track_name = track_name[:30] + "..."
-                dynamic_track_font_size = 28
-            elif len(track_name) > 25:
-                dynamic_track_font_size = 32
-            elif len(track_name) > 20:
-                dynamic_track_font_size = 34
-            else:
-                dynamic_track_font_size = 36
+            draw.text((margin + 40, track_y), track_name, fill=self.config.SPOTIFY_WHITE, font=track_font)
             
-            # Create dynamic font for track name
-            dynamic_track_font = load_font_prefer_helvetica(dynamic_track_font_size, condensed=False)
-            
-            # Position track name with minimal padding
-            track_y_pos = track_y + 5  # Minimal padding from the line
-            draw.text((margin + 50, track_y_pos), track_name, fill=self.config.SPOTIFY_WHITE, font=dynamic_track_font)
-            
-            # Artist name (clean encoding) - add consistent spacing from track name
+            # Artist name (clean encoding)
             artist_name = track['artist']
             artist_name = artist_name.replace('\u201c', '"').replace('\u201d', '"').replace('\u2018', "'").replace('\u2019', "'")
+            if len(artist_name) > 30:
+                artist_name = artist_name[:30] + "..."
             
-            # Dynamic font sizing for artist names
-            if len(artist_name) > 35:
-                artist_name = artist_name[:35] + "..."
-                dynamic_artist_font_size = 22
-            elif len(artist_name) > 30:
-                dynamic_artist_font_size = 24
-            elif len(artist_name) > 25:
-                dynamic_artist_font_size = 26
-            else:
-                dynamic_artist_font_size = 28
-            
-            # Create dynamic font for artist name
-            dynamic_artist_font = load_font_prefer_helvetica(dynamic_artist_font_size, condensed=False)
-            
-            # Calculate consistent spacing based on track name height
-            track_bbox = draw.textbbox((0, 0), track_name, font=dynamic_track_font)
-            track_height = track_bbox[3] - track_bbox[1]
-            artist_y_pos = track_y_pos + track_height + 8  # Tighter 8px spacing
-            draw.text((margin + 50, artist_y_pos), artist_name, fill=self.config.SPOTIFY_GRAY, font=dynamic_artist_font)
+            draw.text((margin + 40, track_y + 18), artist_name, fill=self.config.SPOTIFY_GRAY, font=artist_font)
         
         # Footer
-        footer_text = "Suave's new music friday recap"
+        footer_text = f"Generated with love - {len(tracks)} tracks total"
         footer_bbox = draw.textbbox((0, 0), footer_text, font=artist_font)
         footer_width = footer_bbox[2] - footer_bbox[0]
         footer_x = (canvas_width - footer_width) // 2
@@ -829,108 +660,6 @@ class SpotifyNewMusicAutomation:
         
         logger.info(f"✅ Tracklist saved to: {output_path}")
         return output_path
-    
-    def upload_image_to_supabase(self, image_path: str, week_start: str, image_type: str) -> Optional[str]:
-        """
-        Upload image to Supabase post-images storage and return public URL
-        
-        Args:
-            image_path: Local path to the image file
-            week_start: Week start date string (YYYY-MM-DD)
-            image_type: Type of image ('cover' or 'tracklist')
-            
-        Returns:
-            Public URL if successful, None otherwise
-        """
-        if not supabase:
-            logger.warning("Supabase not available, skipping upload")
-            return None
-            
-        try:
-            if not os.path.exists(image_path):
-                logger.error(f"❌ Image file not found: {image_path}")
-                return None
-            
-            # Read image file
-            with open(image_path, 'rb') as f:
-                image_data = f.read()
-            
-            # Create filename with week_start and image type
-            filename = f"instagram_images/{week_start}_{image_type}_{os.path.basename(image_path)}"
-            
-            # Upload to Supabase storage
-            result = supabase.storage.from_('instagram-images').upload(filename, image_data, {
-                'content-type': 'image/png',
-                'upsert': 'true'
-            })
-            
-            if result:
-                # Get public URL
-                public_url = supabase.storage.from_('instagram-images').get_public_url(filename)
-                logger.info(f"✅ Image uploaded to Supabase: {public_url}")
-                return public_url
-            else:
-                logger.error(f"❌ Failed to upload image: {filename}")
-                return None
-                
-        except Exception as e:
-            logger.error(f"❌ Error uploading image to Supabase: {e}")
-            return None
-    
-    def save_image_metadata(self, week_start: str, cover_url: str, tracklist_url: str) -> bool:
-        """
-        Save image metadata to Supabase images table with duplicate prevention
-        
-        Args:
-            week_start: Week start date string (YYYY-MM-DD)
-            cover_url: Public URL of cover image
-            tracklist_url: Public URL of tracklist image
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        if not supabase:
-            logger.warning("Supabase not available, skipping metadata save")
-            return False
-            
-        try:
-            # Check if record already exists with images
-            existing = supabase.table('images').select('id, cover_image_url, tracklist_image_url').eq('week_start', week_start).execute()
-            
-            if existing.data and existing.data[0]:
-                existing_record = existing.data[0]
-                # Check if both images already exist
-                if existing_record.get('cover_image_url') and existing_record.get('tracklist_image_url'):
-                    logger.info(f"⚠️ Images already exist for week {week_start}, skipping upload to prevent duplicates")
-                    return True
-                else:
-                    # Update existing record with missing images
-                    logger.info(f"🔄 Updating existing record for week {week_start}")
-                    result = supabase.table('images').update({
-                        'cover_image_url': cover_url or existing_record.get('cover_image_url'),
-                        'tracklist_image_url': tracklist_url or existing_record.get('tracklist_image_url'),
-                        'updated_at': datetime.now().isoformat()
-                    }).eq('week_start', week_start).execute()
-            else:
-                # Insert new record
-                logger.info(f"➕ Creating new record for week {week_start}")
-                result = supabase.table('images').insert({
-                    'week_start': week_start,
-                    'cover_image_url': cover_url,
-                    'tracklist_image_url': tracklist_url,
-                    'created_at': datetime.now().isoformat()
-                }).execute()
-            
-            if result.data:
-                logger.info(f"✅ Image metadata saved for week {week_start}")
-                return True
-            else:
-                logger.error(f"❌ Failed to save image metadata for week {week_start}")
-                return False
-                
-        except Exception as e:
-            logger.error(f"❌ Error saving image metadata: {e}")
-            return False
     
     def generate_caption(self, tracks: List[Dict]) -> str:
         """
@@ -1074,12 +803,6 @@ class SpotifyNewMusicAutomation:
         # Generate timestamp for files
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        # Calculate week start (Friday)
-        today = datetime.now()
-        days_since_friday = (today.weekday() - 4) % 7  # 4 = Friday (0=Monday, 4=Friday)
-        week_start = today - timedelta(days=days_since_friday)
-        week_start_str = week_start.strftime('%Y-%m-%d')
-        
         # Create single artist image (using the first track)
         if unique_tracks:
             single_artist_filename = f"nmf_single_artist_{timestamp}.png"
@@ -1104,27 +827,10 @@ class SpotifyNewMusicAutomation:
         with open(caption_path, 'w', encoding='utf-8') as f:
             f.write(caption)
         
-        # Upload images to Supabase and save metadata
-        cover_url = None
-        tracklist_url = None
-        
-        if single_artist_path and os.path.exists(single_artist_path):
-            cover_url = self.upload_image_to_supabase(single_artist_path, week_start_str, 'cover')
-        
-        if tracklist_path and os.path.exists(tracklist_path):
-            tracklist_url = self.upload_image_to_supabase(tracklist_path, week_start_str, 'tracklist')
-        
-        # Save image metadata to Supabase
-        if cover_url or tracklist_url:
-            self.save_image_metadata(week_start_str, cover_url, tracklist_url)
-        
         results = {
             'track_count': len(unique_tracks),
             'single_artist_image': single_artist_path,
             'tracklist_image': tracklist_path,
-            'cover_url': cover_url,
-            'tracklist_url': tracklist_url,
-            'week_start': week_start_str,
             'caption': caption,
             'caption_file': caption_path,
             'data_file': data_path,
@@ -1134,10 +840,6 @@ class SpotifyNewMusicAutomation:
         logger.info("🎉 Automation completed successfully!")
         logger.info(f"🎨 Single Artist Image: {single_artist_path}")
         logger.info(f"📋 Tracklist: {tracklist_path}")
-        if cover_url:
-            logger.info(f"☁️ Cover URL: {cover_url}")
-        if tracklist_url:
-            logger.info(f"☁️ Tracklist URL: {tracklist_url}")
         logger.info(f"📝 Caption: {caption_path}")
         logger.info(f"💾 Data: {data_path}")
         

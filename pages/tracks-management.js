@@ -23,10 +23,8 @@ export default function TracksManagement() {
     const [showTagDropdown, setShowTagDropdown] = useState(false);
     const [showImageModal, setShowImageModal] = useState(false);
     const [currentWeekImages, setCurrentWeekImages] = useState(null);
-    const [regenerating, setRegenerating] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [weekImageStatus, setWeekImageStatus] = useState({});
-    const [generatingWeek, setGeneratingWeek] = useState(null);
 
     // Form state for adding/editing tracks
     const [formData, setFormData] = useState({
@@ -453,67 +451,6 @@ export default function TracksManagement() {
         setShowImageModal(true);
     };
 
-    const handleGenerateImages = async (week = null) => {
-        const targetWeek = week || selectedWeek;
-        
-        if (!targetWeek) {
-            alert('Please select a week first');
-            return;
-        }
-        
-        // Ensure targetWeek is a string
-        const weekString = String(targetWeek);
-        
-        setGeneratingWeek(weekString);
-        setRegenerating(true);
-        try {
-            const response = await fetch('/api/generate-images', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ week_start: weekString }),
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    // Update status to show generation is in progress
-                    setWeekImageStatus(prev => ({
-                        ...prev,
-                        [weekString]: 'generating'
-                    }));
-                    alert(`Image generation triggered successfully! This may take a few minutes.`);
-                    
-                    // Wait a bit then refresh images
-                    setTimeout(async () => {
-                        try {
-                            const images = await fetchWeekImages(weekString);
-                            if (images && images.cover_image_url && images.tracklist_image_url) {
-                                setCurrentWeekImages(images);
-                                setWeekImageStatus(prev => ({
-                                    ...prev,
-                                    [weekString]: true
-                                }));
-                            }
-                        } catch (error) {
-                            console.error('Error refreshing images:', error);
-                        }
-                    }, 30000); // Wait 30 seconds
-                } else {
-                    alert('Failed to trigger image generation: ' + result.error);
-                }
-            } else {
-                alert('Failed to generate images');
-            }
-        } catch (error) {
-            console.error('Error generating images:', error);
-            alert('Error generating images');
-        } finally {
-            setRegenerating(false);
-            setGeneratingWeek(null);
-        }
-    };
 
     const findWeekWithSelectedTracks = () => {
         // Find which week has selected tracks
@@ -525,49 +462,6 @@ export default function TracksManagement() {
         return null;
     };
 
-    const handleRegenerateImages = async () => {
-        // Use the week from currentWeekImages if available, otherwise selectedWeek
-        const targetWeek = currentWeekImages?.week_start || selectedWeek;
-        
-        if (!targetWeek) {
-            alert('Please select a week first');
-            return;
-        }
-        
-        setRegenerating(true);
-        try {
-            const response = await fetch('/api/generate-images', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ week_start: targetWeek }),
-            });
-            
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    // Refresh the images and update status
-                    const images = await fetchWeekImages(targetWeek);
-                    setCurrentWeekImages(images);
-                    setWeekImageStatus(prev => ({
-                        ...prev,
-                        [targetWeek]: true
-                    }));
-                    alert(`Images regenerated successfully for week ${targetWeek}!`);
-                } else {
-                    alert('Failed to regenerate images: ' + result.error);
-                }
-            } else {
-                alert('Failed to regenerate images');
-            }
-        } catch (error) {
-            console.error('Error regenerating images:', error);
-            alert('Error regenerating images');
-        } finally {
-            setRegenerating(false);
-        }
-    };
 
     const downloadImage = (url, filename) => {
         const link = document.createElement('a');
@@ -1145,28 +1039,6 @@ export default function TracksManagement() {
                                                 >
                                                     View Images
                                                 </button>
-                                                <span className="text-gray-300">•</span>
-                                                <button
-                                                    onClick={() => handleGenerateImages(week)}
-                                                    disabled={generatingWeek === week}
-                                                    className={`text-xs underline transition-colors ${
-                                                        generatingWeek === week 
-                                                            ? 'text-gray-400 cursor-not-allowed' 
-                                                            : 'text-orange-600 hover:text-orange-800'
-                                                    }`}
-                                                >
-                                                    {generatingWeek === week ? (
-                                                        <span className="flex items-center gap-1">
-                                                            <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
-                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                            </svg>
-                                                            Generating...
-                                                        </span>
-                                                    ) : (
-                                                        weekImageStatus[week] ? 'Regenerate' : 'Generate'
-                                                    )}
-                                                </button>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <input
@@ -1425,13 +1297,6 @@ export default function TracksManagement() {
                                             </svg>
                                             Download
                                         </button>
-                                        <button
-                                            onClick={handleRegenerateImages}
-                                            disabled={regenerating}
-                                            className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-full text-sm font-medium transition-all"
-                                        >
-                                            {regenerating ? 'Regenerating...' : 'Regenerate'}
-                                        </button>
                                     </div>
 
                                     {/* Image indicators */}
@@ -1466,30 +1331,8 @@ export default function TracksManagement() {
                                     <p className="text-sm opacity-60">Create stunning Instagram-ready images for this week's top tracks</p>
                                 </div>
                                 <div className="space-y-4">
-                                    <button
-                                        onClick={handleGenerateImages}
-                                        disabled={regenerating}
-                                        className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-500 disabled:to-gray-600 text-white px-8 py-3 rounded-full text-sm font-medium transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none disabled:shadow-none"
-                                    >
-                                        {regenerating ? (
-                                            <span className="flex items-center gap-2">
-                                                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                                Generating Images...
-                                            </span>
-                                        ) : (
-                                            <span className="flex items-center gap-2">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                                </svg>
-                                                Generate Images
-                                            </span>
-                                        )}
-                                    </button>
-                                    <p className="text-xs text-white text-opacity-50">
-                                        ✨ AI-powered cover art and tracklist designs
+                                    <p className="text-sm text-white text-opacity-75">
+                                        Images are automatically generated by the py_scraper script and stored in Supabase.
                                     </p>
                                 </div>
                             </div>

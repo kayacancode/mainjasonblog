@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import time
+from datetime import datetime, timedelta
 from typing import Dict, List
 
 import requests
@@ -346,9 +347,93 @@ class EnhancedSpotifyAutomation:
             print("❌ No tracks found")
             return {}
 
+        # Generate timestamp for files
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
         # Initialize main automation
         try:
             automation = SpotifyNewMusicAutomation(self.client_id, self.client_secret)
+            
+            # Generate images using the actual scraped tracks instead of simulation
+            print("🎨 Generating images with actual scraped tracks...")
+            
+            # Calculate week start (Friday)
+            today = datetime.now()
+            days_since_friday = (today.weekday() - 4) % 7  # 4 = Friday (0=Monday, 4=Friday)
+            week_start = today - timedelta(days=days_since_friday)
+            week_start_str = week_start.strftime('%Y-%m-%d')
+            
+            # Create single artist image (using the first track)
+            if unique_tracks:
+                single_artist_filename = f"nmf_single_artist_{timestamp}.png"
+                single_artist_path = automation.create_single_artist_image(unique_tracks[0], automation.spotify, single_artist_filename)
+            else:
+                single_artist_path = None
+            
+            # Create tracklist
+            tracklist_filename = f"nmf_tracklist_{timestamp}.png"
+            tracklist_path = automation.create_tracklist_image(unique_tracks, tracklist_filename)
+            
+            # Generate caption
+            caption = automation.generate_caption(unique_tracks)
+            
+            # Save track data
+            data_filename = f"nmf_data_{timestamp}.json"
+            data_path = automation.save_track_data(unique_tracks, data_filename)
+            
+            # Upload images to Supabase and save metadata
+            cover_url = None
+            tracklist_url = None
+            
+            if single_artist_path and os.path.exists(single_artist_path):
+                cover_url = automation.upload_image_to_supabase(single_artist_path, week_start_str, 'cover')
+            
+            if tracklist_path and os.path.exists(tracklist_path):
+                tracklist_url = automation.upload_image_to_supabase(tracklist_path, week_start_str, 'tracklist')
+            
+            # Save image metadata to Supabase
+            if cover_url or tracklist_url:
+                automation.save_image_metadata(week_start_str, cover_url, tracklist_url)
+            
+            # Create results dictionary
+            results = {
+                'track_count': len(unique_tracks),
+                'single_artist_image': single_artist_path,
+                'tracklist_image': tracklist_path,
+                'cover_url': cover_url,
+                'tracklist_url': tracklist_url,
+                'week_start': week_start_str,
+                'caption': caption,
+                'caption_file': f"output/nmf_caption_{timestamp}.txt",
+                'data_file': data_path,
+                'generated_at': datetime.now().isoformat()
+            }
+            
+            # Save caption to file
+            caption_filename = f"nmf_caption_{timestamp}.txt"
+            caption_path = os.path.join(automation.config.OUTPUT_DIR, caption_filename)
+            with open(caption_path, 'w', encoding='utf-8') as f:
+                f.write(caption)
+            
+            print("🎉 Image generation completed successfully!")
+            print(f"🎨 Single Artist Image: {single_artist_path}")
+            print(f"📋 Tracklist: {tracklist_path}")
+            if cover_url:
+                print(f"☁️ Cover URL: {cover_url}")
+            if tracklist_url:
+                print(f"☁️ Tracklist URL: {tracklist_url}")
+            print(f"📝 Caption: {caption_path}")
+            print(f"💾 Data: {data_path}")
+            
+            # Extract results for compatibility
+            collage_path = single_artist_path
+            tracklist_path = tracklist_path
+            caption = caption
+            data_path = data_path
+            cover_url = cover_url
+            tracklist_url = tracklist_url
+            week_start = week_start_str
+            
         except Exception as e:
             print(f"⚠️ Failed to initialize Spotify automation: {e}")
             print("🔄 Continuing without Spotify API features...")
@@ -356,18 +441,18 @@ class EnhancedSpotifyAutomation:
             class MinimalAutomation:
                 def __init__(self):
                     self.config = type('Config', (), {'OUTPUT_DIR': 'output'})()
-                
+
                 def create_collage(self, tracks, filename):
                     print(f"⚠️ Skipping collage creation due to Spotify API error")
                     return f"output/{filename}"
-                
+
                 def create_tracklist_image(self, tracks, filename):
                     print(f"⚠️ Skipping tracklist creation due to Spotify API error")
                     return f"output/{filename}"
-                
+
                 def generate_caption(self, tracks):
                     return f"🎵 {len(tracks)} new tracks discovered!"
-                
+
                 def save_track_data(self, tracks, filename):
                     import json
                     os.makedirs('output', exist_ok=True)
@@ -378,31 +463,36 @@ class EnhancedSpotifyAutomation:
             
             automation = MinimalAutomation()
 
-        # Generate content
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            # Generate content using old methods as fallback
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        print("🎨 Creating enhanced album art collage...")
-        collage_filename = f"enhanced_collage_{timestamp}.png"
-        try:
-            collage_path = automation.create_collage(unique_tracks, collage_filename)
-        except Exception as e:
-            print(f"⚠️ Failed to create collage: {e}")
-            collage_path = f"output/{collage_filename}"
+            print("🎨 Creating enhanced album art collage...")
+            collage_filename = f"enhanced_collage_{timestamp}.png"
+            try:
+                collage_path = automation.create_collage(unique_tracks, collage_filename)
+            except Exception as e:
+                print(f"⚠️ Failed to create collage: {e}")
+                collage_path = f"output/{collage_filename}"
 
-        print("📋 Creating enhanced tracklist...")
-        tracklist_filename = f"enhanced_tracklist_{timestamp}.png"
-        try:
-            tracklist_path = automation.create_tracklist_image(unique_tracks, tracklist_filename)
-        except Exception as e:
-            print(f"⚠️ Failed to create tracklist image: {e}")
-            tracklist_path = f"output/{tracklist_filename}"
+            print("📋 Creating enhanced tracklist...")
+            tracklist_filename = f"enhanced_tracklist_{timestamp}.png"
+            try:
+                tracklist_path = automation.create_tracklist_image(unique_tracks, tracklist_filename)
+            except Exception as e:
+                print(f"⚠️ Failed to create tracklist image: {e}")
+                tracklist_path = f"output/{tracklist_filename}"
 
-        print("📝 Generating caption...")
-        caption = automation.generate_caption(unique_tracks)
+            print("📝 Generating caption...")
+            caption = automation.generate_caption(unique_tracks)
 
-        # Save JSON data
-        data_filename = f"enhanced_data_{timestamp}.json"
-        data_path = automation.save_track_data(unique_tracks, data_filename)
+            # Save JSON data
+            data_filename = f"enhanced_data_{timestamp}.json"
+            data_path = automation.save_track_data(unique_tracks, data_filename)
+            
+            # Set fallback values
+            cover_url = None
+            tracklist_url = None
+            week_start = None
 
         # Save tracks to Supabase
         print("💾 Saving tracks to Supabase...")
@@ -469,6 +559,9 @@ class EnhancedSpotifyAutomation:
             'track_count': len(unique_tracks),
             'collage_image': collage_path,
             'tracklist_image': tracklist_path,
+            'cover_url': cover_url,
+            'tracklist_url': tracklist_url,
+            'week_start': week_start,
             'caption': caption,
             'caption_file': caption_path,
             'data_file': data_path,
@@ -480,6 +573,10 @@ class EnhancedSpotifyAutomation:
         print("🎉 Enhanced automation completed successfully!")
         print(f"📸 Collage: {collage_path}")
         print(f"📋 Tracklist: {tracklist_path}")
+        if cover_url:
+            print(f"☁️ Cover URL: {cover_url}")
+        if tracklist_url:
+            print(f"☁️ Tracklist URL: {tracklist_url}")
         print(f"📝 Caption: {caption_path}")
         print(f"💾 Data: {data_path}")
 
