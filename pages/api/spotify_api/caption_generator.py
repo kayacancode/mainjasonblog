@@ -60,7 +60,9 @@ class CaptionGenerator:
     
     def __init__(self, api_key: str = None):
         """Initialize the caption generator"""
-        self.api_key = api_key or os.getenv('OPENAI_API_KEY')
+        # Use hardcoded OpenAI API key for GitHub Actions compatibility
+        # Replace with your actual OpenAI API key
+        self.api_key = api_key or os.getenv('OPENAI_API_KEY') or "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"
         
         if not self.api_key:
             logger.warning("OpenAI API key not found, will use fallback templates")
@@ -69,7 +71,7 @@ class CaptionGenerator:
             if openai:
                 openai.api_key = self.api_key
                 self.openai_available = True
-                logger.info("✅ OpenAI client initialized")
+                logger.info("✅ OpenAI client initialized with hardcoded key")
             else:
                 logger.warning("OpenAI package not installed, will use fallback templates")
                 self.openai_available = False
