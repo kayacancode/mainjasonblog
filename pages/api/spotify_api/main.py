@@ -1098,13 +1098,12 @@ class SpotifyNewMusicAutomation:
         try:
             from supabase import create_client, Client
             
-            # Initialize Supabase client
-            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
-            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+            # Initialize Supabase client with hardcoded credentials for consistency
+            supabase_url = "https://yxziaumwnvyswnqfyosh.supabase.co"
+            supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"
             
-            if not supabase_url or not supabase_key:
-                logger.warning("Supabase credentials not found, skipping upload")
-                return None
+            logger.info(f"🔍 Debug - Using Supabase URL: {supabase_url}")
+            logger.info(f"🔍 Debug - Using Supabase KEY: {supabase_key[:10]}...")
                 
             supabase: Client = create_client(supabase_url, supabase_key)
             
@@ -1147,14 +1146,9 @@ class SpotifyNewMusicAutomation:
         try:
             from supabase import create_client, Client
             
-            # Initialize Supabase client
-            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
-            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
-            
-            if not supabase_url or not supabase_key:
-                logger.warning("Supabase credentials not found, skipping metadata save")
-                print("❌ Supabase credentials not found, skipping metadata save")
-                return
+            # Initialize Supabase client with hardcoded credentials for consistency
+            supabase_url = "https://yxziaumwnvyswnqfyosh.supabase.co"
+            supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"
                 
             supabase: Client = create_client(supabase_url, supabase_key)
             
@@ -1196,14 +1190,9 @@ class SpotifyNewMusicAutomation:
         try:
             from supabase import create_client, Client
             
-            # Initialize Supabase client
-            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
-            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
-            
-            if not supabase_url or not supabase_key:
-                logger.warning("Supabase credentials not found, skipping caption save")
-                print("❌ Supabase credentials not found, skipping caption save")
-                return
+            # Initialize Supabase client with hardcoded credentials for consistency
+            supabase_url = "https://yxziaumwnvyswnqfyosh.supabase.co"
+            supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"
                 
             supabase: Client = create_client(supabase_url, supabase_key)
             

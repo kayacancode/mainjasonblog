@@ -28,6 +28,9 @@ export default function TracksManagement() {
     const [captionLoading, setCaptionLoading] = useState(false);
     const [showCaptionModal, setShowCaptionModal] = useState(false);
     const [currentWeekCaption, setCurrentWeekCaption] = useState(null);
+    const [isEditingCaption, setIsEditingCaption] = useState(false);
+    const [editingCaption, setEditingCaption] = useState('');
+    const [editingHashtags, setEditingHashtags] = useState('');
 
     // Form state for adding/editing tracks
     const [formData, setFormData] = useState({
@@ -513,6 +516,9 @@ export default function TracksManagement() {
             
             if (captionData && captionData.caption) {
                 setCurrentWeekCaption(captionData);
+                setEditingCaption(captionData.caption);
+                setEditingHashtags(captionData.hashtags ? captionData.hashtags.join(' ') : '');
+                setIsEditingCaption(false);
                 setShowCaptionModal(true);
             } else {
                 alert('No caption found for this week. Captions are generated automatically during the New Music Friday automation.');
@@ -523,6 +529,57 @@ export default function TracksManagement() {
         } finally {
             setCaptionLoading(false);
         }
+    };
+
+    const handleSaveCaption = async () => {
+        if (!currentWeekCaption) return;
+
+        try {
+            setCaptionLoading(true);
+            
+            // Convert hashtags string to array and ensure they all start with #
+            const hashtagsArray = editingHashtags
+                .split(' ')
+                .map(tag => tag.trim())
+                .filter(tag => tag.length > 0)
+                .map(tag => tag.startsWith('#') ? tag : `#${tag}`);
+
+            const { error } = await supabase
+                .from('images')
+                .update({
+                    caption: editingCaption,
+                    hashtags: hashtagsArray,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('week_start', currentWeekCaption.week_start);
+
+            if (error) {
+                console.error('Error saving caption:', error);
+                alert('Failed to save caption changes');
+                return;
+            }
+
+            // Update local state
+            setCurrentWeekCaption(prev => ({
+                ...prev,
+                caption: editingCaption,
+                hashtags: hashtagsArray
+            }));
+
+            setIsEditingCaption(false);
+            alert('Caption saved successfully!');
+        } catch (error) {
+            console.error('Error saving caption:', error);
+            alert('Error saving caption');
+        } finally {
+            setCaptionLoading(false);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingCaption(currentWeekCaption.caption);
+        setEditingHashtags(currentWeekCaption.hashtags ? currentWeekCaption.hashtags.join(' ') : '');
+        setIsEditingCaption(false);
     };
 
 
@@ -1455,7 +1512,7 @@ export default function TracksManagement() {
             {/* Caption Modal */}
             {showCaptionModal && currentWeekCaption && (
                 <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-                    <div className="bg-gray-900 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="bg-gray-900 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-2xl font-bold text-white">📝 Caption & Hashtags</h2>
@@ -1476,50 +1533,116 @@ export default function TracksManagement() {
                                 </div>
 
                                 <div>
-                                    <label className="text-sm text-gray-300 block mb-2">Caption:</label>
-                                    <div className="bg-black bg-opacity-50 rounded-lg p-4 text-white text-sm leading-relaxed whitespace-pre-line">
-                                        {currentWeekCaption.caption}
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="text-sm text-gray-300">Caption:</label>
+                                        {!isEditingCaption && (
+                                            <button
+                                                onClick={() => setIsEditingCaption(true)}
+                                                className="text-blue-400 hover:text-blue-300 text-sm"
+                                            >
+                                                ✏️ Edit
+                                            </button>
+                                        )}
                                     </div>
-                                    <button
-                                        onClick={() => copyToClipboard(currentWeekCaption.caption)}
-                                        className="mt-2 text-sm text-blue-300 hover:text-blue-200 transition-colors"
-                                    >
-                                        📋 Copy Caption
-                                    </button>
+                                    
+                                    {isEditingCaption ? (
+                                        <div className="space-y-3">
+                                            <textarea
+                                                value={editingCaption}
+                                                onChange={(e) => setEditingCaption(e.target.value)}
+                                                className="w-full bg-black bg-opacity-50 rounded-lg p-4 text-white text-sm leading-relaxed resize-none"
+                                                rows={6}
+                                                placeholder="Enter your caption..."
+                                            />
+                                            <div className="text-xs text-gray-400">
+                                                Characters: {editingCaption.length}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-black bg-opacity-50 rounded-lg p-4 text-white text-sm leading-relaxed whitespace-pre-line">
+                                            {currentWeekCaption.caption}
+                                        </div>
+                                    )}
+                                    
+                                    {!isEditingCaption && (
+                                        <button
+                                            onClick={() => copyToClipboard(currentWeekCaption.caption)}
+                                            className="mt-2 text-sm text-blue-300 hover:text-blue-200 transition-colors"
+                                        >
+                                            📋 Copy Caption
+                                        </button>
+                                    )}
                                 </div>
 
-                                {currentWeekCaption.hashtags && currentWeekCaption.hashtags.length > 0 && (
-                                    <div>
-                                        <label className="text-sm text-gray-300 block mb-2">Hashtags:</label>
-                                        <div className="bg-black bg-opacity-50 rounded-lg p-4 text-white text-sm">
-                                            {currentWeekCaption.hashtags.join(' ')}
+                                <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="text-sm text-gray-300">Hashtags:</label>
+                                        {!isEditingCaption && (
+                                            <button
+                                                onClick={() => setIsEditingCaption(true)}
+                                                className="text-blue-400 hover:text-blue-300 text-sm"
+                                            >
+                                                ✏️ Edit
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    {isEditingCaption ? (
+                                        <div className="space-y-3">
+                                            <textarea
+                                                value={editingHashtags}
+                                                onChange={(e) => setEditingHashtags(e.target.value)}
+                                                className="w-full bg-black bg-opacity-50 rounded-lg p-4 text-white text-sm resize-none"
+                                                rows={3}
+                                                placeholder="Enter hashtags separated by spaces..."
+                                            />
+                                            <div className="text-xs text-gray-400">
+                                                Separate hashtags with spaces
+                                            </div>
                                         </div>
+                                    ) : (
+                                        <div className="bg-black bg-opacity-50 rounded-lg p-4 text-white text-sm">
+                                            {currentWeekCaption.hashtags ? currentWeekCaption.hashtags.join(' ') : 'No hashtags'}
+                                        </div>
+                                    )}
+                                    
+                                    {!isEditingCaption && currentWeekCaption.hashtags && currentWeekCaption.hashtags.length > 0 && (
                                         <button
                                             onClick={() => copyToClipboard(currentWeekCaption.hashtags.join(' '))}
                                             className="mt-2 text-sm text-blue-300 hover:text-blue-200 transition-colors"
                                         >
                                             📋 Copy Hashtags
                                         </button>
-                                    </div>
-                                )}
-
-                                <div className="flex justify-between items-center text-sm text-gray-400">
-                                    <div>
-                                        Style: {currentWeekCaption.caption_style || 'balanced'}
-                                    </div>
-                                    <div>
-                                        Characters: {currentWeekCaption.caption?.length || 0}
-                                    </div>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="mt-6 flex justify-end gap-3">
-                                <button
-                                    onClick={() => setShowCaptionModal(false)}
-                                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-                                >
-                                    Close
-                                </button>
+                                {isEditingCaption ? (
+                                    <>
+                                        <button
+                                            onClick={handleCancelEdit}
+                                            disabled={captionLoading}
+                                            className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-500 text-white px-4 py-2 rounded-lg transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleSaveCaption}
+                                            disabled={captionLoading}
+                                            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-500 text-white px-4 py-2 rounded-lg transition-colors"
+                                        >
+                                            {captionLoading ? 'Saving...' : 'Save Changes'}
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowCaptionModal(false)}
+                                        className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                                    >
+                                        Close
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

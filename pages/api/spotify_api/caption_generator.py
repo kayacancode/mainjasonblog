@@ -77,44 +77,40 @@ class CaptionGenerator:
     def generate_caption(self, 
                         tracks: List[Dict], 
                         week_start: str,
-                        style: str = 'balanced',
                         include_hashtags: bool = True) -> Dict:
         """
-        Generate caption and hashtags for a week's tracks
+        Generate caption and hashtags for a week's tracks in reviewer style
         
         Args:
             tracks: List of track dictionaries
             week_start: Week start date (YYYY-MM-DD)
-            style: Caption style name
             include_hashtags: Whether to generate hashtags
             
         Returns:
             Dictionary with caption, hashtags, and metadata
         """
         try:
-            style_config = self.STYLES.get(style, self.STYLES['balanced'])
             
             if self.openai_available:
-                return self._generate_openai_caption(tracks, week_start, style_config, include_hashtags)
+                return self._generate_openai_caption(tracks, week_start, include_hashtags)
             else:
-                return self._generate_fallback_caption(tracks, week_start, style_config, include_hashtags)
+                return self._generate_fallback_caption(tracks, week_start, include_hashtags)
                 
         except Exception as e:
             logger.error(f"Error generating caption: {e}")
-            return self._generate_fallback_caption(tracks, week_start, self.STYLES['balanced'], include_hashtags)
+            return self._generate_fallback_caption(tracks, week_start, include_hashtags)
     
     def _generate_openai_caption(self, 
                                 tracks: List[Dict], 
                                 week_start: str,
-                                style: CaptionStyle,
                                 include_hashtags: bool) -> Dict:
         """Generate caption using OpenAI API"""
         try:
             # Prepare track data for OpenAI
             track_info = self._prepare_track_data(tracks)
             
-            # Create prompt based on style
-            prompt = self._create_prompt(track_info, week_start, style)
+            # Create prompt in reviewer style
+            prompt = self._create_prompt(track_info, week_start)
             
             # Call OpenAI API (new v1.0+ syntax)
             client = openai.OpenAI(api_key=self.api_key)
@@ -152,27 +148,19 @@ class CaptionGenerator:
             
         except Exception as e:
             logger.error(f"OpenAI API error: {e}")
-            return self._generate_fallback_caption(tracks, week_start, style, include_hashtags)
+            return self._generate_fallback_caption(tracks, week_start, include_hashtags)
     
     def _generate_fallback_caption(self, 
                                   tracks: List[Dict], 
                                   week_start: str,
-                                  style: CaptionStyle,
                                   include_hashtags: bool) -> Dict:
         """Generate fallback caption using templates"""
         try:
             # Get top tracks (up to 3 for caption)
             top_tracks = tracks[:3]
             
-            # Create caption based on style
-            if style.emoji_heavy:
-                caption = self._create_emoji_heavy_caption(top_tracks, week_start)
-            elif style.minimal:
-                caption = self._create_minimal_caption(top_tracks, week_start)
-            elif style.review_style:
-                caption = self._create_review_caption(top_tracks, week_start)
-            else:
-                caption = self._create_balanced_caption(top_tracks, week_start)
+            # Create reviewer-style caption
+            caption = self._create_review_caption(top_tracks, week_start)
             
             # Generate hashtags if requested
             hashtags = []
@@ -182,7 +170,7 @@ class CaptionGenerator:
             return {
                 'caption': caption,
                 'hashtags': hashtags,
-                'style': style.name,
+                'style': 'reviewer',
                 'generated_at': datetime.now().isoformat(),
                 'method': 'fallback',
                 'character_count': len(caption)
@@ -206,33 +194,21 @@ class CaptionGenerator:
         
         return "\n".join(track_info)
     
-    def _create_prompt(self, track_info: str, week_start: str, style: CaptionStyle) -> str:
-        """Create OpenAI prompt based on style"""
-        base_prompt = f"""Create an Instagram caption for New Music Friday (week of {week_start}).
+    def _create_prompt(self, track_info: str, week_start: str) -> str:
+        """Create OpenAI prompt in reviewer style"""
+        return f"""Create an engaging Instagram caption for New Music Friday (week of {week_start}).
 
 Tracks this week:
 {track_info}
 
-Requirements:
-- Keep under {style.max_length} characters
-- Include the week date
-- Make it engaging for music fans
-- Use appropriate emojis
-- Don't include hashtags (they'll be added separately)
+Write this as a music reviewer/blogger would - with personality, insight, and enthusiasm. Include:
+- A brief review of 1-2 standout tracks with specific commentary
+- Your take on the overall vibe and quality of the week
+- Some personality and music knowledge that shows you actually listen
+- Engaging language that music fans would appreciate and relate to
+- Appropriate emojis that enhance the message
 
-Style: {style.description}
-"""
-        
-        if style.emoji_heavy:
-            base_prompt += "- Use lots of emojis and excitement\n- Be enthusiastic and energetic\n"
-        elif style.minimal:
-            base_prompt += "- Keep it clean and simple\n- Minimal emojis\n- Focus on the music\n"
-        elif style.review_style:
-            base_prompt += "- Write like a music review\n- Include brief thoughts on the tracks\n- Professional but engaging\n"
-        else:
-            base_prompt += "- Balanced mix of emojis and text\n- Engaging but not overwhelming\n"
-        
-        return base_prompt
+Keep it under 500 characters and make it feel authentic and knowledgeable about music. Don't include hashtags (they'll be added separately)."""
     
     def _create_emoji_heavy_caption(self, tracks: List[Dict], week_start: str) -> str:
         """Create emoji-heavy fallback caption"""

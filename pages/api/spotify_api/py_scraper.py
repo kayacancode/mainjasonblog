@@ -424,13 +424,9 @@ class EnhancedSpotifyAutomation:
                 from caption_generator import CaptionGenerator
                 caption_gen = CaptionGenerator()
                 
-                # Get caption style from environment variable or default to 'balanced'
-                caption_style = os.getenv('DEFAULT_CAPTION_STYLE', 'balanced')
-                
                 caption_result = caption_gen.generate_caption(
                     tracks=unique_tracks,
                     week_start=week_start_str,
-                    style=caption_style,
                     include_hashtags=True
                 )
                 
@@ -443,7 +439,7 @@ class EnhancedSpotifyAutomation:
                     week_start_str, 
                     caption_result['caption'],
                     caption_result['hashtags'],
-                    caption_result['style']
+                    'reviewer'
                 )
                 
             except Exception as e:
