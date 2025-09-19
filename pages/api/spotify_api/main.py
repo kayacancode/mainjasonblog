@@ -14,18 +14,15 @@ import spotipy
 from hybrid_approach import HybridSpotifyFetcher
 from PIL import Image, ImageDraw, ImageFont
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
-from supabase import Client, create_client
 
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
-
     # Load .env file from the main project directory (three levels up from this file)
     env_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '.env')
     load_dotenv(env_path)
     # Reload the config after loading environment variables
     import importlib
-
     import config
     importlib.reload(config)
     from config import SpotifyConfig
@@ -39,29 +36,6 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-# Initialize Supabase client
-# Try environment variables first, then fall back to hardcoded credentials
-SUPABASE_URL = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
-SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_KEY')
-
-# Fallback to hardcoded credentials if environment variables are not available
-if not SUPABASE_URL or not SUPABASE_KEY:
-    SUPABASE_URL = "https://yxziaumwnvyswnqfyosh.supabase.co"
-    SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"
-    logger.info("🔍 Using hardcoded Supabase credentials for consistency")
-
-supabase: Optional[Client] = None
-
-if SUPABASE_URL and SUPABASE_KEY:
-    try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        logger.info("✅ Supabase client initialized")
-    except Exception as e:
-        logger.warning(f"⚠️ Failed to initialize Supabase: {e}")
-        supabase = None
-else:
-    logger.warning("⚠️ Supabase credentials not found, images will only be saved locally")
 
 class SpotifyNewMusicAutomation:
     """Main automation class for New Music Friday Instagram content generation"""
@@ -328,12 +302,21 @@ class SpotifyNewMusicAutomation:
 
             # Fonts (prefer Helvetica Neue Bold / Condensed Bold on macOS)
             def load_font_prefer_helvetica(size: int, condensed: bool = False):
+                # Windows-friendly font loading with larger base sizes
                 candidates = [
+                    # macOS fonts
                     ("/System/Library/Fonts/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6, 7, 8]),
                     ("/System/Library/Fonts/Helvetica.ttc", [0, 1, 2, 3, 4, 5]),
                     ("/Library/Fonts/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6]),
                     ("/System/Library/Fonts/Supplemental/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6]),
-                    ("/Library/Fonts/Arial Bold.ttf", [0]),
+                    # Windows fonts
+                    ("C:/Windows/Fonts/arialbd.ttf", [0]),  # Arial Bold
+                    ("C:/Windows/Fonts/arial.ttf", [0]),    # Arial Regular
+                    ("C:/Windows/Fonts/calibrib.ttf", [0]), # Calibri Bold
+                    ("C:/Windows/Fonts/calibri.ttf", [0]),  # Calibri Regular
+                    ("C:/Windows/Fonts/segoeuib.ttf", [0]), # Segoe UI Bold
+                    ("C:/Windows/Fonts/segoeui.ttf", [0]),  # Segoe UI Regular
+                    # Fallback
                     ("Arial.ttf", [0])
                 ]
                 # Try specific TTC indexes first (heuristics)
@@ -352,13 +335,18 @@ class SpotifyNewMusicAutomation:
                             return ImageFont.truetype(path, size=size)
                         except Exception:
                             continue
+                # Fallback to default with larger size compensation
                 return ImageFont.load_default()
 
-            # Larger/bolder sizes
-            title_font = load_font_prefer_helvetica(150, condensed=False)   # top artist name
-            name_font = load_font_prefer_helvetica(92, condensed=False)     # bottom-left lines
-            stacked_font_big = load_font_prefer_helvetica(92, condensed=False)   # NEW - bold not condensed
-            stacked_font_small = load_font_prefer_helvetica(92, condensed=False) # MUSIC/FRIDAY - bold not condensed
+            # Even smaller, more balanced sizes for better readability
+            # Windows font size compensation (Windows fonts render smaller)
+            is_windows = os.name == 'nt'
+            size_multiplier = 1.0 if is_windows else 1.0  # No extra compensation needed
+            
+            title_font = load_font_prefer_helvetica(int(85 * size_multiplier), condensed=False)   # top artist name - smaller
+            name_font = load_font_prefer_helvetica(int(60 * size_multiplier), condensed=False)     # bottom-left lines - even smaller
+            stacked_font_big = load_font_prefer_helvetica(int(65 * size_multiplier), condensed=False)   # NEW - even smaller
+            stacked_font_small = load_font_prefer_helvetica(int(50 * size_multiplier), condensed=False) # MUSIC/FRIDAY - even smaller
 
             # Rounded white border
             radius = 40
@@ -370,15 +358,15 @@ class SpotifyNewMusicAutomation:
                 width=18
             )
 
-            # Artist name at top - Smart dynamic sizing with proper line breaking
+            # Top artist name (uppercase, centered) - Dynamic sizing for long names
             artist_name = (track['artist'] or "").upper()
             
             # Calculate available width for artist name (full width minus margins)
             available_width = target_size[0] - (margin * 2) - 40  # Leave 40px margin on each side
-            artist_font_size = 120
+            artist_font_size = int(160 * size_multiplier)  # Starting size with Windows compensation
             
             # Find the optimal font size that fits
-            while artist_font_size > 60:  # Minimum font size
+            while artist_font_size > 80:  # Minimum font size
                 test_font = load_font_prefer_helvetica(artist_font_size, condensed=False)
                 test_bbox = draw_overlay.textbbox((0, 0), artist_name, font=test_font)
                 test_width = test_bbox[2] - test_bbox[0]
@@ -388,8 +376,8 @@ class SpotifyNewMusicAutomation:
                 artist_font_size -= 10
             
             # If still too long, try two lines with proper word breaking
-            if artist_font_size <= 60:
-                artist_font_size = 80
+            if artist_font_size <= int(80 * size_multiplier):
+                artist_font_size = int(100 * size_multiplier)  # Reasonable size for multi-line
                 words = artist_name.split()
                 lines = []
                 current_line = ""
@@ -419,13 +407,13 @@ class SpotifyNewMusicAutomation:
             # Create final font
             dynamic_title_font = load_font_prefer_helvetica(artist_font_size, condensed=False)
             
-            # Position artist name at top, centered
+            # Position artist name at top, centered with better spacing
             if len(lines) == 1:
                 # Single line - center it
                 name_bbox = draw_overlay.textbbox((0, 0), lines[0], font=dynamic_title_font)
                 name_w = name_bbox[2] - name_bbox[0]
                 name_x = (target_size[0] - name_w) // 2
-                name_y = margin + 40
+                name_y = margin + 30  # More space from top
                 draw_overlay.text((name_x, name_y), lines[0], fill=off_white, font=dynamic_title_font, stroke_width=3, stroke_fill=(0,0,0,160))
             else:
                 # Multiple lines - center each line
@@ -434,25 +422,25 @@ class SpotifyNewMusicAutomation:
                     bbox = draw_overlay.textbbox((0, 0), line, font=dynamic_title_font)
                     line_height = max(line_height, bbox[3] - bbox[1])
                 
-                total_height = (line_height + 15) * len(lines)
-                start_y = margin + 40
+                total_height = (line_height + 20) * len(lines)  # More spacing between lines
+                start_y = margin + 30  # More space from top
                 
                 for i, line in enumerate(lines):
                     line_bbox = draw_overlay.textbbox((0, 0), line, font=dynamic_title_font)
                     line_w = line_bbox[2] - line_bbox[0]
                     line_x = (target_size[0] - line_w) // 2
-                    line_y = start_y + (i * (line_height + 15))
+                    line_y = start_y + (i * (line_height + 20))
                     draw_overlay.text((line_x, line_y), line, fill=off_white, font=dynamic_title_font, stroke_width=3, stroke_fill=(0,0,0,160))
 
-            # Track title in bottom left - Smart sizing and line breaking
+            # Bottom-left track title - Smart sizing and line breaking
             track_title = (track['name'] or "").upper()
             
             # Calculate available space for track title (left side)
             available_width = (target_size[0] // 2) - margin - 20  # Left half minus margin
-            track_font_size = 90
+            track_font_size = int(100 * size_multiplier)  # Starting size with Windows compensation
             
             # Find optimal font size that fits
-            while track_font_size > 50:  # Minimum font size
+            while track_font_size > 60:  # Minimum font size
                 test_font = load_font_prefer_helvetica(track_font_size, condensed=False)
                 test_bbox = draw_overlay.textbbox((0, 0), track_title, font=test_font)
                 test_width = test_bbox[2] - test_bbox[0]
@@ -462,8 +450,8 @@ class SpotifyNewMusicAutomation:
                 track_font_size -= 5
             
             # If still too long, try two lines with proper word breaking
-            if track_font_size <= 50:
-                track_font_size = 70
+            if track_font_size <= int(60 * size_multiplier):
+                track_font_size = int(75 * size_multiplier)  # Reasonable size for multi-line
                 words = track_title.split()
                 lines = []
                 current_line = ""
@@ -493,9 +481,9 @@ class SpotifyNewMusicAutomation:
             # Create final font
             dynamic_track_font = load_font_prefer_helvetica(track_font_size, condensed=False)
 
-            # Position track title in bottom left
-            l_margin = margin + 20
-            b_margin = margin + 100  # Space from bottom
+            # Position track title in bottom left with better spacing
+            l_margin = margin + 30  # More space from left edge
+            b_margin = margin + 50  # Move down more from bottom
             
             # Calculate total height needed for all lines
             line_height = 0
@@ -511,46 +499,38 @@ class SpotifyNewMusicAutomation:
                 y_pos = start_y + (i * (line_height + 20))
                 draw_overlay.text((l_margin, y_pos), line, fill=off_white, font=dynamic_track_font, stroke_width=2, stroke_fill=(0,0,0,150))
 
-            # Bottom-right stacked NEW / MUSIC / FRIDAY - Positioned in bottom right
-            r_margin = margin + 40
-            
-            # Use appropriate fonts for bottom positioning
-            stacked_font_big = load_font_prefer_helvetica(65, condensed=False)
-            stacked_font_small = load_font_prefer_helvetica(55, condensed=False)
-            
+            # Bottom-right stacked NEW / MUSIC / FRIDAY with better positioning
+            r_margin = margin + 50  # More space from right edge
+            b_margin_right = margin + 40  # Move down more from bottom
+            # Right align by measuring widest word
             words_stack = [
                 ("NEW", brand_red, stacked_font_big),
                 ("MUSIC", light_gray, stacked_font_small),
                 ("FRIDAY", light_gray, stacked_font_small),
             ]
-            
-            # Calculate total height needed
-            total_height = 0
+            # Compute x based on widest word width
+            max_w = 0
             heights = []
             for w, color, fnt in words_stack:
                 bbox = draw_overlay.textbbox((0,0), w, font=fnt)
-                h = bbox[3] - bbox[1]
-                heights.append(h)
-                total_height += h + 15  # 15px spacing between words
-            
-            # Position in bottom right corner
+                max_w = max(max_w, bbox[2]-bbox[0])
+                heights.append(bbox[3]-bbox[1])
             x_right = target_size[0] - r_margin
-            y_start = target_size[1] - margin - total_height - 30  # Space from bottom
-            
+            y_start = target_size[1] - b_margin_right - sum(heights) - 16*2
             y = y_start
             for (w, color, fnt), h in zip(words_stack, heights):
                 bbox = draw_overlay.textbbox((0,0), w, font=fnt)
                 w_px = bbox[2]-bbox[0]
                 x = x_right - w_px
                 draw_overlay.text((x, y), w, fill=color, font=fnt, stroke_width=2, stroke_fill=(0,0,0,150))
-                y += h + 15
+                y += h + 16
             
-            # Create a translucent black overlay to improve text readability
-            black_overlay = Image.new('RGBA', target_size, (0, 0, 0, 80))  # 80/255 = ~31% opacity
+            # Create a subtle background overlay to improve text readability
+            black_overlay = Image.new('RGBA', target_size, (0, 0, 0, 60))  # 60/255 = ~24% opacity
             
             # Composite the overlays onto the artist image
             artist_image = artist_image.convert('RGBA')
-            # First apply the black overlay
+            # First apply the subtle black overlay
             artist_image = Image.alpha_composite(artist_image, black_overlay)
             # Then apply the text overlay
             final_image = Image.alpha_composite(artist_image, overlay)
@@ -568,8 +548,11 @@ class SpotifyNewMusicAutomation:
             
         except Exception as e:
             logger.error(f"❌ Error creating single artist image: {e}")
-            if art_path and os.path.exists(art_path):
-                os.remove(art_path)
+            if 'art_path' in locals() and art_path and os.path.exists(art_path):
+                try:
+                    os.remove(art_path)
+                except:
+                    pass
             return None
 
     def create_collage(self, tracks: List[Dict], output_filename: str = "nmf_collage.png") -> str:
@@ -671,6 +654,11 @@ class SpotifyNewMusicAutomation:
                             os.remove(art_path)
                         except Exception as e:
                             logger.warning(f"⚠️ Error processing artist image for {track['name']}: {e}")
+                            if 'art_path' in locals() and art_path and os.path.exists(art_path):
+                                try:
+                                    os.remove(art_path)
+                                except:
+                                    pass
             
             # Paste artist image onto canvas
             canvas.paste(artist_image, (x, y))
@@ -721,12 +709,21 @@ class SpotifyNewMusicAutomation:
         
         # Load fonts using same Helvetica Neue Bold as single artist image
         def load_font_prefer_helvetica(size: int, condensed: bool = False):
+            # Windows-friendly font loading with larger base sizes
             candidates = [
+                # macOS fonts
                 ("/System/Library/Fonts/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6, 7, 8]),
                 ("/System/Library/Fonts/Helvetica.ttc", [0, 1, 2, 3, 4, 5]),
                 ("/Library/Fonts/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6]),
                 ("/System/Library/Fonts/Supplemental/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6]),
-                ("/Library/Fonts/Arial Bold.ttf", [0]),
+                # Windows fonts
+                ("C:/Windows/Fonts/arialbd.ttf", [0]),  # Arial Bold
+                ("C:/Windows/Fonts/arial.ttf", [0]),    # Arial Regular
+                ("C:/Windows/Fonts/calibrib.ttf", [0]), # Calibri Bold
+                ("C:/Windows/Fonts/calibri.ttf", [0]),  # Calibri Regular
+                ("C:/Windows/Fonts/segoeuib.ttf", [0]), # Segoe UI Bold
+                ("C:/Windows/Fonts/segoeui.ttf", [0]),  # Segoe UI Regular
+                # Fallback
                 ("Arial.ttf", [0])
             ]
             # Try specific TTC indexes first (heuristics)
@@ -745,12 +742,18 @@ class SpotifyNewMusicAutomation:
                         return ImageFont.truetype(path, size=size)
                     except Exception:
                         continue
+            # Fallback to default with larger size compensation
             return ImageFont.load_default()
 
-        # Bigger font sizes for tracklist
-        title_font = load_font_prefer_helvetica(48, condensed=False)    # Main title - bigger
-        track_font = load_font_prefer_helvetica(36, condensed=False)    # Track names - much bigger
-        artist_font = load_font_prefer_helvetica(28, condensed=False)   # Artist names - bigger
+        # Much larger font sizes for tracklist readability
+        # Smaller, more readable sizes with better padding
+        # Windows font size compensation (Windows fonts render smaller)
+        is_windows = os.name == 'nt'
+        size_multiplier = 1.0 if is_windows else 1.0  # No extra compensation needed
+        
+        title_font = load_font_prefer_helvetica(int(50 * size_multiplier), condensed=False)    # Main title - smaller
+        track_font = load_font_prefer_helvetica(int(38 * size_multiplier), condensed=False)    # Track names - smaller
+        artist_font = load_font_prefer_helvetica(int(28 * size_multiplier), condensed=False)   # Artist names - smaller
         
         # Title section
         title = f"Top {len(sorted_tracks)} Tracks"
@@ -758,7 +761,7 @@ class SpotifyNewMusicAutomation:
         
         # Title background - use same red as "NEW" from artist image
         brand_red = (226, 62, 54)
-        title_height = 100
+        title_height = 120  # Increased height to prevent overlap
         draw.rectangle([0, 0, canvas_width, title_height], fill=brand_red)
         
         # Center title text
@@ -770,18 +773,18 @@ class SpotifyNewMusicAutomation:
         subtitle_width = subtitle_bbox[2] - subtitle_bbox[0]
         subtitle_x = (canvas_width - subtitle_width) // 2
         
-        draw.text((title_x, 20), title, fill=self.config.SPOTIFY_WHITE, font=title_font)
-        draw.text((subtitle_x, 60), subtitle, fill=self.config.SPOTIFY_WHITE, font=artist_font)
+        draw.text((title_x, 15), title, fill=self.config.SPOTIFY_WHITE, font=title_font)
+        draw.text((subtitle_x, 70), subtitle, fill=self.config.SPOTIFY_WHITE, font=artist_font)
         
-        # Track list - balanced padding
-        y_offset = title_height + 50  # Moderate padding under title
-        line_height = 70  # Balanced line height for good spacing
-        margin = 40  # Standard margin
+        # Track list - more padding and better spacing
+        y_offset = title_height + 50  # More padding under title
+        line_height = 85  # Even more line height for better readability
+        margin = 50  # More margin for better padding
         
         for i, track in enumerate(sorted_tracks):  # Only top 10 tracks
             track_y = y_offset + i * line_height
             
-            # Track number - larger and better positioned
+            # Track number
             number_text = f"{i+1:2d}."
             draw.text((margin, track_y), number_text, fill=self.config.SPOTIFY_GRAY, font=track_font)
             
@@ -790,16 +793,16 @@ class SpotifyNewMusicAutomation:
             # Replace problematic characters
             track_name = track_name.replace('\u201c', '"').replace('\u201d', '"').replace('\u2018', "'").replace('\u2019', "'")
             
-            # Dynamic font sizing for track names
+            # Dynamic font sizing for track names - smaller sizes with better padding
             if len(track_name) > 30:
                 track_name = track_name[:30] + "..."
-                dynamic_track_font_size = 28
+                dynamic_track_font_size = int(28 * size_multiplier)  # Smaller size
             elif len(track_name) > 25:
-                dynamic_track_font_size = 32
+                dynamic_track_font_size = int(32 * size_multiplier)  # Smaller size
             elif len(track_name) > 20:
-                dynamic_track_font_size = 34
+                dynamic_track_font_size = int(34 * size_multiplier)  # Smaller size
             else:
-                dynamic_track_font_size = 36
+                dynamic_track_font_size = int(38 * size_multiplier)  # Smaller base size
             
             # Create dynamic font for track name
             dynamic_track_font = load_font_prefer_helvetica(dynamic_track_font_size, condensed=False)
@@ -812,16 +815,16 @@ class SpotifyNewMusicAutomation:
             artist_name = track['artist']
             artist_name = artist_name.replace('\u201c', '"').replace('\u201d', '"').replace('\u2018', "'").replace('\u2019', "'")
             
-            # Dynamic font sizing for artist names
+            # Dynamic font sizing for artist names - smaller sizes with better padding
             if len(artist_name) > 35:
                 artist_name = artist_name[:35] + "..."
-                dynamic_artist_font_size = 22
+                dynamic_artist_font_size = int(22 * size_multiplier)  # Smaller size
             elif len(artist_name) > 30:
-                dynamic_artist_font_size = 24
+                dynamic_artist_font_size = int(24 * size_multiplier)  # Smaller size
             elif len(artist_name) > 25:
-                dynamic_artist_font_size = 26
+                dynamic_artist_font_size = int(26 * size_multiplier)  # Smaller size
             else:
-                dynamic_artist_font_size = 28
+                dynamic_artist_font_size = int(28 * size_multiplier)  # Smaller base size
             
             # Create dynamic font for artist name
             dynamic_artist_font = load_font_prefer_helvetica(dynamic_artist_font_size, condensed=False)
@@ -829,7 +832,7 @@ class SpotifyNewMusicAutomation:
             # Calculate consistent spacing based on track name height
             track_bbox = draw.textbbox((0, 0), track_name, font=dynamic_track_font)
             track_height = track_bbox[3] - track_bbox[1]
-            artist_y_pos = track_y_pos + track_height + 8  # Tighter 8px spacing
+            artist_y_pos = track_y_pos + track_height + 8  # More spacing for better readability
             draw.text((margin + 50, artist_y_pos), artist_name, fill=self.config.SPOTIFY_GRAY, font=dynamic_artist_font)
         
         # Footer
@@ -847,108 +850,6 @@ class SpotifyNewMusicAutomation:
         
         logger.info(f"✅ Tracklist saved to: {output_path}")
         return output_path
-    
-    def upload_image_to_supabase(self, image_path: str, week_start: str, image_type: str) -> Optional[str]:
-        """
-        Upload image to Supabase post-images storage and return public URL
-        
-        Args:
-            image_path: Local path to the image file
-            week_start: Week start date string (YYYY-MM-DD)
-            image_type: Type of image ('cover' or 'tracklist')
-            
-        Returns:
-            Public URL if successful, None otherwise
-        """
-        if not supabase:
-            logger.warning("Supabase not available, skipping upload")
-            return None
-            
-        try:
-            if not os.path.exists(image_path):
-                logger.error(f"❌ Image file not found: {image_path}")
-                return None
-            
-            # Read image file
-            with open(image_path, 'rb') as f:
-                image_data = f.read()
-            
-            # Create filename with week_start and image type
-            filename = f"instagram_images/{week_start}_{image_type}_{os.path.basename(image_path)}"
-            
-            # Upload to Supabase storage
-            result = supabase.storage.from_('instagram-images').upload(filename, image_data, {
-                'content-type': 'image/png',
-                'upsert': 'true'
-            })
-            
-            if result:
-                # Get public URL
-                public_url = supabase.storage.from_('instagram-images').get_public_url(filename)
-                logger.info(f"✅ Image uploaded to Supabase: {public_url}")
-                return public_url
-            else:
-                logger.error(f"❌ Failed to upload image: {filename}")
-                return None
-                
-        except Exception as e:
-            logger.error(f"❌ Error uploading image to Supabase: {e}")
-            return None
-    
-    def save_image_metadata(self, week_start: str, cover_url: str, tracklist_url: str) -> bool:
-        """
-        Save image metadata to Supabase images table with duplicate prevention
-        
-        Args:
-            week_start: Week start date string (YYYY-MM-DD)
-            cover_url: Public URL of cover image
-            tracklist_url: Public URL of tracklist image
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        if not supabase:
-            logger.warning("Supabase not available, skipping metadata save")
-            return False
-            
-        try:
-            # Check if record already exists with images
-            existing = supabase.table('images').select('id, cover_image_url, tracklist_image_url').eq('week_start', week_start).execute()
-            
-            if existing.data and existing.data[0]:
-                existing_record = existing.data[0]
-                # Check if both images already exist
-                if existing_record.get('cover_image_url') and existing_record.get('tracklist_image_url'):
-                    logger.info(f"⚠️ Images already exist for week {week_start}, skipping upload to prevent duplicates")
-                    return True
-                else:
-                    # Update existing record with missing images
-                    logger.info(f"🔄 Updating existing record for week {week_start}")
-                    result = supabase.table('images').update({
-                        'cover_image_url': cover_url or existing_record.get('cover_image_url'),
-                        'tracklist_image_url': tracklist_url or existing_record.get('tracklist_image_url'),
-                        'updated_at': datetime.now().isoformat()
-                    }).eq('week_start', week_start).execute()
-            else:
-                # Insert new record
-                logger.info(f"➕ Creating new record for week {week_start}")
-                result = supabase.table('images').insert({
-                    'week_start': week_start,
-                    'cover_image_url': cover_url,
-                    'tracklist_image_url': tracklist_url,
-                    'created_at': datetime.now().isoformat()
-                }).execute()
-            
-            if result.data:
-                logger.info(f"✅ Image metadata saved for week {week_start}")
-                return True
-            else:
-                logger.error(f"❌ Failed to save image metadata for week {week_start}")
-                return False
-                
-        except Exception as e:
-            logger.error(f"❌ Error saving image metadata: {e}")
-            return False
     
     def generate_caption(self, tracks: List[Dict]) -> str:
         """
@@ -1089,60 +990,43 @@ class SpotifyNewMusicAutomation:
         
         logger.info(f"🎵 Processing {len(unique_tracks)} unique tracks...")
         
-        # Generate timestamp for files
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        # Calculate week start (Friday)
+        # Calculate week start (Friday) for consistent naming
         today = datetime.now()
         days_since_friday = (today.weekday() - 4) % 7  # 4 = Friday (0=Monday, 4=Friday)
         week_start = today - timedelta(days=days_since_friday)
-        week_start_str = week_start.strftime('%Y-%m-%d')
+        week_start_str = week_start.strftime('%Y%m%d')
+        
+        # Use week-based filenames to prevent duplicates
+        single_artist_filename = f"nmf_single_artist_{week_start_str}.png"
+        tracklist_filename = f"nmf_tracklist_{week_start_str}.png"
         
         # Create single artist image (using the first track)
         if unique_tracks:
-            single_artist_filename = f"nmf_single_artist_{timestamp}.png"
             single_artist_path = self.create_single_artist_image(unique_tracks[0], hybrid_fetcher.spotify, single_artist_filename)
         else:
             single_artist_path = None
         
         # Create tracklist
-        tracklist_filename = f"nmf_tracklist_{timestamp}.png"
         tracklist_path = self.create_tracklist_image(unique_tracks, tracklist_filename)
         
         # Generate caption
         caption = self.generate_caption(unique_tracks)
         
-        # Save track data
-        data_filename = f"nmf_data_{timestamp}.json"
+        # Save track data with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        data_filename = f"nmf_data_{week_start_str}_{timestamp}.json"
         data_path = self.save_track_data(unique_tracks, data_filename)
         
         # Save caption to file
-        caption_filename = f"nmf_caption_{timestamp}.txt"
+        caption_filename = f"nmf_caption_{week_start_str}.txt"
         caption_path = os.path.join(self.config.OUTPUT_DIR, caption_filename)
         with open(caption_path, 'w', encoding='utf-8') as f:
             f.write(caption)
-        
-        # Upload images to Supabase and save metadata
-        cover_url = None
-        tracklist_url = None
-        
-        if single_artist_path and os.path.exists(single_artist_path):
-            cover_url = self.upload_image_to_supabase(single_artist_path, week_start_str, 'cover')
-        
-        if tracklist_path and os.path.exists(tracklist_path):
-            tracklist_url = self.upload_image_to_supabase(tracklist_path, week_start_str, 'tracklist')
-        
-        # Save image metadata to Supabase
-        if cover_url or tracklist_url:
-            self.save_image_metadata(week_start_str, cover_url, tracklist_url)
         
         results = {
             'track_count': len(unique_tracks),
             'single_artist_image': single_artist_path,
             'tracklist_image': tracklist_path,
-            'cover_url': cover_url,
-            'tracklist_url': tracklist_url,
-            'week_start': week_start_str,
             'caption': caption,
             'caption_file': caption_path,
             'data_file': data_path,
@@ -1152,14 +1036,200 @@ class SpotifyNewMusicAutomation:
         logger.info("🎉 Automation completed successfully!")
         logger.info(f"🎨 Single Artist Image: {single_artist_path}")
         logger.info(f"📋 Tracklist: {tracklist_path}")
-        if cover_url:
-            logger.info(f"☁️ Cover URL: {cover_url}")
-        if tracklist_url:
-            logger.info(f"☁️ Tracklist URL: {tracklist_url}")
         logger.info(f"📝 Caption: {caption_path}")
         logger.info(f"💾 Data: {data_path}")
         
+        # Upload images to Supabase
+        cover_url = None
+        tracklist_url = None
+        
+        if single_artist_path and os.path.exists(single_artist_path):
+            cover_url = self.upload_image_to_supabase(single_artist_path, week_start_str, 'cover')
+        
+        if tracklist_path and os.path.exists(tracklist_path):
+            tracklist_url = self.upload_image_to_supabase(tracklist_path, week_start_str, 'tracklist')
+        
+        # Save image metadata to database
+        if cover_url or tracklist_url:
+            self.save_image_metadata(week_start_str, cover_url, tracklist_url)
+        
+        # Add URLs to results
+        results.update({
+            'artist_collage_url': cover_url,
+            'tracklist_url': tracklist_url,
+            'week_start': week_start_str
+        })
+        
+        # Clean up .pyc files
+        self.cleanup_pyc_files()
+        
         return results
+
+    def cleanup_pyc_files(self):
+        """Clean up .pyc files and __pycache__ directories"""
+        import shutil
+        import glob
+        
+        try:
+            # Get the directory containing this script
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            
+            # Find and remove all __pycache__ directories
+            pycache_dirs = glob.glob(os.path.join(script_dir, "**/__pycache__"), recursive=True)
+            for pycache_dir in pycache_dirs:
+                if os.path.exists(pycache_dir):
+                    shutil.rmtree(pycache_dir)
+                    logger.info(f"🗑️ Removed __pycache__ directory: {pycache_dir}")
+            
+            # Find and remove all .pyc files
+            pyc_files = glob.glob(os.path.join(script_dir, "**/*.pyc"), recursive=True)
+            for pyc_file in pyc_files:
+                if os.path.exists(pyc_file):
+                    os.remove(pyc_file)
+                    logger.info(f"🗑️ Removed .pyc file: {pyc_file}")
+            
+            logger.info("✅ Cleanup completed successfully!")
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Cleanup failed: {e}")
+
+    def upload_image_to_supabase(self, image_path, week_start, image_type):
+        """Upload image to Supabase storage and return public URL"""
+        try:
+            from supabase import create_client, Client
+            
+            # Initialize Supabase client
+            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+            
+            if not supabase_url or not supabase_key:
+                logger.warning("Supabase credentials not found, skipping upload")
+                return None
+                
+            supabase: Client = create_client(supabase_url, supabase_key)
+            
+            # Read image file
+            with open(image_path, 'rb') as f:
+                image_data = f.read()
+            
+            # Create filename with correct naming convention (matching working format)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            if image_type == 'cover':
+                filename = f"{week_start}_artist_collage_{timestamp}.png"
+            elif image_type == 'tracklist':
+                filename = f"{week_start}_tracklist_{timestamp}.png"
+            else:
+                filename = f"{week_start}_{image_type}_{timestamp}.png"
+            
+            # Upload to Supabase storage (no subfolder needed)
+            result = supabase.storage.from_('instagram-images').upload(
+                filename, 
+                image_data
+            )
+            
+            # Check if upload was successful
+            if hasattr(result, 'error') and result.error:
+                logger.error(f"Error uploading {image_type} image: {result.error}")
+                return None
+            
+            # Get public URL
+            public_url = supabase.storage.from_('instagram-images').get_public_url(filename)
+            
+            logger.info(f"✅ Uploaded {image_type} image: {public_url}")
+            return public_url
+            
+        except Exception as e:
+            logger.error(f"Error uploading {image_type} image: {e}")
+            return None
+
+    def save_image_metadata(self, week_start, cover_url, tracklist_url):
+        """Save image metadata to Supabase database"""
+        try:
+            from supabase import create_client, Client
+            
+            # Initialize Supabase client
+            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+            
+            if not supabase_url or not supabase_key:
+                logger.warning("Supabase credentials not found, skipping metadata save")
+                print("❌ Supabase credentials not found, skipping metadata save")
+                return
+                
+            supabase: Client = create_client(supabase_url, supabase_key)
+            
+            # Prepare metadata with correct field names
+            now = datetime.now().isoformat()
+            metadata = {
+                'week_start': week_start,
+                'cover_image_url': cover_url,  # Frontend expects cover_image_url
+                'tracklist_image_url': tracklist_url,  # Frontend expects tracklist_image_url
+                'created_at': now,
+                'updated_at': now
+            }
+            
+            print(f"📝 Saving metadata: {metadata}")
+            
+            # Insert or update metadata (upsert)
+            result = supabase.table('images').upsert(
+                metadata,
+                on_conflict='week_start'
+            ).execute()
+            
+            print(f"📊 Database result: {result}")
+            
+            if result.data:
+                logger.info(f"✅ Saved image metadata for week {week_start}")
+                print(f"✅ Successfully saved image metadata for week {week_start}")
+            else:
+                logger.error(f"Failed to save image metadata: {result}")
+                print(f"❌ Failed to save image metadata: {result}")
+                
+        except Exception as e:
+            logger.error(f"Error saving image metadata: {e}")
+            print(f"❌ Error saving image metadata: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def cleanup_old_image_records(self):
+        """Clean up old image records from database that have invalid URLs"""
+        try:
+            from supabase import create_client, Client
+            
+            # Initialize Supabase client
+            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+            
+            if not supabase_url or not supabase_key:
+                logger.warning("Supabase credentials not found, skipping cleanup")
+                return
+                
+            supabase: Client = create_client(supabase_url, supabase_key)
+            
+            # Get all image records
+            result = supabase.table('images').select('*').execute()
+            
+            if not result.data:
+                logger.info("No image records found to clean up")
+                return
+                
+            deleted_count = 0
+            for record in result.data:
+                # Check if URLs contain the old double folder structure
+                cover_url = record.get('cover_image_url', '')
+                tracklist_url = record.get('tracklist_image_url', '')
+                
+                if '/instagram-images/instagram_images/' in cover_url or '/instagram-images/instagram_images/' in tracklist_url:
+                    # Delete this record
+                    delete_result = supabase.table('images').delete().eq('id', record['id']).execute()
+                    if delete_result.data:
+                        deleted_count += 1
+                        logger.info(f"🗑️ Deleted old record for week {record.get('week_start')}")
+            
+            logger.info(f"✅ Cleaned up {deleted_count} old image records")
+            
+        except Exception as e:
+            logger.error(f"Error cleaning up old image records: {e}")
 
 def main():
     """Main function for running the automation"""

@@ -365,13 +365,13 @@ class EnhancedSpotifyAutomation:
             
             # Create single artist image (using the first track)
             if unique_tracks:
-                single_artist_filename = f"nmf_single_artist_{timestamp}.png"
+                single_artist_filename = f"{week_start_str}_artist_collage_{timestamp}.png"
                 single_artist_path = automation.create_single_artist_image(unique_tracks[0], automation.spotify, single_artist_filename)
             else:
                 single_artist_path = None
             
             # Create tracklist
-            tracklist_filename = f"nmf_tracklist_{timestamp}.png"
+            tracklist_filename = f"{week_start_str}_tracklist_{timestamp}.png"
             tracklist_path = automation.create_tracklist_image(unique_tracks, tracklist_filename)
             
             # Generate caption
@@ -385,15 +385,38 @@ class EnhancedSpotifyAutomation:
             cover_url = None
             tracklist_url = None
             
+            print(f"🖼️ Uploading images for week {week_start_str}...")
+            
             if single_artist_path and os.path.exists(single_artist_path):
+                print(f"📤 Uploading cover image: {single_artist_path}")
                 cover_url = automation.upload_image_to_supabase(single_artist_path, week_start_str, 'cover')
+                if cover_url:
+                    print(f"✅ Cover image uploaded: {cover_url}")
+                else:
+                    print("❌ Failed to upload cover image")
+            else:
+                print("⚠️ No cover image to upload")
             
             if tracklist_path and os.path.exists(tracklist_path):
+                print(f"📤 Uploading tracklist image: {tracklist_path}")
                 tracklist_url = automation.upload_image_to_supabase(tracklist_path, week_start_str, 'tracklist')
+                if tracklist_url:
+                    print(f"✅ Tracklist image uploaded: {tracklist_url}")
+                else:
+                    print("❌ Failed to upload tracklist image")
+            else:
+                print("⚠️ No tracklist image to upload")
             
             # Save image metadata to Supabase
+            print(f"💾 Saving image metadata to database...")
             if cover_url or tracklist_url:
-                automation.save_image_metadata(week_start_str, cover_url, tracklist_url)
+                try:
+                    automation.save_image_metadata(week_start_str, cover_url, tracklist_url)
+                    print(f"✅ Image metadata saved for week {week_start_str}")
+                except Exception as e:
+                    print(f"❌ Failed to save image metadata: {e}")
+            else:
+                print("⚠️ No image URLs to save to database")
             
             # Create results dictionary
             results = {
@@ -592,6 +615,12 @@ def test_enhanced_automation():
     print(f"🔍 Debug - Using hardcoded Spotify Client ID: {client_id[:10]}...")
     
     automation = EnhancedSpotifyAutomation(client_id, client_secret)
+    
+    # Clean up old image records first
+    print("🧹 Cleaning up old image records...")
+    from main import SpotifyNewMusicAutomation
+    cleanup_automation = SpotifyNewMusicAutomation(client_id, client_secret)
+    cleanup_automation.cleanup_old_image_records()
     
     print("🧪 Testing Enhanced Automation...")
     print("=" * 60)
