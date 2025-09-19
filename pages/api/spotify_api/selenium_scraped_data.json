@@ -233,15 +233,6 @@
       "popularity": 0,
       "album_art_url": null,
       "spotify_url": "https://open.spotify.com/track/3gdzRoYEL3iBJUXRgcWEB3"
-    },
-    {
-      "id": "5wpegU5IjGs4X6oFNRPKAq",
-      "name": "I Met A Boy",
-      "artist": "Mimi Webb",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": "https://open.spotify.com/track/5wpegU5IjGs4X6oFNRPKAq"
     }
   ],
   "release_radar": [
@@ -496,17 +487,8 @@
       "popularity": 0,
       "album_art_url": null,
       "spotify_url": "https://open.spotify.com/track/63LK1IdaFJzslF5vkji8kz"
-    },
-    {
-      "id": "5vtZTLyLMkIHsAUuSVnzg2",
-      "name": "Aura",
-      "artist": "E",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": "https://open.spotify.com/track/5vtZTLyLMkIHsAUuSVnzg2"
     }
   ],
-  "scraped_at": "2025-09-18 23:05:05",
+  "scraped_at": "2025-09-18 21:05:31",
   "method": "enhanced_scraper"
 }

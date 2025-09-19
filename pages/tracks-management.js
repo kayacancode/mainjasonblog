@@ -25,6 +25,9 @@ export default function TracksManagement() {
     const [currentWeekImages, setCurrentWeekImages] = useState(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [weekImageStatus, setWeekImageStatus] = useState({});
+    const [captionLoading, setCaptionLoading] = useState(false);
+    const [showCaptionModal, setShowCaptionModal] = useState(false);
+    const [currentWeekCaption, setCurrentWeekCaption] = useState(null);
 
     // Form state for adding/editing tracks
     const [formData, setFormData] = useState({
@@ -474,6 +477,65 @@ export default function TracksManagement() {
         return !!images;
     };
 
+    // Caption functions
+    const fetchWeekCaption = async (weekStart) => {
+        try {
+            console.log('🔍 Fetching caption for week:', weekStart);
+            const { data, error } = await supabase
+                .from('images')
+                .select('caption, hashtags, caption_style, week_start')
+                .eq('week_start', weekStart)
+                .single();
+            
+            if (error) {
+                console.error('Error fetching caption:', error);
+                return null;
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Error fetching caption:', error);
+            return null;
+        }
+    };
+
+    const handleViewCaption = async (week = null) => {
+        const targetWeek = week || selectedWeek;
+        
+        if (!targetWeek) {
+            alert('Please select a week first');
+            return;
+        }
+
+        try {
+            setCaptionLoading(true);
+            const captionData = await fetchWeekCaption(targetWeek);
+            
+            if (captionData && captionData.caption) {
+                setCurrentWeekCaption(captionData);
+                setShowCaptionModal(true);
+            } else {
+                alert('No caption found for this week. Captions are generated automatically during the New Music Friday automation.');
+            }
+        } catch (error) {
+            console.error('Error fetching caption:', error);
+            alert('Error fetching caption');
+        } finally {
+            setCaptionLoading(false);
+        }
+    };
+
+
+    const copyToClipboard = async (text) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            alert('Copied to clipboard!');
+        } catch (error) {
+            console.error('Failed to copy to clipboard:', error);
+            alert('Failed to copy to clipboard');
+        }
+    };
+
     const handleViewImages = async (week = null) => {
         const targetWeek = week || selectedWeek;
         
@@ -568,13 +630,13 @@ export default function TracksManagement() {
             <div className="max-w-7xl mx-auto px-4 sm:px-5 py-6 sm:py-8 font-sans">
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b-2 border-gray-200">
                     <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 m-0 text-center sm:text-left">🎵 Tracks Management</h1>
-                <button 
-                    onClick={() => setShowAddForm(true)}
-                    className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-none py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg text-sm sm:text-base font-semibold cursor-pointer transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-full sm:w-auto"
-                >
-                    ➕ Add New Track
-                </button>
-            </div>
+                    <button 
+                        onClick={() => setShowAddForm(true)}
+                        className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-none py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg text-sm sm:text-base font-semibold cursor-pointer transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl hover:-translate-y-0.5 w-full sm:w-auto"
+                    >
+                        ➕ Add New Track
+                    </button>
+                </div>
 
             {/* Filters */}
             <div className="flex flex-col gap-3 mb-6 sm:mb-8">
@@ -609,29 +671,6 @@ export default function TracksManagement() {
                     </select>
 
                     
-                    {(selectedWeek || selectedTracks.size > 0) && (
-                        <div className="flex gap-2">
-                            <button 
-                                onClick={handleViewImages}
-                                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-300 flex items-center gap-2 whitespace-nowrap"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                View Images
-                            </button>
-                            <button 
-                                onClick={handleGenerateImages}
-                                disabled={regenerating}
-                                className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-300 flex items-center gap-2 whitespace-nowrap"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                {regenerating ? 'Generating...' : 'Generate Images'}
-                            </button>
-                        </div>
-                    )}
                     
                 </div>
 
@@ -1071,12 +1110,18 @@ export default function TracksManagement() {
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <span className="text-sm text-gray-600">{weekTracks.length} tracks</span>
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-3">
                                                 <button
                                                     onClick={() => handleViewImages(week)}
                                                     className="text-blue-600 hover:text-blue-800 text-xs underline"
                                                 >
                                                     View Images
+                                                </button>
+                                                <button
+                                                    onClick={() => handleViewCaption(week)}
+                                                    className="text-green-600 hover:text-green-800 text-xs underline"
+                                                >
+                                                    View Caption
                                                 </button>
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -1346,6 +1391,7 @@ export default function TracksManagement() {
                                         <p className="text-sm opacity-75">Week of {currentWeekImages?.week_start || selectedWeek}</p>
                                     </div>
 
+
                                     {/* Action buttons */}
                                     <div className="mt-6 flex justify-center gap-4">
                                         <button
@@ -1402,6 +1448,80 @@ export default function TracksManagement() {
                                 </div>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Caption Modal */}
+            {showCaptionModal && currentWeekCaption && (
+                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-900 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-2xl font-bold text-white">📝 Caption & Hashtags</h2>
+                                <button
+                                    onClick={() => setShowCaptionModal(false)}
+                                    className="text-gray-400 hover:text-white transition-colors"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="text-sm text-gray-300 block mb-2">Week:</label>
+                                    <div className="text-white font-medium">{currentWeekCaption.week_start}</div>
+                                </div>
+
+                                <div>
+                                    <label className="text-sm text-gray-300 block mb-2">Caption:</label>
+                                    <div className="bg-black bg-opacity-50 rounded-lg p-4 text-white text-sm leading-relaxed whitespace-pre-line">
+                                        {currentWeekCaption.caption}
+                                    </div>
+                                    <button
+                                        onClick={() => copyToClipboard(currentWeekCaption.caption)}
+                                        className="mt-2 text-sm text-blue-300 hover:text-blue-200 transition-colors"
+                                    >
+                                        📋 Copy Caption
+                                    </button>
+                                </div>
+
+                                {currentWeekCaption.hashtags && currentWeekCaption.hashtags.length > 0 && (
+                                    <div>
+                                        <label className="text-sm text-gray-300 block mb-2">Hashtags:</label>
+                                        <div className="bg-black bg-opacity-50 rounded-lg p-4 text-white text-sm">
+                                            {currentWeekCaption.hashtags.join(' ')}
+                                        </div>
+                                        <button
+                                            onClick={() => copyToClipboard(currentWeekCaption.hashtags.join(' '))}
+                                            className="mt-2 text-sm text-blue-300 hover:text-blue-200 transition-colors"
+                                        >
+                                            📋 Copy Hashtags
+                                        </button>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-center text-sm text-gray-400">
+                                    <div>
+                                        Style: {currentWeekCaption.caption_style || 'balanced'}
+                                    </div>
+                                    <div>
+                                        Characters: {currentWeekCaption.caption?.length || 0}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end gap-3">
+                                <button
+                                    onClick={() => setShowCaptionModal(false)}
+                                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

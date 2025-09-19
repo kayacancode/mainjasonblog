@@ -418,6 +418,38 @@ class EnhancedSpotifyAutomation:
             else:
                 print("⚠️ No image URLs to save to database")
             
+            # Generate caption and hashtags
+            print(f"📝 Generating caption and hashtags...")
+            try:
+                from caption_generator import CaptionGenerator
+                caption_gen = CaptionGenerator()
+                
+                # Get caption style from environment variable or default to 'balanced'
+                caption_style = os.getenv('DEFAULT_CAPTION_STYLE', 'balanced')
+                
+                caption_result = caption_gen.generate_caption(
+                    tracks=unique_tracks,
+                    week_start=week_start_str,
+                    style=caption_style,
+                    include_hashtags=True
+                )
+                
+                print(f"✅ Caption generated ({caption_result['character_count']} chars)")
+                print(f"📝 Caption: {caption_result['caption'][:100]}...")
+                print(f"🏷️ Hashtags: {len(caption_result['hashtags'])} generated")
+                
+                # Save caption to images table
+                automation.save_caption_metadata(
+                    week_start_str, 
+                    caption_result['caption'],
+                    caption_result['hashtags'],
+                    caption_result['style']
+                )
+                
+            except Exception as e:
+                print(f"❌ Failed to generate caption: {e}")
+                # Continue without caption - images are still saved
+            
             # Create results dictionary
             results = {
                 'track_count': len(unique_tracks),

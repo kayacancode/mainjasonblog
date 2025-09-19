@@ -1191,6 +1191,55 @@ class SpotifyNewMusicAutomation:
             import traceback
             traceback.print_exc()
 
+    def save_caption_metadata(self, week_start, caption, hashtags, style):
+        """Save caption and hashtags to Supabase database"""
+        try:
+            from supabase import create_client, Client
+            
+            # Initialize Supabase client
+            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+            
+            if not supabase_url or not supabase_key:
+                logger.warning("Supabase credentials not found, skipping caption save")
+                print("❌ Supabase credentials not found, skipping caption save")
+                return
+                
+            supabase: Client = create_client(supabase_url, supabase_key)
+            
+            # Prepare caption metadata
+            now = datetime.now().isoformat()
+            metadata = {
+                'week_start': week_start,
+                'caption': caption,
+                'hashtags': hashtags,
+                'caption_style': style,
+                'updated_at': now
+            }
+            
+            print(f"📝 Saving caption metadata: {len(caption)} chars, {len(hashtags)} hashtags")
+            
+            # Update existing record or create new one
+            result = supabase.table('images').upsert(
+                metadata,
+                on_conflict='week_start'
+            ).execute()
+            
+            print(f"📊 Caption save result: {result}")
+            
+            if result.data:
+                logger.info(f"✅ Saved caption metadata for week {week_start}")
+                print(f"✅ Successfully saved caption for week {week_start}")
+            else:
+                logger.error(f"Failed to save caption metadata: {result}")
+                print(f"❌ Failed to save caption metadata: {result}")
+                
+        except Exception as e:
+            logger.error(f"Error saving caption metadata: {e}")
+            print(f"❌ Error saving caption metadata: {e}")
+            import traceback
+            traceback.print_exc()
+
     def cleanup_old_image_records(self):
         """Clean up old image records from database that have invalid URLs"""
         try:
