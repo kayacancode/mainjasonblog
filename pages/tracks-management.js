@@ -405,23 +405,62 @@ export default function TracksManagement() {
     // Image management functions
     const fetchWeekImages = async (weekStart) => {
         try {
-            console.log('Fetching images for week:', weekStart);
-            const { data, error } = await supabase
-                .from('images')
-                .select('*')
-                .eq('week_start', weekStart);
+            console.log('🔍 Fetching images for week:', weekStart);
             
-            console.log('Images query result:', { data, error });
+            // Try different week formats to match what's in the database
+            const weekFormats = [
+                weekStart, // Original format (YYYY-MM-DD)
+                weekStart.replace(/-/g, ''), // YYYYMMDD format
+                new Date(weekStart).toISOString().split('T')[0] // Ensure YYYY-MM-DD format
+            ];
             
-            if (error) {
-                console.error('Error fetching images:', error);
-                return null;
+            console.log('📅 Trying week formats:', weekFormats);
+            
+            for (const format of weekFormats) {
+                console.log(`🔎 Trying format: ${format}`);
+                const { data, error } = await supabase
+                    .from('images')
+                    .select('*')
+                    .eq('week_start', format);
+                
+                console.log(`📊 Query result for ${format}:`, { data, error });
+                
+                if (error) {
+                    console.error(`❌ Error fetching images for ${format}:`, error);
+                    continue;
+                }
+                
+                if (data && data.length > 0) {
+                    console.log(`✅ Found images for format ${format}:`, data[0]);
+                    
+                    // Fix old naming conventions to match actual storage files
+                    const imageData = data[0];
+                    if (imageData.cover_image_url) {
+                        // Fix old naming: cover_nmf_single_artist -> artist_collage
+                        imageData.cover_image_url = imageData.cover_image_url
+                            .replace('_cover_nmf_single_artist_', '_artist_collage_')
+                            .replace('_nmf_single_artist_', '_artist_collage_');
+                    }
+                    if (imageData.tracklist_image_url) {
+                        // Fix old naming: tracklist_nmf_tracklist -> tracklist
+                        imageData.tracklist_image_url = imageData.tracklist_image_url
+                            .replace('_tracklist_nmf_tracklist_', '_tracklist_')
+                            .replace('_nmf_tracklist_', '_tracklist_');
+                    }
+                    
+                    console.log('🔧 Fixed URLs:', {
+                        cover: imageData.cover_image_url,
+                        tracklist: imageData.tracklist_image_url
+                    });
+                    
+                    return imageData;
+                }
             }
             
-            // Return the first result or null
-            return data && data.length > 0 ? data[0] : null;
+            console.log('❌ No images found for any format');
+            return null;
         } catch (error) {
-            console.error('Error fetching images:', error);
+            console.error('❌ Error fetching images:', error);
             return null;
         }
     };
@@ -1263,14 +1302,40 @@ export default function TracksManagement() {
 
                                 {/* Image display */}
                                 <div className="text-center">
-                                    <img
-                                        src={currentImageIndex === 0 && currentWeekImages.cover_image_url 
+                                    {(() => {
+                                        const imageUrl = currentImageIndex === 0 && currentWeekImages.cover_image_url 
                                             ? currentWeekImages.cover_image_url 
-                                            : currentWeekImages.tracklist_image_url}
-                                        alt={currentImageIndex === 0 ? "Cover Image" : "Tracklist Image"}
-                                        className="max-w-full h-auto rounded-lg shadow-2xl mx-auto"
-                                        style={{ maxHeight: '80vh' }}
-                                    />
+                                            : currentWeekImages.tracklist_image_url;
+                                        
+                                        if (!imageUrl) {
+                                            return <div className="text-white text-lg">No image available for this week</div>;
+                                        }
+                                        
+                                        // Clean up the URL - remove trailing ? and fix folder structure
+                                        let cleanUrl = imageUrl.replace(/\?$/, '');
+                                        
+                                        // Fix old double folder structure to new single folder structure
+                                        if (cleanUrl.includes('/instagram-images/instagram_images/')) {
+                                            cleanUrl = cleanUrl.replace('/instagram-images/instagram_images/', '/instagram-images/');
+                                            console.log('Fixed URL structure:', cleanUrl);
+                                        }
+                                        
+                                        console.log('Displaying image URL:', cleanUrl);
+                                        
+                                        return (
+                                            <img
+                                                src={cleanUrl}
+                                                alt={currentImageIndex === 0 ? "Cover Image" : "Tracklist Image"}
+                                                className="max-w-full h-auto rounded-lg shadow-2xl mx-auto"
+                                                style={{ maxHeight: '80vh' }}
+                                                onLoad={() => console.log('✅ Image loaded successfully')}
+                                                onError={(e) => {
+                                                    console.error('❌ Image failed to load:', e);
+                                                    console.error('Failed URL:', cleanUrl);
+                                                }}
+                                            />
+                                        );
+                                    })()}
                                 
                                     
                                     {/* Image title */}
