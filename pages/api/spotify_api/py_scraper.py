@@ -9,8 +9,8 @@ import time
 from datetime import datetime, timedelta
 from typing import Dict, List
 
-import requests
 import spotipy
+from email_notifier import send_weekly_notification
 from selenium_scraper import SpotifySeleniumScraper
 from spotipy.oauth2 import SpotifyOAuth
 from supabase import Client, create_client
@@ -630,6 +630,31 @@ class EnhancedSpotifyAutomation:
             print(f"☁️ Tracklist URL: {tracklist_url}")
         print(f"📝 Caption: {caption_path}")
         print(f"💾 Data: {data_path}")
+
+        # Send email notification to client
+        if unique_tracks and len(unique_tracks) > 0:
+            try:
+                print("📧 Sending email notification to client...")
+                first_track = unique_tracks[0]
+                artist_name = first_track.get('artist', 'Unknown Artist')
+                track_name = first_track.get('name', 'Unknown Track')
+                
+                email_sent = send_weekly_notification(
+                    artist_name=artist_name,
+                    track_name=track_name,
+                    week_start=week_start_str,
+                    cover_url=cover_url or '',
+                    tracklist_url=tracklist_url or ''
+                )
+                
+                if email_sent:
+                    print("✅ Email notification sent successfully!")
+                else:
+                    print("⚠️ Email notification failed, but automation completed successfully")
+                    
+            except Exception as e:
+                print(f"⚠️ Error sending email notification: {e}")
+                print("✅ Automation completed successfully despite email error")
 
         return results
 
