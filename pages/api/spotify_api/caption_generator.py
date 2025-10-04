@@ -4,12 +4,12 @@ OpenAI Caption Generator for Instagram posts
 Generates captions and hashtags based on track metadata
 """
 
-import os
 import json
 import logging
+import os
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
 
 try:
     import openai
@@ -60,9 +60,8 @@ class CaptionGenerator:
     
     def __init__(self, api_key: str = None):
         """Initialize the caption generator"""
-        # Use hardcoded OpenAI API key for GitHub Actions compatibility
-        # Replace with your actual OpenAI API key
-        self.api_key = api_key or os.getenv('OPENAI_API_KEY') or "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"
+        # Get API key from environment variables only
+        self.api_key = api_key or os.getenv('OPENAI_API_KEY')
         
         if not self.api_key:
             logger.warning("OpenAI API key not found, will use fallback templates")
@@ -117,18 +116,18 @@ class CaptionGenerator:
             # Call OpenAI API (new v1.0+ syntax)
             client = openai.OpenAI(api_key=self.api_key)
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4",
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a music blogger creating Instagram captions for New Music Friday playlists. Create engaging, authentic captions that music fans would love."
+                        "content": "You're a music curator creating short, punchy Instagram captions for New Music Friday. Keep it concise, authentic, and engaging. Write like you're texting a friend about great music - casual but knowledgeable."
                     },
                     {
                         "role": "user",
                         "content": prompt
                     }
                 ],
-                max_tokens=300,
+                max_tokens=150,
                 temperature=0.7
             )
             
@@ -142,7 +141,7 @@ class CaptionGenerator:
             return {
                 'caption': caption_text,
                 'hashtags': hashtags,
-                'style': style.name,
+                'style': 'reviewer',
                 'generated_at': datetime.now().isoformat(),
                 'method': 'openai',
                 'character_count': len(caption_text)
@@ -198,19 +197,12 @@ class CaptionGenerator:
     
     def _create_prompt(self, track_info: str, week_start: str) -> str:
         """Create OpenAI prompt in reviewer style"""
-        return f"""Create an engaging Instagram caption for New Music Friday (week of {week_start}).
+        return f"""Write a short, engaging Instagram caption for New Music Friday (week of {week_start}).
 
 Tracks this week:
 {track_info}
 
-Write this as a music reviewer/blogger would - with personality, insight, and enthusiasm. Include:
-- A brief review of 1-2 standout tracks with specific commentary
-- Your take on the overall vibe and quality of the week
-- Some personality and music knowledge that shows you actually listen
-- Engaging language that music fans would appreciate and relate to
-- Appropriate emojis that enhance the message
-
-Keep it under 500 characters and make it feel authentic and knowledgeable about music. Don't include hashtags (they'll be added separately)."""
+Keep it under 200 characters. Write like you're recommending music to a friend - casual, enthusiastic, and to the point. Mention 1-2 standout tracks briefly. Use a few relevant emojis. Don't include hashtags."""
     
     def _create_emoji_heavy_caption(self, tracks: List[Dict], week_start: str) -> str:
         """Create emoji-heavy fallback caption"""

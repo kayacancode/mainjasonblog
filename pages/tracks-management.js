@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router';
+import Script from 'next/script';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -25,12 +26,16 @@ export default function TracksManagement() {
     const [currentWeekImages, setCurrentWeekImages] = useState(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [weekImageStatus, setWeekImageStatus] = useState({});
+    const [weekCaptionStatus, setWeekCaptionStatus] = useState({});
     const [captionLoading, setCaptionLoading] = useState(false);
     const [showCaptionModal, setShowCaptionModal] = useState(false);
     const [currentWeekCaption, setCurrentWeekCaption] = useState(null);
     const [isEditingCaption, setIsEditingCaption] = useState(false);
     const [editingCaption, setEditingCaption] = useState('');
     const [editingHashtags, setEditingHashtags] = useState('');
+    const [instagramPublisher, setInstagramPublisher] = useState(null);
+    const [isCreatingPost, setIsCreatingPost] = useState(false);
+    const [postMessage, setPostMessage] = useState('');
 
     // Form state for adding/editing tracks
     const [formData, setFormData] = useState({
@@ -77,6 +82,25 @@ export default function TracksManagement() {
             fetchAvailableTags();
         }
     }, [authLoading, user]);
+
+    // Initialize Instagram publisher when component mounts
+    useEffect(() => {
+        const initializeInstagram = () => {
+            if (typeof window !== 'undefined' && window.InstagramPublisher) {
+                const publisher = new window.InstagramPublisher();
+                // Set the Facebook App ID
+                publisher.facebookAppId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
+                setInstagramPublisher(publisher);
+                console.log('✅ Instagram publisher initialized with App ID:', publisher.facebookAppId);
+            } else {
+                console.log('⏳ Instagram publisher not ready yet, retrying...');
+                // Retry after a short delay
+                setTimeout(initializeInstagram, 1000);
+            }
+        };
+        
+        initializeInstagram();
+    }, []);
 
     useEffect(() => {
         fetchTracks();
@@ -153,6 +177,12 @@ export default function TracksManagement() {
             if (error) throw error;
             const uniqueWeeks = [...new Set(data.map(t => t.week_start))];
             setWeeks(uniqueWeeks);
+            
+            // Check image and caption status for each week
+            uniqueWeeks.forEach(week => {
+                checkWeekImageStatus(week);
+                checkWeekCaptionStatus(week);
+            });
         } catch (error) {
             console.error('Error fetching weeks:', error);
         }
@@ -411,7 +441,7 @@ export default function TracksManagement() {
     // Image management functions
     const fetchWeekImages = async (weekStart) => {
         try {
-            console.log('🔍 Fetching images for week:', weekStart);
+            //console.log('🔍 Fetching images for week:', weekStart);
             
             // Try different week formats to match what's in the database
             const weekFormats = [
@@ -420,24 +450,24 @@ export default function TracksManagement() {
                 new Date(weekStart).toISOString().split('T')[0] // Ensure YYYY-MM-DD format
             ];
             
-            console.log('📅 Trying week formats:', weekFormats);
+            //console.log('📅 Trying week formats:', weekFormats);
             
             for (const format of weekFormats) {
-                console.log(`🔎 Trying format: ${format}`);
+                //console.log(`🔎 Trying format: ${format}`);
                 const { data, error } = await supabase
                     .from('images')
                     .select('*')
                     .eq('week_start', format);
                 
-                console.log(`📊 Query result for ${format}:`, { data, error });
+                //console.log(`📊 Query result for ${format}:`, { data, error });
                 
                 if (error) {
-                    console.error(`❌ Error fetching images for ${format}:`, error);
+                    //console.error(`❌ Error fetching images for ${format}:`, error);
                     continue;
                 }
                 
                 if (data && data.length > 0) {
-                    console.log(`✅ Found images for format ${format}:`, data[0]);
+                    //console.log(`✅ Found images for format ${format}:`, data[0]);
                     
                     // Fix old naming conventions to match actual storage files
                     const imageData = data[0];
@@ -463,10 +493,10 @@ export default function TracksManagement() {
                 }
             }
             
-            console.log('❌ No images found for any format');
+            //console.log('❌ No images found for any format');
             return null;
         } catch (error) {
-            console.error('❌ Error fetching images:', error);
+            //console.error('❌ Error fetching images:', error);
             return null;
         }
     };
@@ -480,10 +510,19 @@ export default function TracksManagement() {
         return !!images;
     };
 
+    const checkWeekCaptionStatus = async (weekStart) => {
+        const caption = await fetchWeekCaption(weekStart);
+        setWeekCaptionStatus(prev => ({
+            ...prev,
+            [weekStart]: !!(caption && caption.caption)
+        }));
+        return !!(caption && caption.caption);
+    };
+
     // Caption functions
     const fetchWeekCaption = async (weekStart) => {
         try {
-            console.log('🔍 Fetching caption for week:', weekStart);
+            //console.log('🔍 Fetching caption for week:', weekStart);
             const { data, error } = await supabase
                 .from('images')
                 .select('caption, hashtags, caption_style, week_start')
@@ -491,13 +530,13 @@ export default function TracksManagement() {
                 .single();
             
             if (error) {
-                console.error('Error fetching caption:', error);
+                //console.error('Error fetching caption:', error);
                 return null;
             }
             
             return data;
         } catch (error) {
-            console.error('Error fetching caption:', error);
+            //console.error('Error fetching caption:', error);
             return null;
         }
     };
@@ -582,6 +621,51 @@ export default function TracksManagement() {
         setIsEditingCaption(false);
     };
 
+    // Instagram post creation
+    const handleCreateInstagramPost = async () => {
+        if (!currentWeekImages || !currentWeekCaption) {
+            alert('Please ensure both images and caption are available for this week');
+            return;
+        }
+
+        if (!instagramPublisher) {
+            alert('Instagram publisher not initialized. Please refresh the page and try again.');
+            return;
+        }
+
+        try {
+            setIsCreatingPost(true);
+            setPostMessage('');
+
+            const weekStart = currentWeekImages.week_start;
+            const coverImageUrl = currentWeekImages.cover_image_url;
+            const tracklistImageUrl = currentWeekImages.tracklist_image_url;
+            const caption = currentWeekCaption.caption;
+            const hashtags = currentWeekCaption.hashtags || [];
+
+            const result = await instagramPublisher.handleCreatePost(
+                weekStart,
+                coverImageUrl,
+                tracklistImageUrl,
+                caption,
+                hashtags
+            );
+
+            // Handle the result from Instagram publisher
+            if (result.success) {
+                setPostMessage(result.message);
+            } else {
+                setPostMessage(result.message);
+            }
+
+        } catch (error) {
+            console.error('Error creating Instagram post:', error);
+            setPostMessage(`Error: ${error.message}`);
+        } finally {
+            setIsCreatingPost(false);
+        }
+    };
+
 
     const copyToClipboard = async (text) => {
         try {
@@ -654,6 +738,8 @@ export default function TracksManagement() {
 
     return (
         <div className="min-h-screen bg-gray-50">
+            {/* Instagram Client Script */}
+            <Script src="/instagram-client.js" strategy="afterInteractive" />
             {/* Top Navigation Bar */}
             <nav className="bg-white shadow-sm border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1168,18 +1254,104 @@ export default function TracksManagement() {
                                         <div className="flex items-center gap-4">
                                             <span className="text-sm text-gray-600">{weekTracks.length} tracks</span>
                                             <div className="flex items-center gap-3">
-                                                <button
-                                                    onClick={() => handleViewImages(week)}
-                                                    className="text-blue-600 hover:text-blue-800 text-xs underline"
-                                                >
-                                                    View Images
-                                                </button>
-                                                <button
-                                                    onClick={() => handleViewCaption(week)}
-                                                    className="text-green-600 hover:text-green-800 text-xs underline"
-                                                >
-                                                    View Caption
-                                                </button>
+                                                {weekImageStatus[week] && (
+                                                    <button
+                                                        onClick={() => handleViewImages(week)}
+                                                        className="text-blue-600 hover:text-blue-800 text-xs underline"
+                                                    >
+                                                        View Images
+                                                    </button>
+                                                )}
+                                                {weekCaptionStatus[week] && (
+                                                    <button
+                                                        onClick={() => handleViewCaption(week)}
+                                                        className="text-green-600 hover:text-green-800 text-xs underline"
+                                                    >
+                                                        View Caption
+                                                    </button>
+                                                )}
+                                                {/* Instagram Post Creation Button - Show if both images and caption are available */}
+                                                {weekImageStatus[week] && weekCaptionStatus[week] && (
+                                                    <button
+                                                        onClick={async () => {
+                                                            // Check if Instagram publisher is initialized
+                                                            if (!instagramPublisher) {
+                                                                alert('Instagram publisher not initialized. Please refresh the page and try again.');
+                                                                return;
+                                                            }
+
+                                                            // Check if caption exists for this week
+                                                            const captionData = await fetchWeekCaption(week);
+                                                            if (!captionData || !captionData.caption) {
+                                                                alert('Both images and caption are required to create an Instagram post. Please ensure caption is available for this week.');
+                                                                return;
+                                                            }
+
+                                                            // Get images for this week
+                                                            const imagesData = await fetchWeekImages(week);
+                                                            if (!imagesData || !imagesData.cover_image_url || !imagesData.tracklist_image_url) {
+                                                                alert('Both cover and tracklist images are required to create an Instagram post.');
+                                                                return;
+                                                            }
+
+                                                            // Set the data and create Instagram post directly
+                                                            setCurrentWeekImages(imagesData);
+                                                            setCurrentWeekCaption(captionData);
+                                                            
+                                                            // Create Instagram post directly
+                                                            try {
+                                                                setIsCreatingPost(true);
+                                                                setPostMessage('');
+
+                                                                const weekStart = imagesData.week_start;
+                                                                const coverImageUrl = imagesData.cover_image_url;
+                                                                const tracklistImageUrl = imagesData.tracklist_image_url;
+                                                                const caption = captionData.caption;
+                                                                const hashtags = captionData.hashtags || [];
+
+                                                                const result = await instagramPublisher.handleCreatePost(
+                                                                    weekStart,
+                                                                    coverImageUrl,
+                                                                    tracklistImageUrl,
+                                                                    caption,
+                                                                    hashtags
+                                                                );
+
+                                                                // Handle the result from Instagram publisher
+                                                                if (result.success) {
+                                                                    setPostMessage(result.message);
+                                                                    alert(`✅ ${result.message}`);
+                                                                } else {
+                                                                    setPostMessage(result.message);
+                                                                    alert(`❌ ${result.message}`);
+                                                                }
+
+                                                            } catch (error) {
+                                                                console.error('Error creating Instagram post:', error);
+                                                                setPostMessage(`Error: ${error.message}`);
+                                                                alert(`❌ Error creating Instagram post: ${error.message}`);
+                                                            } finally {
+                                                                setIsCreatingPost(false);
+                                                            }
+                                                        }}
+                                                        disabled={isCreatingPost}
+                                                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1"
+                                                    >
+                                                        {isCreatingPost ? (
+                                                            <>
+                                                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
+                                                                Creating...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                                                                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                                                                </svg>
+                                                                Instagram
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                )}
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <input
@@ -1450,7 +1622,7 @@ export default function TracksManagement() {
 
 
                                     {/* Action buttons */}
-                                    <div className="mt-6 flex justify-center gap-4">
+                                    <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
                                         <button
                                             onClick={() => downloadImage(
                                                 currentImageIndex === 0 
@@ -1465,7 +1637,46 @@ export default function TracksManagement() {
                                             </svg>
                                             Download
                                         </button>
+                                        
+                                        {/* Instagram Post Creation Button - Only show if both images and caption are available */}
+                                        {currentWeekImages.cover_image_url && 
+                                         currentWeekImages.tracklist_image_url && 
+                                         currentWeekCaption && 
+                                         currentWeekCaption.caption && (
+                                            <button
+                                                onClick={handleCreateInstagramPost}
+                                                disabled={isCreatingPost}
+                                                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 text-white px-6 py-2 rounded-full text-sm font-medium transition-all border border-white border-opacity-30 flex items-center justify-center"
+                                            >
+                                                {isCreatingPost ? (
+                                                    <>
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                        Creating Post...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <svg className="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                                                        </svg>
+                                                        Create Instagram Post
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
                                     </div>
+
+                                    {/* Post Message */}
+                                    {postMessage && (
+                                        <div className="mt-4 text-center">
+                                            <div className={`inline-block px-4 py-2 rounded-lg text-sm ${
+                                                postMessage.includes('Error') 
+                                                    ? 'bg-red-500 bg-opacity-20 text-red-200 border border-red-500 border-opacity-30' 
+                                                    : 'bg-green-500 bg-opacity-20 text-green-200 border border-green-500 border-opacity-30'
+                                            }`}>
+                                                {postMessage}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Image indicators */}
                                     {currentWeekImages.cover_image_url && currentWeekImages.tracklist_image_url && (

@@ -20,21 +20,250 @@ const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
  */
 async function getInstagramAccessToken(pageAccessToken) {
     try {
+        console.log('🔍 Getting Instagram access token...');
+        console.log('Page Access Token:', pageAccessToken.substring(0, 20) + '...');
+        
+        // Use the provided page access token from environment variables
+        const directPageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+        
+        if (!directPageToken) {
+            throw new Error('FACEBOOK_PAGE_ACCESS_TOKEN not configured in environment variables');
+        }
+        
+        console.log('🔍 Trying direct page access with provided token...');
         const response = await fetch(
-            `${INSTAGRAM_API_BASE}/me/accounts?access_token=${pageAccessToken}`
+            `${INSTAGRAM_API_BASE}/me/accounts?access_token=${directPageToken}`
         );
+        
+        // Always try /me/pages as well
+        console.log('🔍 Trying /me/pages endpoint...');
+        const pagesResponse = await fetch(
+            `${INSTAGRAM_API_BASE}/me/pages?access_token=${directPageToken}`
+        );
+        console.log('📊 Pages response status:', pagesResponse.status);
+        const pagesData = await pagesResponse.json();
+        console.log('📊 Pages response data:', JSON.stringify(pagesData, null, 2));
+        
+        // Also try /me to see what user info we have
+        console.log('🔍 Trying /me endpoint...');
+        const meResponse = await fetch(
+            `${INSTAGRAM_API_BASE}/me?access_token=${directPageToken}`
+        );
+        console.log('📊 Me response status:', meResponse.status);
+        const meData = await meResponse.json();
+        console.log('📊 Me response data:', JSON.stringify(meData, null, 2));
+        
+        // Try to get pages with different permissions
+        console.log('🔍 Trying /me/accounts with different fields...');
+        const accountsResponse = await fetch(
+            `${INSTAGRAM_API_BASE}/me/accounts?access_token=${directPageToken}&fields=id,name,access_token,instagram_business_account`
+        );
+        console.log('📊 Accounts response status:', accountsResponse.status);
+        const accountsData = await accountsResponse.json();
+        console.log('📊 Accounts response data:', JSON.stringify(accountsData, null, 2));
+        
+        // Try to search for the page directly
+        console.log('🔍 Searching for InSuaveWeTrust page...');
+        const searchResponse = await fetch(
+            `${INSTAGRAM_API_BASE}/search?q=InSuaveWeTrust&type=page&access_token=${pageAccessToken}`
+        );
+        console.log('📊 Search response status:', searchResponse.status);
+        const searchData = await searchResponse.json();
+        console.log('📊 Search response data:', JSON.stringify(searchData, null, 2));
+        
+        // Try to get page access token directly
+        console.log('🔍 Trying to get page access token directly...');
+        const pageTokenResponse2 = await fetch(
+            `${INSTAGRAM_API_BASE}/me/accounts?access_token=${pageAccessToken}&fields=access_token`
+        );
+        console.log('📊 Page token response status:', pageTokenResponse2.status);
+        let pageTokenData2;
+        try {
+            pageTokenData2 = await pageTokenResponse2.json();
+            console.log('📊 Page token response data:', JSON.stringify(pageTokenData2, null, 2));
+        } catch (error) {
+            console.log('📊 Page token response text:', await pageTokenResponse2.text());
+            pageTokenData2 = {};
+        }
+        
+        // Try to access the page directly by ID (if we can find it)
+        console.log('🔍 Trying to access page directly by ID...');
+        const pageIdResponse = await fetch(
+            `${INSTAGRAM_API_BASE}/InSuaveWeTrust?access_token=${directPageToken}&fields=id,name,instagram_business_account`
+        );
+        console.log('📊 Page ID response status:', pageIdResponse.status);
+        const pageIdData = await pageIdResponse.json();
+        console.log('📊 Page ID response data:', JSON.stringify(pageIdData, null, 2));
+        
+        // Now try to get Instagram Business account info
+        if (pageIdData.id) {
+            // Try to get the actual Page Access Token from the page
+            console.log('🔍 Trying to get Page Access Token from page...');
+            const pageTokenResponse = await fetch(
+                `${INSTAGRAM_API_BASE}/${pageIdData.id}?access_token=${directPageToken}&fields=access_token`
+            );
+            console.log('📊 Page token response status:', pageTokenResponse.status);
+            
+            let pageTokenData;
+            try {
+                pageTokenData = await pageTokenResponse.json();
+                console.log('📊 Page token response data:', JSON.stringify(pageTokenData, null, 2));
+            } catch (error) {
+                console.log('📊 Page token response text:', await pageTokenResponse.text());
+                pageTokenData = {};
+            }
+            
+            // Use the page's access token if available
+            const actualPageToken = pageTokenData.access_token || directPageToken;
+            console.log('🔍 Using actual page token:', actualPageToken.substring(0, 20) + '...');
+            
+            console.log('🔍 Getting Instagram Business account info...');
+            console.log('🔍 Using page ID:', pageIdData.id);
+            console.log('🔍 Using token:', actualPageToken.substring(0, 20) + '...');
+            
+            const instagramResponse = await fetch(
+                `${INSTAGRAM_API_BASE}/${pageIdData.id}?access_token=${actualPageToken}&fields=instagram_business_account{id,username,name}`
+            );
+            console.log('📊 Instagram response status:', instagramResponse.status);
+            const instagramData = await instagramResponse.json();
+            console.log('📊 Instagram response data:', JSON.stringify(instagramData, null, 2));
+            
+            // Also try to get all fields to see what's available
+            console.log('🔍 Getting all page fields...');
+            const allFieldsResponse = await fetch(
+                `${INSTAGRAM_API_BASE}/${pageIdData.id}?access_token=${actualPageToken}&fields=id,name,instagram_business_account,connected_instagram_account`
+            );
+            console.log('📊 All fields response status:', allFieldsResponse.status);
+            const allFieldsData = await allFieldsResponse.json();
+            console.log('📊 All fields response data:', JSON.stringify(allFieldsData, null, 2));
+            
+            // Try different Instagram field names
+            console.log('🔍 Trying different Instagram field names...');
+            const instagramFieldsResponse = await fetch(
+                `${INSTAGRAM_API_BASE}/${pageIdData.id}?access_token=${actualPageToken}&fields=instagram_business_account,instagram_accounts`
+            );
+            console.log('📊 Instagram fields response status:', instagramFieldsResponse.status);
+            const instagramFieldsData = await instagramFieldsResponse.json();
+            console.log('📊 Instagram fields response data:', JSON.stringify(instagramFieldsData, null, 2));
+            
+            // Check token permissions
+            console.log('🔍 Checking token permissions...');
+            const tokenInfoResponse = await fetch(
+                `${INSTAGRAM_API_BASE}/me?access_token=${directPageToken}&fields=id,name`
+            );
+            console.log('📊 Token info response status:', tokenInfoResponse.status);
+            const tokenInfoData = await tokenInfoResponse.json();
+            console.log('📊 Token info response data:', JSON.stringify(tokenInfoData, null, 2));
+            
+            // If we found Instagram account, use it
+            if (instagramData.instagram_business_account) {
+                console.log('✅ Found Instagram Business account!');
+                console.log('📱 Instagram Account ID:', instagramData.instagram_business_account.id);
+                
+                // Try to get Instagram account details
+                console.log('🔍 Getting Instagram account details...');
+                const instagramDetailsResponse = await fetch(
+                    `${INSTAGRAM_API_BASE}/${instagramData.instagram_business_account.id}?access_token=${actualPageToken}&fields=id,username,name,account_type`
+                );
+                console.log('📊 Instagram details response status:', instagramDetailsResponse.status);
+                const instagramDetailsData = await instagramDetailsResponse.json();
+                console.log('📊 Instagram account details:', JSON.stringify(instagramDetailsData, null, 2));
+                
+                        return {
+                            instagramAccountId: instagramData.instagram_business_account.id,
+                            pageAccessToken: actualPageToken,
+                            pageId: pageIdData.id,
+                            pageName: pageIdData.name
+                        };
+            } else {
+                console.log('❌ No Instagram Business account found in API response.');
+                console.log('🔍 Let me try a different approach - checking if Instagram is connected...');
+                
+                // Try to get Instagram account directly by searching for it
+                console.log('🔍 Trying to find Instagram account via page insights...');
+                const insightsResponse = await fetch(
+                    `${INSTAGRAM_API_BASE}/${pageIdData.id}/insights?access_token=${actualPageToken}&metric=impressions`
+                );
+                console.log('📊 Insights response status:', insightsResponse.status);
+                const insightsData = await insightsResponse.json();
+                console.log('📊 Insights response data:', JSON.stringify(insightsData, null, 2));
+                
+                // If insights work, it means Instagram is connected
+                if (insightsResponse.status === 200) {
+                    console.log('✅ Instagram is connected! Insights API works.');
+                    console.log('💡 The instagram_business_account field might not be available, but Instagram is connected.');
+                    
+                    // Try to get Instagram account ID from a different endpoint
+                    console.log('🔍 Trying to get Instagram account from connected_instagram_account field...');
+                    const connectedResponse = await fetch(
+                        `${INSTAGRAM_API_BASE}/${pageIdData.id}?access_token=${actualPageToken}&fields=connected_instagram_account`
+                    );
+                    console.log('📊 Connected Instagram response status:', connectedResponse.status);
+                    const connectedData = await connectedResponse.json();
+                    console.log('📊 Connected Instagram data:', JSON.stringify(connectedData, null, 2));
+                    
+                    if (connectedData.connected_instagram_account) {
+                        console.log('✅ Found connected Instagram account!');
+                        return {
+                            instagramAccountId: connectedData.connected_instagram_account.id,
+                            pageAccessToken: actualPageToken,
+                            pageId: pageIdData.id,
+                            pageName: pageIdData.name
+                        };
+                    }
+                }
+                
+                console.log('❌ No Instagram Business account found. Page exists but Instagram not connected.');
+                console.log('💡 You need to connect an Instagram Business account to this Facebook page.');
+                console.log('💡 Go to Facebook Page Settings → Instagram → Connect Account');
+                throw new Error('No Instagram Business account connected to this Facebook page. Please connect an Instagram Business account first.');
+            }
+        }
+        
+        // Check if user can create pages
+        console.log('🔍 Checking if user can create pages...');
+        const createPageResponse = await fetch(
+            `${INSTAGRAM_API_BASE}/me/accounts?access_token=${pageAccessToken}&name=Test Page&fields=id,name,access_token`,
+            { method: 'POST' }
+        );
+        console.log('📊 Create page response status:', createPageResponse.status);
+        const createPageData = await createPageResponse.json();
+        console.log('📊 Create page response data:', JSON.stringify(createPageData, null, 2));
         const data = await response.json();
         
+        console.log('📊 Facebook API response:', JSON.stringify(data, null, 2));
+        console.log('📊 Response status:', response.status);
+        console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
+        
         if (data.error) {
+            console.error('Facebook API Error:', data.error);
             throw new Error(`Facebook API Error: ${data.error.message}`);
         }
+        
+        if (!data.data || data.data.length === 0) {
+            console.log('❌ No Facebook Pages found. This could mean:');
+            console.log('1. User has no Facebook Pages');
+            console.log('2. Page Access Token lacks permissions');
+            console.log('3. Facebook App needs additional setup');
+            console.log('4. User needs to grant page permissions');
+            throw new Error('No Facebook Pages found for this user');
+        }
+        
+        console.log('📄 Available pages:', data.data.map(page => ({
+            id: page.id,
+            name: page.name,
+            hasInstagram: !!page.instagram_business_account
+        })));
         
         // Find the Instagram account
         const instagramAccount = data.data.find(account => account.instagram_business_account);
         
         if (!instagramAccount) {
-            throw new Error('No Instagram Business account found');
+            console.error('❌ No Instagram Business account found in any of the pages');
+            throw new Error('No Instagram Business account found. Please ensure your Facebook Page is connected to an Instagram Business account.');
         }
+        
+        console.log('✅ Found Instagram Business account:', instagramAccount.instagram_business_account.id);
         
         return {
             instagramAccountId: instagramAccount.instagram_business_account.id,
@@ -51,6 +280,11 @@ async function getInstagramAccessToken(pageAccessToken) {
  */
 async function uploadMediaToInstagram(mediaUrl, accessToken, instagramAccountId) {
     try {
+        console.log('🔍 Uploading media to Instagram...');
+        console.log('📱 Instagram Account ID:', instagramAccountId);
+        console.log('🖼️ Media URL:', mediaUrl);
+        console.log('🔑 Access Token:', accessToken ? accessToken.substring(0, 20) + '...' : 'undefined');
+        
         // Step 1: Create media container
         const containerResponse = await fetch(
             `${INSTAGRAM_API_BASE}/${instagramAccountId}/media`,
@@ -66,13 +300,48 @@ async function uploadMediaToInstagram(mediaUrl, accessToken, instagramAccountId)
             }
         );
         
+        console.log('📊 Container response status:', containerResponse.status);
         const containerData = await containerResponse.json();
+        console.log('📊 Container response data:', JSON.stringify(containerData, null, 2));
         
         if (containerData.error) {
             throw new Error(`Instagram API Error: ${containerData.error.message}`);
         }
         
-        return containerData.id; // Media container ID
+        const containerId = containerData.id;
+        
+        // Wait for media to be processed
+        console.log('⏳ Waiting for media to be processed...');
+        let status = 'IN_PROGRESS';
+        let attempts = 0;
+        const maxAttempts = 30; // 5 minutes max wait
+        
+        while (status === 'IN_PROGRESS' && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+            
+            const statusResponse = await fetch(
+                `${INSTAGRAM_API_BASE}/${containerId}?fields=status_code&access_token=${accessToken}`
+            );
+            const statusData = await statusResponse.json();
+            
+            console.log(`📊 Status check ${attempts + 1}:`, statusData);
+            
+            if (statusData.status_code === 'FINISHED') {
+                status = 'FINISHED';
+                console.log('✅ Media processing completed!');
+            } else if (statusData.status_code === 'ERROR') {
+                throw new Error(`Media processing failed: ${statusData.error_message || 'Unknown error'}`);
+            } else {
+                attempts++;
+                console.log(`⏳ Still processing... (${attempts}/${maxAttempts})`);
+            }
+        }
+        
+        if (status !== 'FINISHED') {
+            throw new Error('Media processing timed out');
+        }
+        
+        return containerId; // Media container ID
     } catch (error) {
         console.error('Error uploading media to Instagram:', error);
         throw error;
@@ -166,18 +435,29 @@ export default async function handler(req, res) {
         }
         
         // Get Instagram access token
-        const { instagramAccountId, accessToken } = await getInstagramAccessToken(pageAccessToken);
+        const { instagramAccountId, pageAccessToken: instagramAccessToken } = await getInstagramAccessToken(pageAccessToken);
         
         // Upload media to Instagram
         const mediaIds = [];
         
+        // Clean image URLs (remove query parameters and trailing characters)
+        const cleanCoverUrl = coverImageUrl.split('?')[0];
+        const cleanTracklistUrl = tracklistImageUrl ? tracklistImageUrl.split('?')[0] : null;
+        
+        console.log('🔍 Original cover URL:', coverImageUrl);
+        console.log('🔍 Cleaned cover URL:', cleanCoverUrl);
+        if (tracklistImageUrl) {
+            console.log('🔍 Original tracklist URL:', tracklistImageUrl);
+            console.log('🔍 Cleaned tracklist URL:', cleanTracklistUrl);
+        }
+        
         // Upload cover image
-        const coverMediaId = await uploadMediaToInstagram(coverImageUrl, accessToken, instagramAccountId);
+        const coverMediaId = await uploadMediaToInstagram(cleanCoverUrl, instagramAccessToken, instagramAccountId);
         mediaIds.push(coverMediaId);
         
         // Upload tracklist image if provided
-        if (tracklistImageUrl) {
-            const tracklistMediaId = await uploadMediaToInstagram(tracklistImageUrl, accessToken, instagramAccountId);
+        if (cleanTracklistUrl) {
+            const tracklistMediaId = await uploadMediaToInstagram(cleanTracklistUrl, instagramAccessToken, instagramAccountId);
             mediaIds.push(tracklistMediaId);
         }
         
@@ -188,7 +468,7 @@ export default async function handler(req, res) {
         const { postId, containerId } = await createInstagramPost(
             mediaIds, 
             fullCaption, 
-            accessToken, 
+            instagramAccessToken, 
             instagramAccountId
         );
         

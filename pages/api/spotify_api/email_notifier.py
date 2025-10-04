@@ -14,22 +14,19 @@ logger = logging.getLogger(__name__)
 
 class EmailNotifier:
     """Handles sending email notifications for New Music Friday content"""
-    
     def __init__(self):
         # Try environment variables first, then fall back to hardcoded credentials
         self.api_key = os.getenv('SENDGRID_API_KEY')
         self.client_email = os.getenv('CLIENT_EMAIL_ADDRESS', 'client@example.com')
         self.dashboard_url = os.getenv('DASHBOARD_URL', 'https://your-domain.com/tracks-management')
         
-        # Fallback to hardcoded credentials if environment variables are not available
+        # Check if API key is configured
         if not self.api_key:
-            # TODO: Replace with your actual SendGrid API key
-            self.api_key = "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"
-            self.client_email = "shayan1baig@gmail.com"  # Replace with actual client email
-            self.dashboard_url = "https://www.insuavewetrust.com/tracks-management"  # Replace with your actual domain
-            logger.info("🔍 Using hardcoded email credentials for testing")
+            logger.warning("⚠️ SendGrid API key not configured, email notifications disabled")
+            self.enabled = False
+            return
         
-        if not self.api_key or self.api_key == "SG.Ee5x-iAGRTi-u8_ZBBpdNQ.UqihyPftWrjKYyxFHLR6QPexfAWjF1idq1hUT3fxyIYG.Ee5x-iAGRTi-u8_ZBBpdNQ.UqihyPftWrjKYyxFHLR6QPexfAWjF1idq1hUT3fxyIY":
+        if not self.api_key or self.api_key == "SG.test_key_here":
             logger.warning("⚠️ SendGrid API key not configured, email notifications disabled")
             self.enabled = False
         else:
@@ -194,11 +191,12 @@ class EmailNotifier:
                     
                     <h3>📸 Generated Content</h3>
                     <p>Your cover image and tracklist have been generated and are ready for review in the dashboard.</p>
+                    <p><strong>📱 Next Step:</strong> You can now create an Instagram draft post directly from the dashboard using the generated images and caption!</p>
                     
                     <div class="deadline">
                         <strong>⏰ Review Deadline:</strong> {review_deadline}
                         <br>
-                        Please review the content and make any necessary edits before the deadline.
+                        Please review the content, create Instagram draft posts, and make any necessary edits before the deadline.
                     </div>
                     
                     <div style="text-align: center;">
