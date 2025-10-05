@@ -18,7 +18,7 @@ class InstagramPublisher {
             throw new Error('Facebook App ID not configured. Please check your environment variables.');
         }
         
-        const scope = 'public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_engagement';
+        const scope = 'public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_engagement,instagram_basic,instagram_content_publish,pages_manage_metadata';
         const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${this.facebookAppId}&redirect_uri=${this.redirectUri}&scope=${scope}&response_type=code`;
         
         // Open popup window for OAuth

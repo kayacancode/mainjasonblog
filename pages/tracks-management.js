@@ -34,7 +34,7 @@ export default function TracksManagement() {
     const [editingCaption, setEditingCaption] = useState('');
     const [editingHashtags, setEditingHashtags] = useState('');
     const [instagramPublisher, setInstagramPublisher] = useState(null);
-    const [isCreatingPost, setIsCreatingPost] = useState(false);
+    const [creatingPostForWeek, setCreatingPostForWeek] = useState(null);
     const [postMessage, setPostMessage] = useState('');
 
     // Form state for adding/editing tracks
@@ -634,7 +634,7 @@ export default function TracksManagement() {
         }
 
         try {
-            setIsCreatingPost(true);
+            setCreatingPostForWeek(currentWeekImages.week_start);
             setPostMessage('');
 
             const weekStart = currentWeekImages.week_start;
@@ -662,7 +662,7 @@ export default function TracksManagement() {
             console.error('Error creating Instagram post:', error);
             setPostMessage(`Error: ${error.message}`);
         } finally {
-            setIsCreatingPost(false);
+            setCreatingPostForWeek(null);
         }
     };
 
@@ -1300,7 +1300,7 @@ export default function TracksManagement() {
                                                             
                                                             // Create Instagram post directly
                                                             try {
-                                                                setIsCreatingPost(true);
+                                                                setCreatingPostForWeek(week);
                                                                 setPostMessage('');
 
                                                                 const weekStart = imagesData.week_start;
@@ -1331,13 +1331,13 @@ export default function TracksManagement() {
                                                                 setPostMessage(`Error: ${error.message}`);
                                                                 alert(`❌ Error creating Instagram post: ${error.message}`);
                                                             } finally {
-                                                                setIsCreatingPost(false);
+                                                                setCreatingPostForWeek(null);
                                                             }
                                                         }}
-                                                        disabled={isCreatingPost}
+                                                        disabled={creatingPostForWeek === week}
                                                         className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1"
                                                     >
-                                                        {isCreatingPost ? (
+                                                        {creatingPostForWeek === week ? (
                                                             <>
                                                                 <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
                                                                 Creating...
@@ -1645,10 +1645,10 @@ export default function TracksManagement() {
                                          currentWeekCaption.caption && (
                                             <button
                                                 onClick={handleCreateInstagramPost}
-                                                disabled={isCreatingPost}
+                                                disabled={creatingPostForWeek === currentWeekImages?.week_start}
                                                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 text-white px-6 py-2 rounded-full text-sm font-medium transition-all border border-white border-opacity-30 flex items-center justify-center"
                                             >
-                                                {isCreatingPost ? (
+                                                {creatingPostForWeek === currentWeekImages?.week_start ? (
                                                     <>
                                                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                                                         Creating Post...

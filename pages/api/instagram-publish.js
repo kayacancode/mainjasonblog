@@ -353,6 +353,8 @@ async function uploadMediaToInstagram(mediaUrl, accessToken, instagramAccountId)
  */
 async function createInstagramPost(mediaIds, caption, accessToken, instagramAccountId) {
     try {
+        console.log('🔍 Creating Instagram post with media IDs:', mediaIds);
+        
         // Step 2: Create post container
         const postData = {
             media_type: mediaIds.length > 1 ? 'CAROUSEL' : 'IMAGE',
@@ -360,6 +362,8 @@ async function createInstagramPost(mediaIds, caption, accessToken, instagramAcco
             caption: caption,
             access_token: accessToken
         };
+        
+        console.log('🔍 Post data:', JSON.stringify(postData, null, 2));
         
         const postResponse = await fetch(
             `${INSTAGRAM_API_BASE}/${instagramAccountId}/media`,
@@ -373,12 +377,45 @@ async function createInstagramPost(mediaIds, caption, accessToken, instagramAcco
         );
         
         const postContainerData = await postResponse.json();
+        console.log('📊 Post container response:', JSON.stringify(postContainerData, null, 2));
         
         if (postContainerData.error) {
             throw new Error(`Instagram API Error: ${postContainerData.error.message}`);
         }
         
+        // Wait for post container to be ready
+        console.log('⏳ Waiting for post container to be ready...');
+        let postStatus = 'IN_PROGRESS';
+        let postAttempts = 0;
+        const maxPostAttempts = 30; // 5 minutes max wait
+        
+        while (postStatus === 'IN_PROGRESS' && postAttempts < maxPostAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+            
+            const postStatusResponse = await fetch(
+                `${INSTAGRAM_API_BASE}/${postContainerData.id}?fields=status_code&access_token=${accessToken}`
+            );
+            const postStatusData = await postStatusResponse.json();
+            
+            console.log(`📊 Post status check ${postAttempts + 1}:`, postStatusData);
+            
+            if (postStatusData.status_code === 'FINISHED') {
+                postStatus = 'FINISHED';
+                console.log('✅ Post container ready!');
+            } else if (postStatusData.status_code === 'ERROR') {
+                throw new Error(`Post container creation failed: ${postStatusData.error_message || 'Unknown error'}`);
+            } else {
+                postAttempts++;
+                console.log(`⏳ Post container still processing... (${postAttempts}/${maxPostAttempts})`);
+            }
+        }
+        
+        if (postStatus !== 'FINISHED') {
+            throw new Error('Post container creation timed out');
+        }
+        
         // Step 3: Publish the post
+        console.log('🚀 Publishing post...');
         const publishResponse = await fetch(
             `${INSTAGRAM_API_BASE}/${instagramAccountId}/media_publish`,
             {
@@ -394,6 +431,7 @@ async function createInstagramPost(mediaIds, caption, accessToken, instagramAcco
         );
         
         const publishData = await publishResponse.json();
+        console.log('📊 Publish response:', JSON.stringify(publishData, null, 2));
         
         if (publishData.error) {
             throw new Error(`Instagram API Error: ${publishData.error.message}`);
