@@ -578,6 +578,18 @@ class EnhancedSpotifyAutomation:
             week_start = today - timedelta(days=days_since_friday)
             week_start_str = week_start.strftime('%Y-%m-%d')
 
+            # Clean up existing tracks for this week to prevent duplicates
+            print(f"🧹 Cleaning up existing tracks for week {week_start_str}...")
+            try:
+                delete_result = supabase.table('tracks').delete().eq('week_start', week_start_str).execute()
+                if hasattr(delete_result, 'data') and delete_result.data:
+                    print(f"✅ Deleted {len(delete_result.data)} existing tracks for week {week_start_str}")
+                else:
+                    print(f"ℹ️ No existing tracks found for week {week_start_str}")
+            except Exception as cleanup_error:
+                print(f"⚠️ Warning: Failed to cleanup existing tracks: {cleanup_error}")
+                print("Continuing with track insertion...")
+
             tracks_saved = 0
             for track in unique_tracks:
                 track_data = {

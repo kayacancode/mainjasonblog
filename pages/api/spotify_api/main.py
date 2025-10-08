@@ -318,6 +318,13 @@ class SpotifyNewMusicAutomation:
                     ("C:/Windows/Fonts/calibri.ttf", [0]),  # Calibri Regular
                     ("C:/Windows/Fonts/segoeuib.ttf", [0]), # Segoe UI Bold
                     ("C:/Windows/Fonts/segoeui.ttf", [0]),  # Segoe UI Regular
+                    # Linux fonts (GitHub Actions)
+                    ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", [0]),
+                    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", [0]),
+                    ("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", [0]),
+                    ("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", [0]),
+                    ("/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf", [0]),
+                    ("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf", [0]),
                     # Fallback
                     ("Arial.ttf", [0])
                 ]
@@ -711,7 +718,7 @@ class SpotifyNewMusicAutomation:
         
         # Load fonts using same Helvetica Neue Bold as single artist image
         def load_font_prefer_helvetica(size: int, condensed: bool = False):
-            # Windows-friendly font loading with larger base sizes
+            # Cross-platform font loading with larger base sizes
             candidates = [
                 # macOS fonts
                 ("/System/Library/Fonts/HelveticaNeue.ttc", [0, 1, 2, 3, 4, 5, 6, 7, 8]),
@@ -725,6 +732,13 @@ class SpotifyNewMusicAutomation:
                 ("C:/Windows/Fonts/calibri.ttf", [0]),  # Calibri Regular
                 ("C:/Windows/Fonts/segoeuib.ttf", [0]), # Segoe UI Bold
                 ("C:/Windows/Fonts/segoeui.ttf", [0]),  # Segoe UI Regular
+                # Linux fonts (GitHub Actions)
+                ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", [0]),
+                ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", [0]),
+                ("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", [0]),
+                ("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", [0]),
+                ("/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf", [0]),
+                ("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf", [0]),
                 # Fallback
                 ("Arial.ttf", [0])
             ]
@@ -759,7 +773,11 @@ class SpotifyNewMusicAutomation:
         
         # Title section
         title = f"Top {len(sorted_tracks)} Tracks"
-        subtitle = f"New Music Friday - {datetime.now().strftime('%B %d, %Y')}"
+        # Calculate the most recent Friday date for the subtitle
+        today = datetime.now()
+        days_since_friday = (today.weekday() - 4) % 7  # 4 = Friday (0=Monday, 4=Friday)
+        friday_date = today - timedelta(days=days_since_friday)
+        subtitle = f"New Music Friday - {friday_date.strftime('%B %d, %Y')}"
         
         # Title background - use same red as "NEW" from artist image
         brand_red = (226, 62, 54)
@@ -866,8 +884,13 @@ class SpotifyNewMusicAutomation:
         # Sort by popularity for top mentions
         top_tracks = sorted(tracks[:10], key=lambda x: x.get('popularity', 0), reverse=True)
         
+        # Calculate the most recent Friday date for the caption
+        today = datetime.now()
+        days_since_friday = (today.weekday() - 4) % 7  # 4 = Friday (0=Monday, 4=Friday)
+        friday_date = today - timedelta(days=days_since_friday)
+        
         caption_parts = [
-            f"🎵 New Music Friday - {datetime.now().strftime('%B %d, %Y')}",
+            f"🎵 New Music Friday - {friday_date.strftime('%B %d, %Y')}",
             "",
             f"Discovered {len(tracks)} fresh tracks this week! Here are some highlights:",
             ""
@@ -1113,19 +1136,19 @@ class SpotifyNewMusicAutomation:
             with open(image_path, 'rb') as f:
                 image_data = f.read()
             
-            # Create filename with correct naming convention (matching working format)
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            # Create filename without timestamp for consistent overwriting
             if image_type == 'cover':
-                filename = f"{week_start}_artist_collage_{timestamp}.png"
+                filename = f"{week_start}_artist_collage.png"
             elif image_type == 'tracklist':
-                filename = f"{week_start}_tracklist_{timestamp}.png"
+                filename = f"{week_start}_tracklist.png"
             else:
-                filename = f"{week_start}_{image_type}_{timestamp}.png"
+                filename = f"{week_start}_{image_type}.png"
             
-            # Upload to Supabase storage (no subfolder needed)
+            # Upload to Supabase storage with upsert to overwrite existing files
             result = supabase.storage.from_('instagram-images').upload(
                 filename, 
-                image_data
+                image_data,
+                file_options={"upsert": "true"}
             )
             
             # Check if upload was successful
