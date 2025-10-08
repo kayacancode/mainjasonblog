@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-10-08T06:53:00.270652",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "53iuhJlwXhSER5J2IYYv1W",
+      "name": "The Fate of Ophelia",
+      "artist": "Taylor Swift",
+      "album": "The Life of a Showgirl",
+      "popularity": 92,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273d7812467811a7da6e6a44902",
+      "spotify_url": "https://open.spotify.com/track/53iuhJlwXhSER5J2IYYv1W",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "1jgTiNob5cVyXeJ3WgX5bL",
+      "name": "Elizabeth Taylor",
+      "artist": "Taylor Swift",
+      "album": "The Life of a Showgirl",
+      "popularity": 90,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273d7812467811a7da6e6a44902",
+      "spotify_url": "https://open.spotify.com/track/1jgTiNob5cVyXeJ3WgX5bL",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "2TEQvxxQabwLQMqWMg1qGu",
+      "name": "Wi$h Li$t",
+      "artist": "Taylor Swift",
+      "album": "The Life of a Showgirl",
+      "popularity": 88,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273d7812467811a7da6e6a44902",
+      "spotify_url": "https://open.spotify.com/track/2TEQvxxQabwLQMqWMg1qGu",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "017erFbOyCrdz0yburnVGZ",
+      "name": "you're a star",
+      "artist": "Fred again.., Amyl and The Sniffers",
+      "album": "you're a star",
+      "popularity": 68,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2733c25e3c107bdf0a4f054bb68",
+      "spotify_url": "https://open.spotify.com/track/017erFbOyCrdz0yburnVGZ",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5E2y5TSb2RJNCO01QjkgLf",
+      "name": "Days Like These",
+      "artist": "Luke Combs",
+      "album": "The Prequel",
+      "popularity": 67,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273356346f2c42065bc248aca3e",
+      "spotify_url": "https://open.spotify.com/track/5E2y5TSb2RJNCO01QjkgLf",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "6g8YoqKjS1OqW0MXo1DyeL",
+      "name": "I Need Her",
+      "artist": "Bryson Tiller",
+      "album": "Solace & The Vices",
+      "popularity": 66,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2735b01657fd65722737d47263a",
+      "spotify_url": "https://open.spotify.com/track/6g8YoqKjS1OqW0MXo1DyeL",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "03Q35hLOZxZfqierYYtHSL",
+      "name": "Evil World",
+      "artist": "Bladee, Yung Lean",
+      "album": "Evil World",
+      "popularity": 59,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273a310af1346c8958ce5afee26",
+      "spotify_url": "https://open.spotify.com/track/03Q35hLOZxZfqierYYtHSL",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "4PAs9QivjLo95KNLGDd1pk",
+      "name": "Fuk Em",
+      "artist": "Kevin Gates",
+      "album": "Fuk Em",
+      "popularity": 58,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273bbc937e7d9201fe3e31b3172",
+      "spotify_url": "https://open.spotify.com/track/4PAs9QivjLo95KNLGDd1pk",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "7lOFSXxqxVhSuu7lgL85sj",
+      "name": "Hood Politics",
+      "artist": "Murda Beatz, Babyface Ray, Big Sean",
+      "album": "Hood Politics",
+      "popularity": 54,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27316271356212a7637e7b8eb59",
+      "spotify_url": "https://open.spotify.com/track/7lOFSXxqxVhSuu7lgL85sj",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "2WBKIq4LHfxg29Uo1R2arA",
+      "name": "RIP",
+      "artist": "Miguel",
+      "album": "RIP",
+      "popularity": 53,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273e4e89e0fb8f94644dfbf785a",
+      "spotify_url": "https://open.spotify.com/track/2WBKIq4LHfxg29Uo1R2arA",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}
