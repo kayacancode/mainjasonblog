@@ -161,17 +161,28 @@ const adminsignin = () => {
                             </button>
                         </div>
 
-                        {/* Sign Up Link */}
-                        <div className="mt-4 text-center">
-                            <Link href="/adminsignup">
-                                <button
-                                    type="button"
-                                    className="text-sm text-gray-600 hover:text-gray-800 underline"
-                                >
-                                    Don't have an account? Sign up
-                                </button>
-                            </Link>
-                        </div>
+                        {/* Sign Up Link - Disabled in production */}
+                        {!(process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') && (
+                            <div className="mt-4 text-center">
+                                <Link href="/adminsignup">
+                                    <button
+                                        type="button"
+                                        className="text-sm text-gray-600 hover:text-gray-800 underline"
+                                    >
+                                        Don't have an account? Sign up
+                                    </button>
+                                </Link>
+                            </div>
+                        )}
+                        
+                        {/* Production message */}
+                        {(process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') && (
+                            <div className="mt-4 text-center">
+                                <p className="text-sm text-gray-500">
+                                    New user registration is currently disabled
+                                </p>
+                            </div>
+                        )}
                     </form>
                     </div>
             </div>

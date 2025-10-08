@@ -20,6 +20,15 @@ class EmailNotifier:
         self.client_email = os.getenv('CLIENT_EMAIL_ADDRESS', 'client@example.com')
         self.dashboard_url = os.getenv('DASHBOARD_URL', 'https://your-domain.com/tracks-management')
         
+        # Ensure API key is a string (not bytes)
+        if self.api_key and isinstance(self.api_key, bytes):
+            self.api_key = self.api_key.decode('utf-8')
+        
+        # Debug API key type and length
+        if self.api_key:
+            logger.info(f"🔍 SendGrid API key type: {type(self.api_key)}, length: {len(self.api_key)}")
+            logger.info(f"🔍 API key starts with: {self.api_key[:10]}...")
+        
         # Check if API key is configured
         if not self.api_key:
             logger.warning("⚠️ SendGrid API key not configured, email notifications disabled")
@@ -227,6 +236,10 @@ class EmailNotifier:
         """Send email via SendGrid API"""
         try:
             url = "https://api.sendgrid.com/v3/mail/send"
+            
+            # Debug the API key before using it
+            logger.info(f"🔍 Using API key type: {type(self.api_key)}")
+            logger.info(f"🔍 API key length: {len(self.api_key) if self.api_key else 'None'}")
             
             headers = {
                 "Authorization": f"Bearer {self.api_key}",

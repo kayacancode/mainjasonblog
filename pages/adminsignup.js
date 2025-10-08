@@ -11,6 +11,13 @@ const adminsignup = () => {
     const [email, setEmail] = useState("");
 
   useEffect(() => {
+    // Disable signup page in production (check both NODE_ENV and VERCEL_ENV)
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+    if (isProduction) {
+      router.push("/");
+      return;
+    }
+
     const checkUser = async () => {
       const { data } = await supabase.auth.getUser();
       if (data.user) {
@@ -19,6 +26,30 @@ const adminsignup = () => {
     };
     checkUser();
   }, [router]);
+
+  // Show disabled message in production
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+  if (isProduction) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="max-w-md w-full space-y-8 p-8">
+          <div className="text-center">
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+              Signup Disabled
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              New user registration is currently disabled in production.
+            </p>
+            <div className="mt-4">
+              <Link href="/" className="text-blue-600 hover:text-blue-500">
+                ← Back to Home
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const register = async (e) => {
     e.preventDefault();
