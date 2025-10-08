@@ -11,6 +11,7 @@ const Apps = () => {
     { href: "https://www.instagram.com/insuavewetrust/", img: "/insta.png", label: "Instagram" },
     { href: "https://twitter.com/SuaveMontana", img: "/x.jpg", label: "X" },
     { href: "https://sochaspace.com/", img: "/sochalogo.png", label: "Socha" },
+    { href: "/privacy-policy", img: "/privacy.svg", label: "Privacy" },
   ];
 
   return (

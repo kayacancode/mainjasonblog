@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-09-19T09:08:50.687226",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "6qfNV0MDV73P9DUhyITlqS",
+      "name": "Frozen Love",
+      "artist": "Buckingham Nicks, Stevie Nicks, Lindsey Buckingham",
+      "album": "Frozen Love",
+      "popularity": 50,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273522d903dfc4ad976d810704d",
+      "spotify_url": "https://open.spotify.com/track/6qfNV0MDV73P9DUhyITlqS",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "356A6LLhntlbIxP8h0Lf3Q",
+      "name": "I Wish I Didn’t Waste Your Time",
+      "artist": "Thundercat",
+      "album": "I Wish I Didn’t Waste Your Time",
+      "popularity": 48,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273439cbb727d9f437e736a0463",
+      "spotify_url": "https://open.spotify.com/track/356A6LLhntlbIxP8h0Lf3Q",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "4ocbhbmq4kUNWFqCEoUOLs",
+      "name": "Cinder Block",
+      "artist": "Samia",
+      "album": "Cinder Block",
+      "popularity": 15,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273de0884cf4102ef1b58cc3f0a",
+      "spotify_url": "https://open.spotify.com/track/4ocbhbmq4kUNWFqCEoUOLs",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5q9I5RmmrLC4U2mW2BnF3K",
+      "name": "Safe (feat. Kehlani)",
+      "artist": "Cardi B, Kehlani",
+      "album": "AM I THE DRAMA?",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2733e5a1515b5f85c7b45619273",
+      "spotify_url": "https://open.spotify.com/track/5q9I5RmmrLC4U2mW2BnF3K",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "1n4Y7LSSZ38HgEdpPpivpg",
+      "name": "Post Sex Clarity",
+      "artist": "Lola Young",
+      "album": "I’m Only F**king Myself",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27310422399c8c305f7cb5ae16f",
+      "spotify_url": "https://open.spotify.com/track/1n4Y7LSSZ38HgEdpPpivpg",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5eGoNGVpScmNcqwvuZQ8Wq",
+      "name": "Prague - ACIDFIELD CLUB REMIX",
+      "artist": "acıdfıeld, EsDeeKid",
+      "album": "Prague (ACIDFIELD CLUB REMIX)",
+      "popularity": 16,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2730be3efe850edd648292abd53",
+      "spotify_url": "https://open.spotify.com/track/5eGoNGVpScmNcqwvuZQ8Wq",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "62LH8a3uBvWftCM9XuOfwa",
+      "name": "My Size",
+      "artist": "Frankie Stew and Harvey Gunn",
+      "album": "My Size",
+      "popularity": 10,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27368b8d33180915ba6adcb8eeb",
+      "spotify_url": "https://open.spotify.com/track/62LH8a3uBvWftCM9XuOfwa",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "0efEODilXhqbvkDZvcfk1Q",
+      "name": "MENTAL HEALTH",
+      "artist": "24HRSnTOKYO, 24hrs, MadeinTYO",
+      "album": "24HRS In TOKYO 2",
+      "popularity": 1,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273bcd3000fc679fd0c4fcd1443",
+      "spotify_url": "https://open.spotify.com/track/0efEODilXhqbvkDZvcfk1Q",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "4mxbWjL7Fq01Jc2aOQYcnU",
+      "name": "Young, Wild & Free (feta. Bruno Mars)",
+      "artist": "Snoop Dogg, Wiz Khalifa, Bruno Mars",
+      "album": "Best Roadtrip Bangers",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2732a6c6ed509709555fee1d1c8",
+      "spotify_url": "https://open.spotify.com/track/4mxbWjL7Fq01Jc2aOQYcnU",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "50dRDwm5ld7fN0e30MFlpB",
+      "name": "ART (feat. Latto)",
+      "artist": "Nemzzz, Latto",
+      "album": "Aura Maxxing",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2735df967be96d3cfc907c00a4e",
+      "spotify_url": "https://open.spotify.com/track/50dRDwm5ld7fN0e30MFlpB",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}
