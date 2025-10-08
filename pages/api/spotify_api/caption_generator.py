@@ -70,7 +70,7 @@ class CaptionGenerator:
             if openai:
                 openai.api_key = self.api_key
                 self.openai_available = True
-                logger.info("✅ OpenAI client initialized with hardcoded key")
+                logger.info("✅ OpenAI client initialized with environment variable")
             else:
                 logger.warning("OpenAI package not installed, will use fallback templates")
                 self.openai_available = False

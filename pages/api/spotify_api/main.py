@@ -18,11 +18,13 @@ from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
+
     # Load .env file from the main project directory (three levels up from this file)
     env_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '.env')
     load_dotenv(env_path)
     # Reload the config after loading environment variables
     import importlib
+
     import config
     importlib.reload(config)
     from config import SpotifyConfig
@@ -1067,8 +1069,8 @@ class SpotifyNewMusicAutomation:
 
     def cleanup_pyc_files(self):
         """Clean up .pyc files and __pycache__ directories"""
-        import shutil
         import glob
+        import shutil
         
         try:
             # Get the directory containing this script
@@ -1096,11 +1098,11 @@ class SpotifyNewMusicAutomation:
     def upload_image_to_supabase(self, image_path, week_start, image_type):
         """Upload image to Supabase storage and return public URL"""
         try:
-            from supabase import create_client, Client
-            
+            from supabase import Client, create_client
+
             # Initialize Supabase client with hardcoded credentials for consistency
-            supabase_url = "https://yxziaumwnvyswnqfyosh.supabase.co"
-            supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"
+            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
             
             logger.info(f"🔍 Debug - Using Supabase URL: {supabase_url}")
             logger.info(f"🔍 Debug - Using Supabase KEY: {supabase_key[:10]}...")
@@ -1144,11 +1146,11 @@ class SpotifyNewMusicAutomation:
     def save_image_metadata(self, week_start, cover_url, tracklist_url):
         """Save image metadata to Supabase database"""
         try:
-            from supabase import create_client, Client
-            
+            from supabase import Client, create_client
+
             # Initialize Supabase client with hardcoded credentials for consistency
-            supabase_url = "https://yxziaumwnvyswnqfyosh.supabase.co"
-            supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"
+            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
                 
             supabase: Client = create_client(supabase_url, supabase_key)
             
@@ -1188,11 +1190,11 @@ class SpotifyNewMusicAutomation:
     def save_caption_metadata(self, week_start, caption, hashtags, style):
         """Save caption and hashtags to Supabase database"""
         try:
-            from supabase import create_client, Client
-            
+            from supabase import Client, create_client
+
             # Initialize Supabase client with hardcoded credentials for consistency
-            supabase_url = "https://yxziaumwnvyswnqfyosh.supabase.co"
-            supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"
+            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
                 
             supabase: Client = create_client(supabase_url, supabase_key)
             
@@ -1232,8 +1234,8 @@ class SpotifyNewMusicAutomation:
     def cleanup_old_image_records(self):
         """Clean up old image records from database that have invalid URLs"""
         try:
-            from supabase import create_client, Client
-            
+            from supabase import Client, create_client
+
             # Initialize Supabase client
             supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
             supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
