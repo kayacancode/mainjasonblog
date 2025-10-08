@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-09-26T09:07:07.142205",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "2RBvwQI858xReQpWSRO866",
+      "name": "Moon (Feat. Bon Iver)",
+      "artist": "Daniel Caesar, Bon Iver",
+      "album": "Moon",
+      "popularity": 44,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273f61b2feb6787b029de71a32c",
+      "spotify_url": "https://open.spotify.com/track/2RBvwQI858xReQpWSRO866",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "3V1K9dBBNhQYsOKUmkcgFg",
+      "name": "Don’t Do Too Much",
+      "artist": "Cardi B",
+      "album": "AM I THE DRAMA? (Bonus Edition)",
+      "popularity": 43,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27337ce0b9341525ba8bc5244cb",
+      "spotify_url": "https://open.spotify.com/track/3V1K9dBBNhQYsOKUmkcgFg",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "2qQqwmaEMrVqXzwNFCa1kc",
+      "name": "Is You Coo",
+      "artist": "Sexyy Red",
+      "album": "Is You Coo",
+      "popularity": 39,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273b7bd09c46fccab47fc1e733e",
+      "spotify_url": "https://open.spotify.com/track/2qQqwmaEMrVqXzwNFCa1kc",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "4mUgLu7PjDvTsKbUF8iTB4",
+      "name": "Sideways",
+      "artist": "Daffo",
+      "album": "Sideways",
+      "popularity": 23,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27370604a699ba518d18b269d6d",
+      "spotify_url": "https://open.spotify.com/track/4mUgLu7PjDvTsKbUF8iTB4",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "6oGFDrlsSXovBIAY7gNYIq",
+      "name": "By My Side",
+      "artist": "Levity",
+      "album": "Snack Pack Vol. 1",
+      "popularity": 4,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273bf53e4b839cc2a3b0d36bdf0",
+      "spotify_url": "https://open.spotify.com/track/6oGFDrlsSXovBIAY7gNYIq",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "0XuBvltQu2uDpq0MIFoypD",
+      "name": "Duse On The Radar Freestyle",
+      "artist": "On The Radar, Duse",
+      "album": "Duse On The Radar Freestyle",
+      "popularity": 7,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27352abab76d0769753972fd555",
+      "spotify_url": "https://open.spotify.com/track/0XuBvltQu2uDpq0MIFoypD",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "5Pvw25g3WUjsiss22BOlfx",
+      "name": "Flip (feat. Payroll Giovanni)",
+      "artist": "22Daboat, Payroll Giovanni",
+      "album": "Flip (feat. Payroll Giovanni)",
+      "popularity": 1,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273c056fc29708ca33689caa467",
+      "spotify_url": "https://open.spotify.com/track/5Pvw25g3WUjsiss22BOlfx",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "5KZQhOFArnmWP0iqtqegaV",
+      "name": "FERG STRONG",
+      "artist": "A$AP Ferg",
+      "album": "FERG STRONG",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2731e459808b9d069547c3696a9",
+      "spotify_url": "https://open.spotify.com/track/5KZQhOFArnmWP0iqtqegaV",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "3kPefPjK6h9ZqcuihLDkvm",
+      "name": "SMILE BODY PRETTY FACE (feat. Kodak Black & YG)",
+      "artist": "Ty Dolla $ign, Kodak Black, YG",
+      "album": "SMILE BODY PRETTY FACE (feat. Kodak Black & YG)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273fd123378c1db70525dee0293",
+      "spotify_url": "https://open.spotify.com/track/3kPefPjK6h9ZqcuihLDkvm",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "4PQFinCed6I46BsyIUz5UV",
+      "name": "N.T.A.B.",
+      "artist": "Hit-Boy, Spank Nitti James, Lefty Gunplay",
+      "album": "N.T.A.B.",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273bdf97497deee24fab0e43af1",
+      "spotify_url": "https://open.spotify.com/track/4PQFinCed6I46BsyIUz5UV",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}
