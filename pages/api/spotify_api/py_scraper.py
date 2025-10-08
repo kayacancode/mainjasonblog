@@ -9,8 +9,8 @@ import time
 from datetime import datetime, timedelta
 from typing import Dict, List
 
-import requests
 import spotipy
+from email_notifier import send_weekly_notification
 from selenium_scraper import SpotifySeleniumScraper
 from spotipy.oauth2 import SpotifyOAuth
 from supabase import Client, create_client
@@ -418,6 +418,34 @@ class EnhancedSpotifyAutomation:
             else:
                 print("⚠️ No image URLs to save to database")
             
+            # Generate caption and hashtags
+            print(f"📝 Generating caption and hashtags...")
+            try:
+                from caption_generator import CaptionGenerator
+                caption_gen = CaptionGenerator()
+                
+                caption_result = caption_gen.generate_caption(
+                    tracks=unique_tracks,
+                    week_start=week_start_str,
+                    include_hashtags=True
+                )
+                
+                print(f"✅ Caption generated ({caption_result['character_count']} chars)")
+                print(f"📝 Caption: {caption_result['caption'][:100]}...")
+                print(f"🏷️ Hashtags: {len(caption_result['hashtags'])} generated")
+                
+                # Save caption to images table
+                automation.save_caption_metadata(
+                    week_start_str, 
+                    caption_result['caption'],
+                    caption_result['hashtags'],
+                    'reviewer'
+                )
+                
+            except Exception as e:
+                print(f"❌ Failed to generate caption: {e}")
+                # Continue without caption - images are still saved
+            
             # Create results dictionary
             results = {
                 'track_count': len(unique_tracks),
@@ -522,13 +550,13 @@ class EnhancedSpotifyAutomation:
         try:
             from supabase import create_client
 
-            # Always use hardcoded Supabase credentials for consistency
-            supabase_url = "https://yxziaumwnvyswnqfyosh.supabase.co"
-            supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4emlhdW13bnZ5c3ducWZ5b3NoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTAxOTcxOSwiZXhwIjoyMDcwNTk1NzE5fQ.vZUvnae2z3UyAirkc2c21cqAByK14bqg3HRtEs0LxXg"
+            # Use Supabase credentials from environment variables
+            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
             
-            print("🔍 Using hardcoded Supabase credentials for consistency")
-            print(f"🔍 Debug - Using Supabase URL: {supabase_url[:50]}...")
-            print(f"🔍 Debug - Using Supabase KEY: {supabase_key[:20]}...")
+            print("🔍 Using Supabase credentials from environment variables")
+            print(f"🔍 Debug - Using Supabase URL: {supabase_url[:50] if supabase_url else 'NOT_SET'}...")
+            print(f"🔍 Debug - Using Supabase KEY: {supabase_key[:20] if supabase_key else 'NOT_SET'}...")
             
             # Validate credentials before creating client
             if not supabase_url or not supabase_url.strip():
@@ -603,16 +631,45 @@ class EnhancedSpotifyAutomation:
         print(f"📝 Caption: {caption_path}")
         print(f"💾 Data: {data_path}")
 
+        # Send email notification to client
+        if unique_tracks and len(unique_tracks) > 0:
+            try:
+                print("📧 Sending email notification to client...")
+                first_track = unique_tracks[0]
+                artist_name = first_track.get('artist', 'Unknown Artist')
+                track_name = first_track.get('name', 'Unknown Track')
+                
+                email_sent = send_weekly_notification(
+                    artist_name=artist_name,
+                    track_name=track_name,
+                    week_start=week_start_str,
+                    cover_url=cover_url or '',
+                    tracklist_url=tracklist_url or ''
+                )
+                
+                if email_sent:
+                    print("✅ Email notification sent successfully!")
+                else:
+                    print("⚠️ Email notification failed, but automation completed successfully")
+                    
+            except Exception as e:
+                print(f"⚠️ Error sending email notification: {e}")
+                print("✅ Automation completed successfully despite email error")
+
         return results
 
 
 def test_enhanced_automation():
     """Test the enhanced automation"""
-    # Always use hardcoded values to ensure consistency between local and GitHub Actions
-    client_id = "cf27169236814c0cab9f7b9f90005058"
-    client_secret = "4ad9af9ecb7d4001a50632ad314c623b"
+    # Use environment variables for Spotify credentials
+    client_id = os.getenv('SPOTIFY_CLIENT_ID')
+    client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
     
-    print(f"🔍 Debug - Using hardcoded Spotify Client ID: {client_id[:10]}...")
+    if not client_id or not client_secret:
+        print("❌ Error: SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET must be set in environment variables")
+        return
+    
+    print(f"🔍 Debug - Using Spotify Client ID from environment: {client_id[:10]}...")
     
     automation = EnhancedSpotifyAutomation(client_id, client_secret)
     

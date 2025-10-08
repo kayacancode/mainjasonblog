@@ -163,8 +163,8 @@ class HybridSpotifyFetcher:
 def test_hybrid_approach():
     """Test the hybrid approach"""
     
-    client_id = "cf27169236814c0cab9f7b9f90005058"
-    client_secret = "4ad9af9ecb7d4001a50632ad314c623b"
+    client_id = os.getenv('SPOTIFY_CLIENT_ID')
+    client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
     
     fetcher = HybridSpotifyFetcher(client_id, client_secret)
     
