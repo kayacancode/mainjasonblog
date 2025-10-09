@@ -569,5 +569,11 @@ export default async function handler(req, res) {
                 error: 'Internal server error: ' + outerError.message
             });
         }
+    } catch (outerError) {
+        console.error('❌ Outer error in Instagram publish handler:', outerError);
+        return res.status(500).json({
+            success: false,
+            error: 'Internal server error: ' + outerError.message
+        });
     }
 }
