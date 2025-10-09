@@ -36,3 +36,4 @@ venv/
 
 # image generation output
 # pages/api/spotify_api/output/
+.env
