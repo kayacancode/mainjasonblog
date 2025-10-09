@@ -36,6 +36,7 @@ export default function TracksManagement() {
     const [instagramPublisher, setInstagramPublisher] = useState(null);
     const [creatingPostForWeek, setCreatingPostForWeek] = useState(null);
     const [postMessage, setPostMessage] = useState('');
+    const [showPopularityModal, setShowPopularityModal] = useState(false);
 
     // Form state for adding/editing tracks
     const [formData, setFormData] = useState({
@@ -770,7 +771,7 @@ export default function TracksManagement() {
                 </div>
             </nav>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-5 py-6 sm:py-8 font-sans">
+            <div className="w-full px-2 sm:px-4 lg:px-8 py-4 sm:py-8 font-sans">
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b-2 border-gray-200">
                     <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 m-0 text-center sm:text-left">🎵 Tracks Management</h1>
                     <button 
@@ -782,16 +783,15 @@ export default function TracksManagement() {
                 </div>
 
             {/* Filters */}
-            <div className="flex flex-col gap-3 mb-6 sm:mb-8">
-                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                    <select 
-                        value={selectedWeek} 
-                        onChange={(e) => {
-                            console.log('Dropdown changed:', e.target.value);
-                            setSelectedWeek(e.target.value);
-                        }}
-                        className="px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm bg-white transition-colors duration-300 focus:outline-none focus:border-indigo-500 flex-1"
-                    >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6 sm:mb-8">
+                <select 
+                    value={selectedWeek} 
+                    onChange={(e) => {
+                        console.log('Dropdown changed:', e.target.value);
+                        setSelectedWeek(e.target.value);
+                    }}
+                    className="px-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm bg-white transition-colors duration-300 focus:outline-none focus:border-indigo-500 w-full"
+                >
                         <option value="">All Weeks</option>
                         {weeks.map(week => (
                             <option key={week} value={week}>
@@ -813,14 +813,10 @@ export default function TracksManagement() {
                         ))}
                     </select>
 
-                    
-                    
-                </div>
-
                 <select 
                     value={filterPlaylist} 
                     onChange={(e) => setFilterPlaylist(e.target.value)}
-                    className="px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm bg-white transition-colors duration-300 focus:outline-none focus:border-indigo-500"
+                    className="px-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm bg-white transition-colors duration-300 focus:outline-none focus:border-indigo-500 w-full"
                 >
                     <option value="">All Playlists</option>
                     <option value="New Music Friday">New Music Friday</option>
@@ -833,14 +829,14 @@ export default function TracksManagement() {
                     placeholder="Search tracks..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="px-4 py-2.5 border-2 border-gray-200 rounded-lg text-sm bg-white transition-colors duration-300 focus:outline-none focus:border-indigo-500"
+                    className="px-3 py-2.5 border-2 border-gray-200 rounded-lg text-sm bg-white transition-colors duration-300 focus:outline-none focus:border-indigo-500 w-full"
                 />
 
-                <button onClick={fetchTracks} className="bg-emerald-500 text-white border-none py-2.5 px-5 rounded-lg font-semibold cursor-pointer transition-colors duration-300 hover:bg-emerald-600">
+                <button onClick={fetchTracks} className="bg-emerald-500 text-white border-none py-2.5 px-4 rounded-lg font-semibold cursor-pointer transition-colors duration-300 hover:bg-emerald-600 w-full">
                     🔎 Search
                 </button>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 col-span-full sm:col-span-1">
                     <input
                         type="checkbox"
                         id="showArchived"
@@ -854,7 +850,7 @@ export default function TracksManagement() {
                 </div>
                 
                 {/* Tag Filter Dropdown */}
-                <div className="relative tag-dropdown">
+                <div className="relative tag-dropdown col-span-full sm:col-span-1">
                     <button
                         onClick={() => setShowTagDropdown(!showTagDropdown)}
                         className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -944,58 +940,52 @@ export default function TracksManagement() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Streamlined Info Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
                     {/* Current Schedule Status */}
-                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                        <h3 className="font-medium text-blue-900 mb-2">📅 Current Schedule</h3>
-                        <div className="space-y-2 text-sm text-blue-800">
-                            <p><strong>Frequency:</strong> Every Friday</p>
-                            <p><strong>Time:</strong> {(() => {
-                                // Create a date for Friday 2 PM UTC
+                    <div className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-200">
+                        <h3 className="font-medium text-blue-900 mb-2 text-sm sm:text-base">📅 Schedule</h3>
+                        <div className="space-y-1 text-xs sm:text-sm text-blue-800">
+                            <p><strong>Every Friday</strong></p>
+                            <p>{(() => {
                                 const now = new Date();
                                 const friday = new Date(now);
                                 const daysUntilFriday = (5 - now.getDay() + 7) % 7;
                                 friday.setDate(now.getDate() + daysUntilFriday);
-                                friday.setUTCHours(14, 0, 0, 0); // 2 PM UTC
+                                friday.setUTCHours(14, 0, 0, 0);
                                 
                                 return friday.toLocaleString('en-US', {
                                     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                                    weekday: 'long',
+                                    weekday: 'short',
                                     hour: 'numeric',
                                     minute: '2-digit',
                                     hour12: true
                                 });
-                            })()} (your timezone)</p>
-                            <p><strong>Status:</strong> <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Active</span></p>
+                            })()}</p>
+                            <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs">Active</span>
                         </div>
                     </div>
 
                     {/* Last Update Info */}
-                    <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                        <h3 className="font-medium text-green-900 mb-2">🤖 Last Update</h3>
-                        <div className="space-y-2 text-sm text-green-800">
-                            <p><strong>Method:</strong> GitHub Actions</p>
-                            <p><strong>Last Run:</strong> {tracks.length > 0 ? `${Math.floor((new Date() - new Date(tracks[0]?.created_at)) / (1000 * 60 * 60 * 24))} days ago` : 'Never'}</p>
-                            <p><strong>Total Tracks:</strong> {tracks.length}</p>
+                    <div className="bg-green-50 rounded-lg p-3 sm:p-4 border border-green-200">
+                        <h3 className="font-medium text-green-900 mb-2 text-sm sm:text-base">🤖 Last Update</h3>
+                        <div className="space-y-1 text-xs sm:text-sm text-green-800">
+                            <p><strong>GitHub Actions</strong></p>
+                            <p>{tracks.length > 0 ? `${Math.floor((new Date() - new Date(tracks[0]?.created_at)) / (1000 * 60 * 60 * 24))} days ago` : 'Never'}</p>
+                            <p><strong>{tracks.length} tracks</strong></p>
                         </div>
                     </div>
-                </div>
 
-                {/* Popularity Note */}
-                <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <div className="flex items-start">
-                        <div className="flex-shrink-0">
-                            <svg className="w-5 h-5 text-amber-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                            </svg>
-                        </div>
-                        <div className="ml-3">
-                            <h3 className="text-sm font-medium text-amber-800">About Popularity Scores</h3>
-                            <div className="mt-1 text-sm text-amber-700">
-                                <p>Some tracks may show a popularity score of 0. This is normal for some newly released tracks, as the weekly music update pulls at a scheduled time,
-                                    and Spotify may not have assigned a popularity score yet.
-                                </p>
+                    {/* Popularity Scores - Clickable Modal */}
+                    <div className="bg-amber-50 rounded-lg p-3 sm:p-4 border border-amber-200 cursor-pointer hover:bg-amber-100 transition-colors" onClick={() => setShowPopularityModal(true)}>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="font-medium text-amber-800 mb-1 text-sm sm:text-base">ℹ️ Popularity Scores</h3>
+                                <p className="text-xs sm:text-sm text-amber-700">Click to learn more</p>
                             </div>
+                            <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
                         </div>
                     </div>
                 </div>
@@ -1145,6 +1135,55 @@ export default function TracksManagement() {
                 </div>
             )}
 
+            {/* Popularity Scores Modal */}
+            {showPopularityModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+                    <div className="bg-white p-6 rounded-xl w-11/12 max-w-md mx-4 shadow-2xl">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                <svg className="w-6 h-6 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                                About Popularity Scores
+                            </h2>
+                            <button
+                                onClick={() => setShowPopularityModal(false)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div className="text-gray-700 leading-relaxed">
+                            <p className="mb-4">
+                                Some tracks may show a popularity score of <strong>0</strong>. This is completely normal and expected for newly released tracks.
+                            </p>
+                            
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                                <h3 className="font-semibold text-amber-800 mb-2">Why does this happen?</h3>
+                                <ul className="text-sm text-amber-700 space-y-1 pl-4">
+                                    <li className="list-disc">The weekly music update runs at a scheduled time</li>
+                                    <li className="list-disc">Spotify may not have assigned popularity scores yet</li>
+                                    <li className="list-disc">New releases need time to accumulate plays</li>
+                                    <li className="list-disc">Popularity scores update throughout the week</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div className="flex justify-end mt-6">
+                            <button
+                                onClick={() => setShowPopularityModal(false)}
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                            >
+                                Got it!
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Bulk Actions Toolbar */}
             {selectedTracks.size > 0 && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -1220,22 +1259,22 @@ export default function TracksManagement() {
                     Object.entries(groupedTracks).map(([week, weekTracks]) => (
                         <div key={week} className="mb-6">
                             <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-                                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 rounded-t-lg">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
+                                <div className="px-4 sm:px-6 py-4 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                                             <button
                                                 onClick={() => toggleWeek(week)}
-                                                className="flex items-center gap-2 hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                                                className="flex items-center gap-2 hover:bg-gray-100 px-2 py-1 rounded transition-colors min-w-0 flex-1"
                                             >
                                                 <svg 
-                                                    className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${expandedWeeks.includes(week) ? 'rotate-180' : ''}`}
+                                                    className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-500 transition-transform duration-200 flex-shrink-0 ${expandedWeeks.includes(week) ? 'rotate-180' : ''}`}
                                                     fill="none" 
                                                     stroke="currentColor" 
                                                     viewBox="0 0 24 24"
                                                 >
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                                 </svg>
-                                                <h2 className="text-xl font-semibold text-gray-900">📅 Week of Friday, {(() => {
+                                                <h2 className="text-sm sm:text-xl font-semibold text-gray-900 truncate">📅 Week of Friday, {(() => {
                                                     try {
                                                         // Parse the date string properly to avoid timezone issues
                                                         const [year, month, day] = week.split('-').map(Number);
@@ -1251,13 +1290,13 @@ export default function TracksManagement() {
                                                 })()}</h2>
                                             </button>
                                         </div>
-                                        <div className="flex items-center gap-4">
-                                            <span className="text-sm text-gray-600">{weekTracks.length} tracks</span>
-                                            <div className="flex items-center gap-3">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                                            <span className="text-xs sm:text-sm text-gray-600">{weekTracks.length} tracks</span>
+                                            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
                                                 {weekImageStatus[week] && (
                                                     <button
                                                         onClick={() => handleViewImages(week)}
-                                                        className="text-blue-600 hover:text-blue-800 text-xs underline"
+                                                        className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm underline px-2 py-1 rounded hover:bg-blue-50 transition-colors"
                                                     >
                                                         View Images
                                                     </button>
@@ -1265,7 +1304,7 @@ export default function TracksManagement() {
                                                 {weekCaptionStatus[week] && (
                                                     <button
                                                         onClick={() => handleViewCaption(week)}
-                                                        className="text-green-600 hover:text-green-800 text-xs underline"
+                                                        className="text-green-600 hover:text-green-800 text-xs sm:text-sm underline px-2 py-1 rounded hover:bg-green-50 transition-colors"
                                                     >
                                                         View Caption
                                                     </button>
@@ -1335,7 +1374,7 @@ export default function TracksManagement() {
                                                             }
                                                         }}
                                                         disabled={creatingPostForWeek === week}
-                                                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1"
+                                                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all flex items-center gap-1 min-w-0"
                                                     >
                                                         {creatingPostForWeek === week ? (
                                                             <>
@@ -1353,7 +1392,7 @@ export default function TracksManagement() {
                                                     </button>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 mt-2 sm:mt-0">
                                                 <input
                                                     type="checkbox"
                                                     checked={weekTracks.every(track => selectedTracks.has(track.id))}
