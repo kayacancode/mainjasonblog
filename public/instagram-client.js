@@ -21,6 +21,11 @@ class InstagramPublisher {
         const scope = 'public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_engagement,instagram_basic,instagram_content_publish,pages_manage_metadata';
         const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${this.facebookAppId}&redirect_uri=${this.redirectUri}&scope=${scope}&response_type=code`;
         
+        console.log('🔍 OAuth URL:', authUrl);
+        console.log('🔍 Redirect URI:', this.redirectUri);
+        console.log('🔍 Facebook App ID:', this.facebookAppId);
+        console.log('🔍 Window location origin:', window.location.origin);
+        
         // Open popup window for OAuth
         const popup = window.open(
             authUrl,
