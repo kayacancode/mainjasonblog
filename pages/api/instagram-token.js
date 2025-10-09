@@ -17,7 +17,16 @@ export default async function handler(req, res) {
     try {
         const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
         const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
-        const REDIRECT_URI = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/instagram-callback`;
+        // Use the same redirect URI logic as the client-side
+        const REDIRECT_URI = process.env.NODE_ENV === 'production' 
+            ? 'https://www.insuavewetrust.com/instagram-callback'
+            : 'http://localhost:3000/instagram-callback';
+
+        console.log('🔍 Environment check:', {
+            NODE_ENV: process.env.NODE_ENV,
+            VERCEL_ENV: process.env.VERCEL_ENV,
+            REDIRECT_URI: REDIRECT_URI
+        });
 
         if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET) {
             return res.status(500).json({ 
