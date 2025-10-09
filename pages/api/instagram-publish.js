@@ -451,11 +451,13 @@ async function createInstagramPost(mediaIds, caption, accessToken, instagramAcco
  * Main function to publish Instagram post
  */
 export default async function handler(req, res) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
-    
+    // Ensure we always return JSON
     try {
+        if (req.method !== 'POST') {
+            return res.status(405).json({ error: 'Method not allowed' });
+        }
+        
+        try {
         const { 
             weekStart, 
             pageAccessToken, 
@@ -560,5 +562,12 @@ export default async function handler(req, res) {
             success: false,
             error: error.message
         });
+        } catch (outerError) {
+            console.error('❌ Outer error in Instagram publish handler:', outerError);
+            return res.status(500).json({
+                success: false,
+                error: 'Internal server error: ' + outerError.message
+            });
+        }
     }
 }
