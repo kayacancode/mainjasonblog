@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-10-10T11:39:11.749519",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "1pgl5ntthebzHaqJVI1n6B",
+      "name": "The Manifesto (feat. Trueno and Proof)",
+      "artist": "Gorillaz, Trueno, Proof",
+      "album": "The Manifesto (feat. Trueno and Proof)",
+      "popularity": 50,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27323f1a41d589c500870c03cd3",
+      "spotify_url": "https://open.spotify.com/track/1pgl5ntthebzHaqJVI1n6B",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "6lLfq5ZYSTMauPOLSJOTZN",
+      "name": "CAOS",
+      "artist": "Miguel",
+      "album": "CAOS",
+      "popularity": 40,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273cb05a43d7b3bdd794f4d75d5",
+      "spotify_url": "https://open.spotify.com/track/6lLfq5ZYSTMauPOLSJOTZN",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "7AubN0uneHfFsEfPLAcG3K",
+      "name": "Whatever U Want (feat. Jeremih)",
+      "artist": "G Herbo, Jeremih",
+      "album": "Whatever U Want",
+      "popularity": 37,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273c08492818016c07856ec4981",
+      "spotify_url": "https://open.spotify.com/track/7AubN0uneHfFsEfPLAcG3K",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "3KjVtWWVEP1gmxosGb9u20",
+      "name": "viscus (feat. FKA twigs)",
+      "artist": "Oklou, FKA twigs",
+      "album": "viscus (feat. FKA twigs)",
+      "popularity": 20,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27393645a1b73872ca28480dc12",
+      "spotify_url": "https://open.spotify.com/track/3KjVtWWVEP1gmxosGb9u20",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5J9Y2roWzvClVvb39fHMiW",
+      "name": "Break The Jaw",
+      "artist": "Madison Cunningham",
+      "album": "Break The Jaw",
+      "popularity": 13,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27342283698cbdc9298e7be38e6",
+      "spotify_url": "https://open.spotify.com/track/5J9Y2roWzvClVvb39fHMiW",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "46k0uaOYOvPlv33lBusXJA",
+      "name": "wanna feel",
+      "artist": "Lil Mabu",
+      "album": "wanna feel",
+      "popularity": 38,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273a34f496fc847656fa90faf56",
+      "spotify_url": "https://open.spotify.com/track/46k0uaOYOvPlv33lBusXJA",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "2b6Xo5x5xa0SRHPObeT3ww",
+      "name": "BACK FOCUSED",
+      "artist": "Doe Boy",
+      "album": "LAST HOPE",
+      "popularity": 24,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27364e0451a11aeed7791a7f0f3",
+      "spotify_url": "https://open.spotify.com/track/2b6Xo5x5xa0SRHPObeT3ww",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "5W5IOrjSfZZoyGrcYH7L8Y",
+      "name": "FAITH TOO HIGH",
+      "artist": "Ryan Trey",
+      "album": "FAITH TOO HIGH",
+      "popularity": 22,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2737f9810ec90d2033fa05974df",
+      "spotify_url": "https://open.spotify.com/track/5W5IOrjSfZZoyGrcYH7L8Y",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "2jJjUo8yonUweEKhkzlRpt",
+      "name": "Set It Off x Better",
+      "artist": "Tory Lanez",
+      "album": "The New Toronto 2",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27387c01699e88921424c24261b",
+      "spotify_url": "https://open.spotify.com/track/2jJjUo8yonUweEKhkzlRpt",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "1tx8j45UuYp9TL42PrR7hS",
+      "name": "Them Days",
+      "artist": "Tory Lanez, DJ Drama",
+      "album": "The New Toronto (Gangsta Grillz)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273ce2954e20a777b917441ba02",
+      "spotify_url": "https://open.spotify.com/track/1tx8j45UuYp9TL42PrR7hS",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}
