@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-10-10T09:08:30.625072",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "6lLfq5ZYSTMauPOLSJOTZN",
+      "name": "CAOS",
+      "artist": "Miguel",
+      "album": "CAOS",
+      "popularity": 37,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273cb05a43d7b3bdd794f4d75d5",
+      "spotify_url": "https://open.spotify.com/track/6lLfq5ZYSTMauPOLSJOTZN",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "7AubN0uneHfFsEfPLAcG3K",
+      "name": "Whatever U Want (feat. Jeremih)",
+      "artist": "G Herbo, Jeremih",
+      "album": "Whatever U Want",
+      "popularity": 12,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273c08492818016c07856ec4981",
+      "spotify_url": "https://open.spotify.com/track/7AubN0uneHfFsEfPLAcG3K",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "1kUJ7401ShEYzAgdTfg2Dp",
+      "name": "Don't Remind Me (with Anderson .Paak)",
+      "artist": "Amber Mark, Anderson .Paak",
+      "album": "Pretty Idea",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273d38e9545b73b9711204701f2",
+      "spotify_url": "https://open.spotify.com/track/1kUJ7401ShEYzAgdTfg2Dp",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "3Dy4xsff7c0fRaTJpA54yd",
+      "name": "Gone Gone Gone",
+      "artist": "David Guetta, Teddy Swims, Tones And I",
+      "album": "Gone Gone Gone",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273d75fc560f6d820d449730142",
+      "spotify_url": "https://open.spotify.com/track/3Dy4xsff7c0fRaTJpA54yd",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "2EJpfJvSPRpy7dE15cV6L6",
+      "name": "Tie you down",
+      "artist": "HAIM, Bon Iver",
+      "album": "Tie you down",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27323dc406415d27f47f8c342c5",
+      "spotify_url": "https://open.spotify.com/track/2EJpfJvSPRpy7dE15cV6L6",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5W5IOrjSfZZoyGrcYH7L8Y",
+      "name": "FAITH TOO HIGH",
+      "artist": "Ryan Trey",
+      "album": "FAITH TOO HIGH",
+      "popularity": 3,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2737f9810ec90d2033fa05974df",
+      "spotify_url": "https://open.spotify.com/track/5W5IOrjSfZZoyGrcYH7L8Y",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "2b6Xo5x5xa0SRHPObeT3ww",
+      "name": "BACK FOCUSED",
+      "artist": "Doe Boy",
+      "album": "LAST HOPE",
+      "popularity": 1,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27364e0451a11aeed7791a7f0f3",
+      "spotify_url": "https://open.spotify.com/track/2b6Xo5x5xa0SRHPObeT3ww",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "2jJjUo8yonUweEKhkzlRpt",
+      "name": "Set It Off x Better",
+      "artist": "Tory Lanez",
+      "album": "The New Toronto 2",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27387c01699e88921424c24261b",
+      "spotify_url": "https://open.spotify.com/track/2jJjUo8yonUweEKhkzlRpt",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "1tx8j45UuYp9TL42PrR7hS",
+      "name": "Them Days",
+      "artist": "Tory Lanez, DJ Drama",
+      "album": "The New Toronto (Gangsta Grillz)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273ce2954e20a777b917441ba02",
+      "spotify_url": "https://open.spotify.com/track/1tx8j45UuYp9TL42PrR7hS",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "218C0McVUM1UPcTzODMRhi",
+      "name": "Sirens (From Ireland)",
+      "artist": "Skepta, Finessekid",
+      "album": "Sirens (From Ireland)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2733aee6a3cf1aa87bf2021783c",
+      "spotify_url": "https://open.spotify.com/track/218C0McVUM1UPcTzODMRhi",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}
