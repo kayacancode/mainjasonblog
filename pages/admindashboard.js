@@ -20,6 +20,13 @@ export default function AdminDashboard() {
   const [bulkUploading, setBulkUploading] = useState(false);
   const [photoTitle, setPhotoTitle] = useState("");
 
+  // Bulk delete state
+  const [selectedPosts, setSelectedPosts] = useState(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  // Post filter state
+  const [postFilter, setPostFilter] = useState('published'); // 'all', 'published', 'unpublished'
+
   // Format date helper
   const safeFormatDate = (timestamp, fallback = "No date") => {
     try {
@@ -49,21 +56,39 @@ export default function AdminDashboard() {
       if (postsError) console.error(postsError);
       else {
         const published = postsData.filter(p => p.is_published);
+        const unpublished = postsData.filter(p => !p.is_published);
         const scheduled = postsData
           .filter(p => !p.is_published && p.scheduled_for && new Date(p.scheduled_for) > new Date())
           .sort((a, b) => new Date(a.scheduled_for) - new Date(b.scheduled_for));
-        setPostList(published);
+        
+        // console.log("Raw postsData:", postsData);
+        // console.log("Published posts:", published);
+        // console.log("Unpublished posts:", unpublished);
+        // console.log("Current filter:", postFilter);
+        
+        // Apply filter
+        let filteredPosts = published;
+        if (postFilter === 'unpublished') {
+          filteredPosts = unpublished;
+        } else if (postFilter === 'all') {
+          filteredPosts = [...published, ...unpublished]; // Combine both arrays
+        }
+        
+        // console.log(`Filter: ${postFilter}, Published: ${published.length}, Unpublished: ${unpublished.length}, Total: ${filteredPosts.length}`);
+        // console.log("Final filtered posts:", filteredPosts);
+        
+        setPostList(filteredPosts);
         setScheduledPosts(scheduled);
       }
 
-      // Fetch photos
-      const { data: photoData, error: photoError } = await supabase
-        .from("photos")
-        .select("*")
-        .order("uploaded_at", { ascending: false });
+      // Fetch photos - commented out since photos table doesn't exist
+      // const { data: photoData, error: photoError } = await supabase
+      //   .from("photos")
+      //   .select("*")
+      //   .order("uploaded_at", { ascending: false });
 
-      if (photoError) console.error(photoError);
-      else setPhotos(photoData);
+      // if (photoError) console.error(photoError);
+      // else setPhotos(photoData);
 
       // Fetch tracks
       const { data: tracksData, error: tracksError } = await supabase
@@ -87,6 +112,44 @@ export default function AdminDashboard() {
 
     return () => subscription.unsubscribe();
   }, [router]);
+
+  // Refetch posts when filter changes
+  useEffect(() => {
+    const refetchPosts = async () => {
+      const { data: postsData, error: postsError } = await supabase
+        .from("posts")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (postsError) console.error(postsError);
+      else {
+        const published = postsData.filter(p => p.is_published);
+        const unpublished = postsData.filter(p => !p.is_published);
+        
+        // console.log("useEffect - Raw postsData:", postsData);
+        // console.log("useEffect - Published posts:", published);
+        // console.log("useEffect - Unpublished posts:", unpublished);
+        // console.log("useEffect - Current filter:", postFilter);
+        
+        // Apply filter
+        let filteredPosts = published;
+        if (postFilter === 'unpublished') {
+          filteredPosts = unpublished;
+        } else if (postFilter === 'all') {
+          filteredPosts = [...published, ...unpublished]; // Combine both arrays
+        }
+        
+        // console.log(`useEffect - Filter: ${postFilter}, Published: ${published.length}, Unpublished: ${unpublished.length}, Total: ${filteredPosts.length}`);
+        // console.log("useEffect - Final filtered posts:", filteredPosts);
+        
+        setPostList(filteredPosts);
+      }
+    };
+
+    if (user) {
+      refetchPosts();
+    }
+  }, [postFilter, user]);
 
   // Sign out
   const signOutUser = async () => {
@@ -116,60 +179,121 @@ export default function AdminDashboard() {
       return false;
     }
   };
-  
-  // Upload photo
-  const handlePhotoUpload = async (e) => {
-    e.preventDefault();
-    if (!selectedFile) return;
-    setUploading(true);
+
+  // Handle individual post selection
+  const handlePostSelection = (postId, isSelected) => {
+    setSelectedPosts(prev => {
+      const newSet = new Set(prev);
+      if (isSelected) {
+        newSet.add(postId);
+      } else {
+        newSet.delete(postId);
+      }
+      return newSet;
+    });
+  };
+
+  // Handle select all posts
+  const handleSelectAll = (isSelected) => {
+    if (isSelected) {
+      const allPostIds = new Set([...postList.map(p => p.id), ...scheduledPosts.map(p => p.id)]);
+      setSelectedPosts(allPostIds);
+    } else {
+      setSelectedPosts(new Set());
+    }
+  };
+
+  // Bulk delete selected posts
+  const handleBulkDelete = async () => {
+    if (selectedPosts.size === 0) {
+      alert('Please select posts to delete.');
+      return;
+    }
+
+    const confirmed = confirm(`Are you sure you want to delete ${selectedPosts.size} post(s)? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    setBulkDeleting(true);
 
     try {
-      const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("photos")
-        .upload(filePath, selectedFile);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage.from("photos").getPublicUrl(filePath);
-
-      const { data, error } = await supabase
-        .from("photos")
-        .insert([{ title: photoTitle, url: publicUrl, uploaded_at: new Date(), storage_path: filePath }])
-        .select();
+      const postIds = Array.from(selectedPosts);
+      
+      // Delete all selected posts
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .in('id', postIds);
 
       if (error) throw error;
 
-      setPhotos([data[0], ...photos]);
-      setSelectedFile(null);
-      setPhotoTitle("");
+      // Update local state
+      setPostList(prevPosts => prevPosts.filter(p => !selectedPosts.has(p.id)));
+      setScheduledPosts(prevPosts => prevPosts.filter(p => !selectedPosts.has(p.id)));
+      setSelectedPosts(new Set());
+
+      alert(`Successfully deleted ${postIds.length} post(s)!`);
+
     } catch (err) {
-      console.error(err);
-      alert("Error uploading photo: " + err.message);
+      console.error('Error during bulk delete:', err);
+      alert('Error deleting posts: ' + err.message);
     } finally {
-      setUploading(false);
+      setBulkDeleting(false);
     }
   };
+  
+  // Upload photo - commented out since photos table doesn't exist
+  // const handlePhotoUpload = async (e) => {
+  //   e.preventDefault();
+  //   if (!selectedFile) return;
+  //   setUploading(true);
 
-  // Delete photo
-  const handlePhotoDelete = async (photoId, storagePath) => {
-    if (!confirm("Are you sure you want to delete this photo?")) return;
-    try {
-      const { error: storageError } = await supabase.storage.from("photos").remove([storagePath]);
-      if (storageError) throw storageError;
+  //   try {
+  //     const fileExt = selectedFile.name.split('.').pop();
+  //     const fileName = `${Date.now()}.${fileExt}`;
+  //     const filePath = `${fileName}`;
 
-      const { error: dbError } = await supabase.from("photos").delete().eq("id", photoId);
-      if (dbError) throw dbError;
+  //     const { error: uploadError } = await supabase.storage
+  //       .from("photos")
+  //       .upload(filePath, selectedFile);
 
-      setPhotos(photos.filter(p => p.id !== photoId));
-    } catch (err) {
-      console.error(err);
-      alert("Error deleting photo: " + err.message);
-    }
-  };
+  //     if (uploadError) throw uploadError;
+
+  //     const { data: { publicUrl } } = supabase.storage.from("photos").getPublicUrl(filePath);
+
+  //     const { data, error } = await supabase
+  //       .from("photos")
+  //       .insert([{ title: photoTitle, url: publicUrl, uploaded_at: new Date(), storage_path: filePath }])
+  //       .select();
+
+  //     if (error) throw error;
+
+  //     setPhotos([data[0], ...photos]);
+  //     setSelectedFile(null);
+  //     setPhotoTitle("");
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert("Error uploading photo: " + err.message);
+  //   } finally {
+  //     setUploading(false);
+  //   }
+  // };
+
+  // Delete photo - commented out since photos table doesn't exist
+  // const handlePhotoDelete = async (photoId, storagePath) => {
+  //   if (!confirm("Are you sure you want to delete this photo?")) return;
+  //   try {
+  //     const { error: storageError } = await supabase.storage.from("photos").remove([storagePath]);
+  //     if (storageError) throw storageError;
+
+  //     const { error: dbError } = await supabase.from("photos").delete().eq("id", photoId);
+  //     if (dbError) throw dbError;
+
+  //     setPhotos(photos.filter(p => p.id !== photoId));
+  //   } catch (err) {
+  //     console.error(err);
+  //     alert("Error deleting photo: " + err.message);
+  //   }
+  // };
 
   // Bulk upload posts (JSON or CSV)
   const handleBulkUpload = async (e) => {
@@ -178,6 +302,14 @@ export default function AdminDashboard() {
     setBulkUploading(true);
 
     try {
+      // Get current user for user_id
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        alert("You must be signed in to upload posts.");
+        setBulkUploading(false);
+        return;
+      }
+
       const text = await bulkFile.text();
       let posts = [];
 
@@ -194,19 +326,33 @@ export default function AdminDashboard() {
         });
       }
 
-      for (const post of posts) {
-        await supabase.from("posts").insert([{
+      // Prepare posts for batch insert
+      const postsToInsert = posts.map(post => {
+        // Handle scheduled posts
+        let scheduledTimestamp = null;
+        if (post.scheduledFor) {
+          scheduledTimestamp = new Date(post.scheduledFor);
+        }
+
+        return {
           title: post.title || "Untitled",
           post_text: post.content || post.postText || "",
-          author: post.author || "Admin",
           post_img: post.imgUrl || post.postImg || "",
-          is_published: post.isPublished !== undefined ? post.isPublished : true,
-          scheduled_for: post.scheduledFor || null,
-          created_at: new Date()
-        }]);
-      }
+          is_published: post.isPublished !== undefined ? post.isPublished : !scheduledTimestamp,
+          scheduled_for: scheduledTimestamp,
+          user_id: user.id
+        };
+      });
 
-      alert("Bulk upload completed!");
+      // Batch insert all posts
+      const { data: insertedPosts, error: insertError } = await supabase
+        .from("posts")
+        .insert(postsToInsert)
+        .select();
+
+      if (insertError) throw insertError;
+
+      alert(`Bulk upload completed! ${insertedPosts.length} posts uploaded successfully.`);
       setBulkFile(null);
 
       // Refresh posts
@@ -399,10 +545,11 @@ export default function AdminDashboard() {
           <div className="bg-indigo-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
             <h3 className="font-medium text-indigo-900 mb-2 text-sm sm:text-base">📋 File Format Requirements:</h3>
             <div className="text-xs sm:text-sm text-indigo-800 space-y-1">
-              <p><strong>JSON Format:</strong> Array of objects with fields: title, content, author, imgUrl, etc.</p>
-              <p><strong>CSV Format:</strong> Headers in first row: title,content,author,imgUrl,isPublished</p>
-              <p><strong>Required Fields:</strong> title, content (maps to postText internally)</p>
-              <p><strong>Note:</strong> content → postText, imgUrl → postImg (auto-mapped)</p>
+              <p><strong>JSON Format:</strong> Array of objects with fields: title, content, imgUrl, isPublished, scheduledFor</p>
+              <p><strong>CSV Format:</strong> Headers in first row: title,content,imgUrl,isPublished,scheduledFor</p>
+              <p><strong>Required Fields:</strong> title, content</p>
+              <p><strong>Optional Fields:</strong> imgUrl, isPublished (defaults to true), scheduledFor (ISO date string)</p>
+              <p><strong>Note:</strong> Posts will be automatically assigned to your user account</p>
             </div>
           </div>
 
@@ -460,20 +607,91 @@ export default function AdminDashboard() {
             <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
               <div className="p-4 sm:p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-base sm:text-lg font-semibold text-gray-900">Recent Posts</h2>
-                  <span className="text-xs sm:text-sm text-gray-500">{postList.length} total</span>
+                  <div className="flex items-center space-x-3">
+                    <h2 className="text-base sm:text-lg font-semibold text-gray-900">Recent Posts</h2>
+                    {selectedPosts.size > 0 && (
+                      <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
+                        {selectedPosts.size} selected
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <select
+                      value={postFilter}
+                      onChange={(e) => setPostFilter(e.target.value)}
+                      className="text-xs sm:text-sm border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="published">Published</option>
+                      <option value="unpublished">Unpublished</option>
+                      <option value="all">All Posts</option>
+                    </select>
+                    <span className="text-xs sm:text-sm text-gray-500">{postList.length} total</span>
+                    {selectedPosts.size > 0 && (
+                      <button
+                        onClick={handleBulkDelete}
+                        disabled={bulkDeleting}
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {bulkDeleting ? "Deleting..." : `Delete ${selectedPosts.size}`}
+                      </button>
+                    )}
+                  </div>
                 </div>
+                
+                {/* Bulk Actions */}
+                {postList.length > 0 && (
+                  <div className="mt-3 flex items-center space-x-3">
+                    <label className="flex items-center space-x-2 text-sm text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={selectedPosts.size === postList.length + scheduledPosts.length && postList.length + scheduledPosts.length > 0}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span>Select All</span>
+                    </label>
+                    {selectedPosts.size > 0 && (
+                      <button
+                        onClick={() => setSelectedPosts(new Set())}
+                        className="text-sm text-gray-500 hover:text-gray-700"
+                      >
+                        Clear Selection
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="p-4 sm:p-6">
                 {postList.length > 0 ? (
                   <div className="space-y-4">
-                    {postList.slice(0, 5).map((post) => (
-                      <div key={post.id} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-gray-900 truncate text-sm sm:text-base">{post.title}</h3>
-                          <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                            {safeFormatDate(post.createdAt)}
-                          </p>
+                    {postList.map((post) => (
+                      <div key={post.id} className={`flex items-center justify-between p-3 sm:p-4 rounded-lg transition-colors ${
+                        selectedPosts.has(post.id) ? 'bg-red-50 border border-red-200' : 'bg-gray-50 hover:bg-gray-100'
+                      }`}>
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={selectedPosts.has(post.id)}
+                            onChange={(e) => handlePostSelection(post.id, e.target.checked)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <h3 className="font-medium text-gray-900 truncate text-sm sm:text-base">{post.title}</h3>
+                              {postFilter === 'all' && (
+                                <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                  post.is_published 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-orange-100 text-orange-800'
+                                }`}>
+                                  {post.is_published ? 'Published' : 'Unpublished'}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                              {safeFormatDate(post.created_at)}
+                            </p>
+                          </div>
                         </div>
                         <div className="flex items-center space-x-1 sm:space-x-2 ml-2 sm:ml-4">
                           <button
@@ -497,6 +715,11 @@ export default function AdminDashboard() {
                               const success = await deletePost(post.id);
                               if (success) {
                                 setPostList(prevPosts => prevPosts.filter(p => p.id !== post.id));
+                                setSelectedPosts(prev => {
+                                  const newSet = new Set(prev);
+                                  newSet.delete(post.id);
+                                  return newSet;
+                                });
                               }
                             }}
                             className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
@@ -505,7 +728,6 @@ export default function AdminDashboard() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                           </button>
-
                         </div>
                       </div>
                     ))}
@@ -533,32 +755,59 @@ export default function AdminDashboard() {
                 <div className="p-4 sm:p-6">
                   <div className="space-y-3">
                     {scheduledPosts.slice(0, 3).map((post) => (
-                      <div key={post.id} className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                        <h3 className="font-medium text-gray-900 text-xs sm:text-sm truncate">{post.title}</h3>
-                        <p className="text-xs text-orange-600 mt-1">
-                          {formatScheduledDate(post.scheduledFor)}
-                        </p>
-                        <div className="flex space-x-2 mt-2">
-                          <button
-                            onClick={() =>
-                              router.push({
-                                pathname: "/createpost",
-                                query: { postId: post.id },
-                              })
-                            }
-                            className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={async () => {
-                              await deletePost(post);
-                              setScheduledPosts((prevPosts) => prevPosts.filter((p) => p.id !== post.id));
-                            }}
-                            className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 transition-colors"
-                          >
-                            Delete
-                          </button>
+                      <div key={post.id} className={`p-3 rounded-lg border transition-colors ${
+                        selectedPosts.has(post.id) ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200'
+                      }`}>
+                        <div className="flex items-start space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedPosts.has(post.id)}
+                            onChange={(e) => handlePostSelection(post.id, e.target.checked)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-1"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <h3 className="font-medium text-gray-900 text-xs sm:text-sm truncate">{post.title}</h3>
+                              <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                                Scheduled
+                              </span>
+                            </div>
+                            <p className="text-xs text-orange-600 mt-1">
+                              {safeFormatDate(post.scheduled_for)}
+                            </p>
+                            <div className="flex space-x-2 mt-2">
+                              <button
+                                onClick={() =>
+                                  router.push({
+                                    pathname: "/createpost",
+                                    query: { postId: post.id },
+                                  })
+                                }
+                                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const confirmed = confirm("Are you sure you want to delete this post?");
+                                  if (!confirmed) return;
+                                  
+                                  const success = await deletePost(post.id);
+                                  if (success) {
+                                    setScheduledPosts((prevPosts) => prevPosts.filter((p) => p.id !== post.id));
+                                    setSelectedPosts(prev => {
+                                      const newSet = new Set(prev);
+                                      newSet.delete(post.id);
+                                      return newSet;
+                                    });
+                                  }
+                                }}
+                                className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -567,8 +816,8 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* Photo Upload */}
-            <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
+            {/* Photo Upload - commented out since photos table doesn't exist */}
+            {/* <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
               <div className="p-4 sm:p-6 border-b border-gray-200">
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">Quick Upload</h2>
               </div>
@@ -600,10 +849,10 @@ export default function AdminDashboard() {
                   </button>
                 </form>
               </div>
-            </div>
+            </div> */}
 
-            {/* Recent Photos */}
-            {photos.length > 0 && (
+            {/* Recent Photos - commented out since photos table doesn't exist */}
+            {/* {photos.length > 0 && (
               <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200">
                 <div className="p-4 sm:p-6 border-b border-gray-200">
                   <h2 className="text-base sm:text-lg font-semibold text-gray-900">Recent Photos</h2>
@@ -632,7 +881,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>
