@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import { supabase } from "../lib/supabaseClient";
 import Link from "next/link";
+import { useRouter } from "next/router";
+import React, { useEffect, useState } from "react";
 import BlogContent from "../components/BlogContent";
+import { supabase } from "../lib/supabaseClient";
 
 const Createpost = () => {
   const router = useRouter();
@@ -188,15 +188,29 @@ const handlePost = async (e) => {
               required
               onChange={(e) => setPostText(e.target.value)}
               className="w-full h-64 px-4 py-2 rounded-lg bg-[#2a2a2a] border border-gray-700 focus:border-[#F2EA6D] focus:ring-2 focus:ring-[#F2EA6D]"
+              placeholder="Write your blog post content here..."
             />
-            <BlogContent postText={postText} />
+            {postText && (
+              <div className="mt-4">
+                <label className="block text-sm text-gray-400 mb-2">Preview:</label>
+                <BlogContent postText={postText} />
+              </div>
+            )}
           </div>
 
           <div>
             <label className="block text-lg mb-2">Upload Image</label>
-            <input type="file" onChange={selectImage} />
+            <input 
+              type="file" 
+              onChange={selectImage}
+              accept="image/*"
+              className="w-full px-4 py-2 rounded-lg bg-[#2a2a2a] border border-gray-700 focus:border-[#F2EA6D] focus:ring-2 focus:ring-[#F2EA6D] text-white"
+            />
             {previewImage && (
-              <img src={previewImage} alt="Preview" className="mt-4 max-h-64" />
+              <div className="mt-4">
+                <label className="block text-sm text-gray-400 mb-2">Image Preview:</label>
+                <img src={previewImage} alt="Preview" className="max-h-64 rounded-lg border border-gray-700" />
+              </div>
             )}
           </div>
 
