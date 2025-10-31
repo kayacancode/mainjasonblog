@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-10-31T09:06:39.774389",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "6V4ntlX6608rd3Ec5SpVhj",
+      "name": "Berghain",
+      "artist": "ROSALÍA, Björk, Yves Tumor",
+      "album": "Berghain",
+      "popularity": 79,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27308256748d3e6c3ed016cab16",
+      "spotify_url": "https://open.spotify.com/track/6V4ntlX6608rd3Ec5SpVhj",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "0pVYhms1xQW1TFsyl1SDmH",
+      "name": "All On Me (feat. G Herbo)",
+      "artist": "Lil Baby, G Herbo",
+      "album": "All On Me (feat. G Herbo)",
+      "popularity": 60,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2738c03d04e9018e6a158d03bcf",
+      "spotify_url": "https://open.spotify.com/track/0pVYhms1xQW1TFsyl1SDmH",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5NuZNC7s5Fe9EFHKpvVADb",
+      "name": "Sympathy Magic",
+      "artist": "Florence + The Machine",
+      "album": "Sympathy Magic",
+      "popularity": 57,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2735dc53c267eb457817146574f",
+      "spotify_url": "https://open.spotify.com/track/5NuZNC7s5Fe9EFHKpvVADb",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5goc5XgGhACpIurZUOe9eM",
+      "name": "Mother",
+      "artist": "Tyler, The Creator",
+      "album": "CHROMAKOPIA +",
+      "popularity": 55,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273f2bfe361205aea3dd17c09a2",
+      "spotify_url": "https://open.spotify.com/track/5goc5XgGhACpIurZUOe9eM",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "4xsbMmk4sWSsnlMMiuPwdp",
+      "name": "Spin The Block",
+      "artist": "Masego",
+      "album": "Spin The Block",
+      "popularity": 20,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273b20432a7e2322b4235ce385f",
+      "spotify_url": "https://open.spotify.com/track/4xsbMmk4sWSsnlMMiuPwdp",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "4rFOEXj5IdCmvGCQAYBN4V",
+      "name": "MASQUERADE",
+      "artist": "Knucks",
+      "album": "A Fine African Man",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273db34f60c1929ab2aca7478d0",
+      "spotify_url": "https://open.spotify.com/track/4rFOEXj5IdCmvGCQAYBN4V",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "77IoxXrzRvWNBpedy6HR8a",
+      "name": "Shootin Craps (feat. Lil Yachty)",
+      "artist": "Kodak Black, Lil Yachty",
+      "album": "Just Getting Started",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273eebf918979047d22ead7a048",
+      "spotify_url": "https://open.spotify.com/track/77IoxXrzRvWNBpedy6HR8a",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "6k8pPJi8jbFSopEQA0rffn",
+      "name": "Endless Nights (feat. Gunna)",
+      "artist": "Kodak Black, Gunna",
+      "album": "Just Getting Started",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273eebf918979047d22ead7a048",
+      "spotify_url": "https://open.spotify.com/track/6k8pPJi8jbFSopEQA0rffn",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "1lJOLxDS8kS2rihrqezMcv",
+      "name": "Century",
+      "artist": "EsDeeKid",
+      "album": "Century",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2737819612c19b5eb6d66d836bb",
+      "spotify_url": "https://open.spotify.com/track/1lJOLxDS8kS2rihrqezMcv",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "0DhmMf3vfWqjPGnS2cLUHa",
+      "name": "Alive (feat. French Montana)",
+      "artist": "41, Kyle Richh, Jenn Carter, TaTa, French Montana",
+      "album": "Alive",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2733ce8cf75527af8be5ba96bdc",
+      "spotify_url": "https://open.spotify.com/track/0DhmMf3vfWqjPGnS2cLUHa",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}
