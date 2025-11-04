@@ -37,6 +37,13 @@ export default function TracksManagement() {
     const [creatingPostForWeek, setCreatingPostForWeek] = useState(null);
     const [postMessage, setPostMessage] = useState('');
     const [showPopularityModal, setShowPopularityModal] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [settingsWeek, setSettingsWeek] = useState(null);
+    const [selectedCoverTrack, setSelectedCoverTrack] = useState(null);
+    const [savingSettings, setSavingSettings] = useState(false);
+    const [processingImage, setProcessingImage] = useState(false);
+    const [previewImageUrl, setPreviewImageUrl] = useState(null);
+    const [processingPreview, setProcessingPreview] = useState(false);
 
     // Form state for adding/editing tracks
     const [formData, setFormData] = useState({
@@ -441,6 +448,7 @@ export default function TracksManagement() {
 
     // Image management functions
     const fetchWeekImages = async (weekStart) => {
+        // Check if custom_image_url exists and use it as cover_image_url
         try {
             //console.log('🔍 Fetching images for week:', weekStart);
             
@@ -472,12 +480,17 @@ export default function TracksManagement() {
                     
                     // Fix old naming conventions to match actual storage files
                     const imageData = data[0];
-                    if (imageData.cover_image_url) {
+                    
+                    // If custom_image_url exists, use it as the cover_image_url
+                    if (imageData.custom_image_url) {
+                        imageData.cover_image_url = imageData.custom_image_url;
+                    } else if (imageData.cover_image_url) {
                         // Fix old naming: cover_nmf_single_artist -> artist_collage
                         imageData.cover_image_url = imageData.cover_image_url
                             .replace('_cover_nmf_single_artist_', '_artist_collage_')
                             .replace('_nmf_single_artist_', '_artist_collage_');
                     }
+                    
                     if (imageData.tracklist_image_url) {
                         // Fix old naming: tracklist_nmf_tracklist -> tracklist
                         imageData.tracklist_image_url = imageData.tracklist_image_url
@@ -487,7 +500,8 @@ export default function TracksManagement() {
                     
                     console.log('🔧 Fixed URLs:', {
                         cover: imageData.cover_image_url,
-                        tracklist: imageData.tracklist_image_url
+                        tracklist: imageData.tracklist_image_url,
+                        custom: imageData.custom_image_url
                     });
                     
                     return imageData;
@@ -616,6 +630,212 @@ export default function TracksManagement() {
         }
     };
 
+    const processPreviewImage = async (track) => {
+        if (!track || !track.album_art_url) {
+            setPreviewImageUrl(null);
+            return;
+        }
+
+        setProcessingPreview(true);
+        try {
+            // Process the selected track's album art with overlay via API
+            // Use a unique timestamp to avoid caching old images
+            const uniqueId = `preview_${Date.now()}_${track.id}`;
+            const processResponse = await fetch('/api/process-custom-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    imageUrl: track.album_art_url,
+                    weekStart: uniqueId,
+                    trackName: track.track_name || 'Custom Image',
+                    artistName: track.artists || 'Custom'
+                })
+            });
+            
+            if (!processResponse.ok) {
+                throw new Error('Failed to process preview image');
+            }
+            
+            const processData = await processResponse.json();
+            if (processData.processedImageUrl) {
+                // Add cache-busting parameter to ensure fresh image
+                const cacheBuster = `?t=${Date.now()}`;
+                setPreviewImageUrl(processData.processedImageUrl + cacheBuster);
+            } else {
+                throw new Error('No processed image URL returned');
+            }
+        } catch (error) {
+            console.error('Error processing preview image:', error);
+            setPreviewImageUrl(null);
+        } finally {
+            setProcessingPreview(false);
+        }
+    };
+
+    const handleOpenSettings = async (week) => {
+        setSettingsWeek(week);
+        setSelectedCoverTrack(null);
+        setPreviewImageUrl(null);
+        
+        // Fetch existing preferences
+        try {
+            const { data, error } = await supabase
+                .from('images')
+                .select('preferred_track_id, preferred_track_name, preferred_track_image, custom_image_url')
+                .eq('week_start', week)
+                .single();
+            
+            if (!error && data) {
+                if (data.preferred_track_id) {
+                    // Find the track in the current week's tracks
+                    const weekTracks = tracks.filter(t => t.week_start === week);
+                    const preferredTrack = weekTracks.find(t => t.id === data.preferred_track_id);
+                    if (preferredTrack) {
+                        setSelectedCoverTrack(preferredTrack);
+                        // Generate preview for existing selection
+                        await processPreviewImage(preferredTrack);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching preferences:', error);
+        }
+        
+        setShowSettingsModal(true);
+    };
+
+    const handleSaveSettings = async () => {
+        if (!settingsWeek) return;
+        
+        setSavingSettings(true);
+        setProcessingImage(false);
+        
+        try {
+            let customImageUrl = null;
+            
+            // If a cover track is selected, process its album art with overlay
+            if (selectedCoverTrack && selectedCoverTrack.album_art_url) {
+                // If we already have a preview image URL, reuse it (avoids reprocessing)
+                if (previewImageUrl) {
+                    customImageUrl = previewImageUrl;
+                } else {
+                    // Otherwise, process it now
+                    setProcessingImage(true);
+                    try {
+                        // Process the selected track's album art with overlay via API
+                        const processResponse = await fetch('/api/process-custom-image', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                imageUrl: selectedCoverTrack.album_art_url,
+                                weekStart: settingsWeek,
+                                trackName: selectedCoverTrack.track_name || 'Custom Image',
+                                artistName: selectedCoverTrack.artists || 'Custom'
+                            })
+                        });
+                        
+                        if (!processResponse.ok) {
+                            let errorMessage = 'Failed to process image with overlay';
+                            try {
+                                const errorData = await processResponse.json();
+                                errorMessage = errorData.error || errorData.details || errorMessage;
+                                if (errorData.details) {
+                                    errorMessage += `: ${errorData.details}`;
+                                }
+                            } catch (e) {
+                                errorMessage = `HTTP ${processResponse.status}: ${processResponse.statusText}`;
+                            }
+                            throw new Error(errorMessage);
+                        }
+                        
+                        const processData = await processResponse.json();
+                        if (processData.processedImageUrl) {
+                            customImageUrl = processData.processedImageUrl;
+                        } else {
+                            throw new Error('No processed image URL returned from server');
+                        }
+                    } catch (error) {
+                        console.error('Error processing image with overlay:', error);
+                        alert('Failed to process image with overlay: ' + error.message);
+                        setProcessingImage(false);
+                        setSavingSettings(false);
+                        return;
+                    } finally {
+                        setProcessingImage(false);
+                    }
+                }
+            }
+            
+            // First check if a record exists for this week
+            const { data: existingRecord, error: checkError } = await supabase
+                .from('images')
+                .select('id')
+                .eq('week_start', settingsWeek)
+                .single();
+            
+            const updateData = {
+                updated_at: new Date().toISOString()
+            };
+            
+            if (selectedCoverTrack) {
+                updateData.preferred_track_id = selectedCoverTrack.id;
+                updateData.preferred_track_name = selectedCoverTrack.track_name;
+                updateData.preferred_track_image = selectedCoverTrack.album_art_url;
+                // Set the processed custom image URL (only include if we have a value)
+                // Note: This requires the custom_image_url column to exist in the database
+                if (customImageUrl) {
+                    updateData.custom_image_url = customImageUrl;
+                }
+            } else {
+                // Clear preference if no track selected
+                updateData.preferred_track_id = null;
+                updateData.preferred_track_name = null;
+                updateData.preferred_track_image = null;
+                // Don't try to clear custom_image_url - it may not exist in schema yet
+            }
+            
+            // Tracklist title is now auto-generated, no need to save custom title
+            
+            let error = null;
+            
+            if (existingRecord && !checkError) {
+                // Record exists, update it
+                const { error: updateError } = await supabase
+                    .from('images')
+                    .update(updateData)
+                    .eq('week_start', settingsWeek);
+                error = updateError;
+            } else {
+                // Record doesn't exist, insert new one
+                const { error: insertError } = await supabase
+                    .from('images')
+                    .insert({
+                        week_start: settingsWeek,
+                        ...updateData,
+                        created_at: new Date().toISOString()
+                    });
+                error = insertError;
+            }
+            
+            if (error) {
+                console.error('Error saving settings:', error);
+                alert('Failed to save settings: ' + error.message);
+                return;
+            }
+            
+            alert('Settings saved successfully! Your selected cover image has been processed with the branding overlay and is now ready to use for Instagram posting.');
+            setShowSettingsModal(false);
+            // Refresh the page to show updated images
+            window.location.reload();
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            alert('Error saving settings: ' + error.message);
+        } finally {
+            setSavingSettings(false);
+            setProcessingImage(false);
+        }
+    };
+
     const handleCancelEdit = () => {
         setEditingCaption(currentWeekCaption.caption);
         setEditingHashtags(currentWeekCaption.hashtags ? currentWeekCaption.hashtags.join(' ') : '');
@@ -690,7 +910,15 @@ export default function TracksManagement() {
         const weekString = String(targetWeek);
         
         const images = await fetchWeekImages(weekString);
+        
+        // If there's a preferred track, add its album art as the first image
+        if (images && images.preferred_track_image) {
+            images.selected_cover_track_image = images.preferred_track_image;
+            images.selected_cover_track_name = images.preferred_track_name;
+        }
+        
         setCurrentWeekImages(images);
+        setCurrentImageIndex(0); // Start with first image
         setShowImageModal(true);
     };
 
@@ -1309,6 +1537,13 @@ export default function TracksManagement() {
                                                         View Caption
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => handleOpenSettings(week)}
+                                                    className="text-indigo-600 hover:text-indigo-800 text-xs sm:text-sm underline px-2 py-1 rounded hover:bg-indigo-50 transition-colors"
+                                                    title="Configure cover image and tracklist title"
+                                                >
+                                                    ⚙️ Settings
+                                                </button>
                                                 {/* Instagram Post Creation Button - Show if both images and caption are available */}
                                                 {weekImageStatus[week] && weekCaptionStatus[week] && (
                                                     <button
@@ -1591,34 +1826,72 @@ export default function TracksManagement() {
 
                         {currentWeekImages ? (
                             <div className="relative">
-                                {/* Navigation arrows */}
-                                {currentWeekImages.cover_image_url && currentWeekImages.tracklist_image_url && (
-                                    <>
-                                        <button
-                                            onClick={() => setCurrentImageIndex(prev => prev === 0 ? 1 : 0)}
-                                            className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all"
-                                        >
-                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                            </svg>
-                                        </button>
-                                        <button
-                                            onClick={() => setCurrentImageIndex(prev => prev === 0 ? 1 : 0)}
-                                            className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all"
-                                        >
-                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </button>
-                                    </>
-                                )}
+                                {/* Determine available images */}
+                                {(() => {
+                                    const hasSelectedCover = currentWeekImages.selected_cover_track_image;
+                                    const hasCover = currentWeekImages.cover_image_url;
+                                    const hasTracklist = currentWeekImages.tracklist_image_url;
+                                    const totalImages = (hasSelectedCover ? 1 : 0) + (hasCover ? 1 : 0) + (hasTracklist ? 1 : 0);
+                                    
+                                    if (totalImages > 1) {
+                                        return (
+                                            <>
+                                                <button
+                                                    onClick={() => {
+                                                        const maxIndex = totalImages - 1;
+                                                        setCurrentImageIndex(prev => prev === 0 ? maxIndex : prev - 1);
+                                                    }}
+                                                    className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all"
+                                                >
+                                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        const maxIndex = totalImages - 1;
+                                                        setCurrentImageIndex(prev => prev === maxIndex ? 0 : prev + 1);
+                                                    }}
+                                                    className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all"
+                                                >
+                                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </button>
+                                            </>
+                                        );
+                                    }
+                                    return null;
+                                })()}
 
                                 {/* Image display */}
                                 <div className="text-center">
                                     {(() => {
-                                        const imageUrl = currentImageIndex === 0 && currentWeekImages.cover_image_url 
-                                            ? currentWeekImages.cover_image_url 
-                                            : currentWeekImages.tracklist_image_url;
+                                        // Determine which image to show based on index
+                                        let imageUrl = null;
+                                        let imageTitle = '';
+                                        let imageSubtitle = '';
+                                        
+                                        const hasSelectedCover = currentWeekImages.selected_cover_track_image;
+                                        const hasCover = currentWeekImages.cover_image_url;
+                                        
+                                        if (currentImageIndex === 0 && hasSelectedCover) {
+                                            // First image: Selected cover track
+                                            imageUrl = currentWeekImages.selected_cover_track_image;
+                                            imageTitle = "Selected Cover Track";
+                                            imageSubtitle = currentWeekImages.selected_cover_track_name || "Cover Track";
+                                        } else if ((currentImageIndex === 0 && !hasSelectedCover && hasCover) || 
+                                                   (currentImageIndex === 1 && hasSelectedCover && hasCover)) {
+                                            // Second image: Generated cover
+                                            imageUrl = currentWeekImages.cover_image_url;
+                                            imageTitle = "Cover Image";
+                                            imageSubtitle = "Generated Graphic";
+                                        } else {
+                                            // Third image: Tracklist
+                                            imageUrl = currentWeekImages.tracklist_image_url;
+                                            imageTitle = "Tracklist Image";
+                                            imageSubtitle = "Generated Tracklist";
+                                        }
                                         
                                         if (!imageUrl) {
                                             return <div className="text-white text-lg">No image available for this week</div>;
@@ -1638,7 +1911,7 @@ export default function TracksManagement() {
                                         return (
                                             <img
                                                 src={cleanUrl}
-                                                alt={currentImageIndex === 0 ? "Cover Image" : "Tracklist Image"}
+                                                alt={imageTitle}
                                                 className="max-w-full h-auto rounded-lg shadow-2xl mx-auto"
                                                 style={{ maxHeight: '80vh' }}
                                                 onLoad={() => console.log('✅ Image loaded successfully')}
@@ -1654,9 +1927,32 @@ export default function TracksManagement() {
                                     {/* Image title */}
                                     <div className="mt-4 text-white">
                                         <h3 className="text-xl font-semibold">
-                                            {currentImageIndex === 0 ? "Cover Image" : "Tracklist Image"}
+                                            {(() => {
+                                                const hasSelectedCover = currentWeekImages.selected_cover_track_image;
+                                                const hasCover = currentWeekImages.cover_image_url;
+                                                
+                                                if (currentImageIndex === 0 && hasSelectedCover) {
+                                                    return "Selected Cover Track";
+                                                } else if ((currentImageIndex === 0 && !hasSelectedCover && hasCover) || 
+                                                           (currentImageIndex === 1 && hasSelectedCover && hasCover)) {
+                                                    return "Cover Image";
+                                                } else {
+                                                    return "Tracklist Image";
+                                                }
+                                            })()}
                                         </h3>
-                                        <p className="text-sm opacity-75">Week of {currentWeekImages?.week_start || selectedWeek}</p>
+                                        <p className="text-sm opacity-75">
+                                            {(() => {
+                                                const hasSelectedCover = currentWeekImages.selected_cover_track_image;
+                                                const hasCover = currentWeekImages.cover_image_url;
+                                                
+                                                if (currentImageIndex === 0 && hasSelectedCover) {
+                                                    return currentWeekImages.selected_cover_track_name || "Selected Cover Track";
+                                                } else {
+                                                    return `Week of ${currentWeekImages?.week_start || selectedWeek}`;
+                                                }
+                                            })()}
+                                        </p>
                                     </div>
 
 
@@ -1718,22 +2014,49 @@ export default function TracksManagement() {
                                     )}
 
                                     {/* Image indicators */}
-                                    {currentWeekImages.cover_image_url && currentWeekImages.tracklist_image_url && (
-                                        <div className="mt-4 flex justify-center gap-2">
-                                            <button
-                                                onClick={() => setCurrentImageIndex(0)}
-                                                className={`w-3 h-3 rounded-full transition-all ${
-                                                    currentImageIndex === 0 ? 'bg-white' : 'bg-white bg-opacity-50'
-                                                }`}
-                                            />
-                                            <button
-                                                onClick={() => setCurrentImageIndex(1)}
-                                                className={`w-3 h-3 rounded-full transition-all ${
-                                                    currentImageIndex === 1 ? 'bg-white' : 'bg-white bg-opacity-50'
-                                                }`}
-                                            />
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const hasSelectedCover = currentWeekImages.selected_cover_track_image;
+                                        const hasCover = currentWeekImages.cover_image_url;
+                                        const hasTracklist = currentWeekImages.tracklist_image_url;
+                                        const totalImages = (hasSelectedCover ? 1 : 0) + (hasCover ? 1 : 0) + (hasTracklist ? 1 : 0);
+                                        
+                                        if (totalImages > 1) {
+                                            return (
+                                                <div className="mt-4 flex justify-center gap-2">
+                                                    {hasSelectedCover && (
+                                                        <button
+                                                            onClick={() => setCurrentImageIndex(0)}
+                                                            className={`w-3 h-3 rounded-full transition-all ${
+                                                                currentImageIndex === 0 ? 'bg-white' : 'bg-white bg-opacity-50'
+                                                            }`}
+                                                            title="Selected Cover Track"
+                                                        />
+                                                    )}
+                                                    {hasCover && (
+                                                        <button
+                                                            onClick={() => setCurrentImageIndex(hasSelectedCover ? 1 : 0)}
+                                                            className={`w-3 h-3 rounded-full transition-all ${
+                                                                (hasSelectedCover ? currentImageIndex === 1 : currentImageIndex === 0) ? 'bg-white' : 'bg-white bg-opacity-50'
+                                                            }`}
+                                                            title="Cover Image"
+                                                        />
+                                                    )}
+                                                    {hasTracklist && (
+                                                        <button
+                                                            onClick={() => setCurrentImageIndex(
+                                                                (hasSelectedCover ? 1 : 0) + (hasCover ? 1 : 0)
+                                                            )}
+                                                            className={`w-3 h-3 rounded-full transition-all ${
+                                                                currentImageIndex === ((hasSelectedCover ? 1 : 0) + (hasCover ? 1 : 0)) ? 'bg-white' : 'bg-white bg-opacity-50'
+                                                            }`}
+                                                            title="Tracklist Image"
+                                                        />
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                 </div>
                             </div>
                         ) : (
@@ -1893,6 +2216,151 @@ export default function TracksManagement() {
                                         Close
                                     </button>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Settings Modal */}
+            {showSettingsModal && settingsWeek && (
+                <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-2xl font-bold text-white">⚙️ Graphic Settings</h2>
+                                <button
+                                    onClick={() => setShowSettingsModal(false)}
+                                    className="text-gray-400 hover:text-white transition-colors"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="text-sm text-gray-300 block mb-2">Week:</label>
+                                    <div className="text-white font-medium">{settingsWeek}</div>
+                                </div>
+
+                                {/* Cover Track Selection */}
+                                <div>
+                                    <label className="text-sm font-medium text-gray-300 block mb-3">
+                                        Select Cover Image Track
+                                    </label>
+                                    <p className="text-xs text-gray-400 mb-4">
+                                        Choose which track's album art will be used as the cover. The image will be automatically processed with the branding overlay (white border, "NEW MUSIC FRIDAY" text, etc.) when you save.
+                                    </p>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
+                                        {tracks
+                                            .filter(t => t.week_start === settingsWeek)
+                                            .map(track => (
+                                                <div
+                                                    key={track.id}
+                                                    onClick={async () => {
+                                                        const newTrack = selectedCoverTrack?.id === track.id ? null : track;
+                                                        setSelectedCoverTrack(newTrack);
+                                                        if (newTrack) {
+                                                            await processPreviewImage(newTrack);
+                                                        } else {
+                                                            setPreviewImageUrl(null);
+                                                        }
+                                                    }}
+                                                    className={`relative cursor-pointer rounded-lg border-2 transition-all ${
+                                                        selectedCoverTrack?.id === track.id
+                                                            ? 'border-indigo-500 bg-indigo-500 bg-opacity-20'
+                                                            : 'border-gray-700 hover:border-gray-600'
+                                                    }`}
+                                                >
+                                                    <div className="aspect-square rounded-t-lg overflow-hidden bg-gray-800">
+                                                        {track.album_art_url ? (
+                                                            <img
+                                                                src={track.album_art_url}
+                                                                alt={track.track_name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-gray-500">
+                                                                🎵
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="p-2">
+                                                        <p className="text-xs text-white font-medium truncate" title={track.track_name}>
+                                                            {track.track_name}
+                                                        </p>
+                                                        <p className="text-xs text-gray-400 truncate" title={track.artists}>
+                                                            {track.artists}
+                                                        </p>
+                                                    </div>
+                                                    {selectedCoverTrack?.id === track.id && (
+                                                        <div className="absolute top-2 right-2 bg-indigo-500 rounded-full p-1">
+                                                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                            </svg>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                    </div>
+                                    {selectedCoverTrack && (
+                                        <div className="mt-3 space-y-3">
+                                            <div className="p-3 bg-indigo-500 bg-opacity-20 rounded-lg border border-indigo-500">
+                                                <p className="text-sm text-indigo-300">
+                                                    ✓ Selected: <span className="font-medium text-white">{selectedCoverTrack.track_name}</span> by {selectedCoverTrack.artists}
+                                                </p>
+                                            </div>
+                                            
+                                            {/* Preview Section */}
+                                            <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+                                                <label className="text-sm font-medium text-gray-300 block mb-3">
+                                                    Preview with Overlay
+                                                </label>
+                                                {processingPreview ? (
+                                                    <div className="flex items-center justify-center h-64 bg-gray-900 rounded-lg">
+                                                        <div className="text-center">
+                                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto mb-2"></div>
+                                                            <p className="text-sm text-gray-400">Processing image with overlay...</p>
+                                                        </div>
+                                                    </div>
+                                                ) : previewImageUrl ? (
+                                                    <div className="relative">
+                                                        <img
+                                                            src={previewImageUrl}
+                                                            alt="Preview with overlay"
+                                                            className="w-full rounded-lg shadow-lg"
+                                                        />
+                                                        <p className="mt-2 text-xs text-gray-400 text-center">
+                                                            This is how your cover image will look with the branding overlay
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-center h-64 bg-gray-900 rounded-lg">
+                                                        <p className="text-sm text-gray-500">No preview available</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end gap-3">
+                                <button
+                                    onClick={() => setShowSettingsModal(false)}
+                                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveSettings}
+                                    disabled={savingSettings || processingImage}
+                                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-500 text-white px-4 py-2 rounded-lg transition-colors"
+                                >
+                                    {processingImage ? 'Processing Image with Overlay...' : savingSettings ? 'Saving...' : 'Save Settings'}
+                                </button>
                             </div>
                         </div>
                     </div>

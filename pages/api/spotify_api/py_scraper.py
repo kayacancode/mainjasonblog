@@ -363,16 +363,81 @@ class EnhancedSpotifyAutomation:
             week_start = today - timedelta(days=days_since_friday)
             week_start_str = week_start.strftime('%Y-%m-%d')
             
-            # Create single artist image (using the first track)
-            if unique_tracks:
-                single_artist_filename = f"{week_start_str}_artist_collage_{timestamp}.png"
-                single_artist_path = automation.create_single_artist_image(unique_tracks[0], automation.spotify, single_artist_filename)
+            # Fetch preferences from Supabase if they exist
+            preferred_track_id = None
+            custom_tracklist_title = None
+            custom_image_url = None
+            try:
+                from supabase import Client, create_client
+                supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+                supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+                if supabase_url and supabase_key:
+                    supabase: Client = create_client(supabase_url, supabase_key)
+                    prefs_result = supabase.table('images').select(
+                        'preferred_track_id, tracklist_title, custom_image_url'
+                    ).eq('week_start', week_start_str).execute()
+                    
+                    if prefs_result.data and len(prefs_result.data) > 0:
+                        prefs = prefs_result.data[0]
+                        preferred_track_id = prefs.get('preferred_track_id')
+                        custom_tracklist_title = prefs.get('tracklist_title')
+                        custom_image_url = prefs.get('custom_image_url')
+                        if preferred_track_id:
+                            print(f"📋 Found preferred track ID: {preferred_track_id}")
+                        if custom_tracklist_title:
+                            print(f"📋 Found custom tracklist title: {custom_tracklist_title}")
+                        if custom_image_url:
+                            print(f"📋 Found custom image URL: {custom_image_url}")
+            except Exception as e:
+                print(f"⚠️ Could not fetch preferences: {e}")
+            
+            # Reorder tracks to put preferred track first if it exists
+            cover_track = unique_tracks[0] if unique_tracks else None
+            if preferred_track_id and unique_tracks:
+                # Find the preferred track in the list
+                preferred_track = None
+                for track in unique_tracks:
+                    # Check multiple possible ID fields
+                    track_id = track.get('id') or track.get('track_id')
+                    if track_id and str(track_id) == str(preferred_track_id):
+                        preferred_track = track
+                        break
+                
+                if preferred_track:
+                    # Move preferred track to the front
+                    unique_tracks.remove(preferred_track)
+                    unique_tracks.insert(0, preferred_track)
+                    cover_track = preferred_track
+                    print(f"✅ Using preferred track: {preferred_track.get('name', 'Unknown')}")
+                else:
+                    print(f"⚠️ Preferred track ID {preferred_track_id} not found in current tracks, using default")
+            
+            # Check if custom image URL exists - if so, use it instead of generating
+            # IMPORTANT: Only generate cover image if user has selected a cover track
+            # If no selection made yet, skip cover image generation and wait for user selection
+            single_artist_path = None
+            if custom_image_url:
+                print(f"✅ Using custom uploaded image: {custom_image_url}")
+                # The custom image is already processed with overlay, so we'll use its URL directly
+                # No need to generate a new image
+            elif preferred_track_id or cover_track:
+                # User has selected a cover track, generate the image
+                if cover_track:
+                    print(f"🎨 Generating cover image using user-selected track: {cover_track.get('name', 'Unknown')}")
+                    single_artist_filename = f"{week_start_str}_artist_collage_{timestamp}.png"
+                    single_artist_path = automation.create_single_artist_image(cover_track, automation.spotify, single_artist_filename)
+                else:
+                    single_artist_path = None
             else:
+                # No user selection yet - skip cover image generation
+                # User needs to select a cover track in the UI first
+                print(f"⏸️ No cover track selected yet. Skipping cover image generation.")
+                print(f"💡 Please select a cover track in the tracks management UI, then images will be generated.")
                 single_artist_path = None
             
-            # Create tracklist
+            # Create tracklist with custom title if provided
             tracklist_filename = f"{week_start_str}_tracklist_{timestamp}.png"
-            tracklist_path = automation.create_tracklist_image(unique_tracks, tracklist_filename)
+            tracklist_path = automation.create_tracklist_image(unique_tracks, tracklist_filename, custom_title=custom_tracklist_title)
             
             # Generate caption
             caption = automation.generate_caption(unique_tracks)
@@ -387,7 +452,11 @@ class EnhancedSpotifyAutomation:
             
             print(f"🖼️ Uploading images for week {week_start_str}...")
             
-            if single_artist_path and os.path.exists(single_artist_path):
+            # Use custom image URL if available, otherwise upload generated image
+            if custom_image_url:
+                cover_url = custom_image_url
+                print(f"✅ Using custom image URL: {cover_url}")
+            elif single_artist_path and os.path.exists(single_artist_path):
                 print(f"📤 Uploading cover image: {single_artist_path}")
                 cover_url = automation.upload_image_to_supabase(single_artist_path, week_start_str, 'cover')
                 if cover_url:

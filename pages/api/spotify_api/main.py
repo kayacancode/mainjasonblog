@@ -537,6 +537,29 @@ class SpotifyNewMusicAutomation:
             # Create a subtle background overlay to improve text readability
             black_overlay = Image.new('RGBA', target_size, (0, 0, 0, 60))  # 60/255 = ~24% opacity
             
+            # Add ISWT branding in bottom-right corner before final composite
+            iswt_text = "ISWT"
+            iswt_font = load_font_prefer_helvetica(int(50 * size_multiplier), condensed=False)  # Larger font
+            iswt_bbox = draw_overlay.textbbox((0, 0), iswt_text, font=iswt_font)
+            iswt_width = iswt_bbox[2] - iswt_bbox[0]
+            iswt_height = iswt_bbox[3] - iswt_bbox[1]
+            iswt_x = target_size[0] - iswt_width - 50  # 50px margin from right
+            iswt_y = target_size[1] - iswt_height - 50  # 50px margin from bottom
+            
+            # Create a semi-transparent background for better visibility
+            padding = 8
+            bg_rect = [
+                iswt_x - padding,
+                iswt_y - padding,
+                iswt_x + iswt_width + padding,
+                iswt_y + iswt_height + padding
+            ]
+            draw_overlay.rectangle(bg_rect, fill=(0, 0, 0, 180))  # Dark semi-transparent background
+            
+            # Draw ISWT with white text and subtle shadow on overlay
+            draw_overlay.text((iswt_x + 2, iswt_y + 2), iswt_text, fill=(0, 0, 0, 220), font=iswt_font)  # Shadow (RGBA for overlay)
+            draw_overlay.text((iswt_x, iswt_y), iswt_text, fill=pure_white, font=iswt_font)
+            
             # Composite the overlays onto the artist image
             artist_image = artist_image.convert('RGBA')
             # First apply the subtle black overlay
@@ -695,16 +718,22 @@ class SpotifyNewMusicAutomation:
         logger.info(f"✅ Collage saved to: {output_path}")
         return output_path
     
-    def create_tracklist_image(self, tracks: List[Dict], output_filename: str = "nmf_tracklist.png") -> str:
+    def create_tracklist_image(self, tracks: List[Dict], output_filename: str = "nmf_tracklist.png", custom_title: str = None) -> str:
         """
         Create a tracklist image with track names and artists
         
         Args:
-            tracks: List of track dictionaries
+            tracks: List of track dictionaries (should have 'week_start' field for date)
             output_filename: Output filename for the tracklist
+            custom_title: Deprecated - title is now fixed as "New Music Out Now"
             
         Returns:
             Path to the generated tracklist image
+            
+        Note:
+            Title format is fixed as:
+            - Line 1: "New Music Out Now"
+            - Line 2: "New Music Friday - Month Day, Year" (uses week_start from tracks)
         """
         logger.info("📋 Creating tracklist image...")
         
@@ -771,12 +800,29 @@ class SpotifyNewMusicAutomation:
         track_font = load_font_prefer_helvetica(int(38 * size_multiplier), condensed=False)    # Track names - smaller
         artist_font = load_font_prefer_helvetica(int(28 * size_multiplier), condensed=False)   # Artist names - smaller
         
-        # Title section
-        title = f"Top {len(sorted_tracks)} Tracks"
+        # Title section - always use "New Music Out Now" as first line
+        title = "New Music Out Now"
         # Calculate the most recent Friday date for the subtitle
-        today = datetime.now()
-        days_since_friday = (today.weekday() - 4) % 7  # 4 = Friday (0=Monday, 4=Friday)
-        friday_date = today - timedelta(days=days_since_friday)
+        # Get week_start from tracks if available, otherwise calculate from today
+        week_start_str = None
+        if tracks and len(tracks) > 0:
+            week_start_str = tracks[0].get('week_start')
+        
+        if week_start_str:
+            # Parse the week_start date (format: YYYY-MM-DD)
+            try:
+                friday_date = datetime.strptime(week_start_str, '%Y-%m-%d')
+            except:
+                # Fallback to calculating from today
+                today = datetime.now()
+                days_since_friday = (today.weekday() - 4) % 7  # 4 = Friday (0=Monday, 4=Friday)
+                friday_date = today - timedelta(days=days_since_friday)
+        else:
+            # Calculate from today if no week_start in tracks
+            today = datetime.now()
+            days_since_friday = (today.weekday() - 4) % 7  # 4 = Friday (0=Monday, 4=Friday)
+            friday_date = today - timedelta(days=days_since_friday)
+        
         subtitle = f"New Music Friday - {friday_date.strftime('%B %d, %Y')}"
         
         # Title background - use same red as "NEW" from artist image
@@ -863,6 +909,29 @@ class SpotifyNewMusicAutomation:
         
         draw.text((footer_x, canvas_height - 40), footer_text, 
                  fill=self.config.SPOTIFY_GRAY, font=artist_font)
+        
+        # Add ISWT branding in bottom-right corner
+        iswt_text = "ISWT"
+        iswt_font = load_font_prefer_helvetica(int(42 * size_multiplier), condensed=False)  # Larger font
+        iswt_bbox = draw.textbbox((0, 0), iswt_text, font=iswt_font)
+        iswt_width = iswt_bbox[2] - iswt_bbox[0]
+        iswt_height = iswt_bbox[3] - iswt_bbox[1]
+        iswt_x = canvas_width - iswt_width - 40  # 40px margin from right
+        iswt_y = canvas_height - iswt_height - 40  # 40px margin from bottom
+        
+        # Create a semi-transparent background for better visibility
+        padding = 10
+        bg_rect = [
+            iswt_x - padding,
+            iswt_y - padding,
+            iswt_x + iswt_width + padding,
+            iswt_y + iswt_height + padding
+        ]
+        draw.rectangle(bg_rect, fill=(0, 0, 0, 200))  # Dark semi-transparent background
+        
+        # Draw ISWT with white text and subtle shadow
+        draw.text((iswt_x + 2, iswt_y + 2), iswt_text, fill=(0, 0, 0), font=iswt_font)  # Shadow
+        draw.text((iswt_x, iswt_y), iswt_text, fill=self.config.SPOTIFY_WHITE, font=iswt_font)
         
         # Save tracklist
         output_path = os.path.join(self.config.OUTPUT_DIR, output_filename)
@@ -1020,19 +1089,65 @@ class SpotifyNewMusicAutomation:
         days_since_friday = (today.weekday() - 4) % 7  # 4 = Friday (0=Monday, 4=Friday)
         week_start = today - timedelta(days=days_since_friday)
         week_start_str = week_start.strftime('%Y%m%d')
+        week_start_iso = week_start.strftime('%Y-%m-%d')  # ISO format for database
+        
+        # Fetch preferences from Supabase if they exist
+        preferred_track_id = None
+        custom_tracklist_title = None
+        try:
+            from supabase import Client, create_client
+            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
+            supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+            if supabase_url and supabase_key:
+                supabase: Client = create_client(supabase_url, supabase_key)
+                prefs_result = supabase.table('images').select(
+                    'preferred_track_id, tracklist_title'
+                ).eq('week_start', week_start_iso).execute()
+                
+                if prefs_result.data and len(prefs_result.data) > 0:
+                    prefs = prefs_result.data[0]
+                    preferred_track_id = prefs.get('preferred_track_id')
+                    custom_tracklist_title = prefs.get('tracklist_title')
+                    if preferred_track_id:
+                        logger.info(f"📋 Found preferred track ID: {preferred_track_id}")
+                    if custom_tracklist_title:
+                        logger.info(f"📋 Found custom tracklist title: {custom_tracklist_title}")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not fetch preferences: {e}")
+        
+        # Reorder tracks to put preferred track first if it exists
+        cover_track = unique_tracks[0] if unique_tracks else None
+        if preferred_track_id and unique_tracks:
+            # Find the preferred track in the list
+            preferred_track = None
+            for track in unique_tracks:
+                # Check if track has 'id' field that matches preferred_track_id
+                track_id = track.get('id') or track.get('track_id')
+                if track_id and str(track_id) == str(preferred_track_id):
+                    preferred_track = track
+                    break
+            
+            if preferred_track:
+                # Move preferred track to the front
+                unique_tracks.remove(preferred_track)
+                unique_tracks.insert(0, preferred_track)
+                cover_track = preferred_track
+                logger.info(f"✅ Using preferred track: {preferred_track.get('name', 'Unknown')}")
+            else:
+                logger.warning(f"⚠️ Preferred track ID {preferred_track_id} not found in current tracks, using default")
         
         # Use week-based filenames to prevent duplicates
         single_artist_filename = f"nmf_single_artist_{week_start_str}.png"
         tracklist_filename = f"nmf_tracklist_{week_start_str}.png"
         
-        # Create single artist image (using the first track)
-        if unique_tracks:
-            single_artist_path = self.create_single_artist_image(unique_tracks[0], hybrid_fetcher.spotify, single_artist_filename)
+        # Create single artist image (using preferred track or first track)
+        if cover_track:
+            single_artist_path = self.create_single_artist_image(cover_track, hybrid_fetcher.spotify, single_artist_filename)
         else:
             single_artist_path = None
         
-        # Create tracklist
-        tracklist_path = self.create_tracklist_image(unique_tracks, tracklist_filename)
+        # Create tracklist with custom title if provided
+        tracklist_path = self.create_tracklist_image(unique_tracks, tracklist_filename, custom_title=custom_tracklist_title)
         
         # Generate caption
         caption = self.generate_caption(unique_tracks)
@@ -1167,7 +1282,7 @@ class SpotifyNewMusicAutomation:
             return None
 
     def save_image_metadata(self, week_start, cover_url, tracklist_url):
-        """Save image metadata to Supabase database"""
+        """Save image metadata to Supabase database, preserving existing preferences"""
         try:
             from supabase import Client, create_client
 
@@ -1177,7 +1292,17 @@ class SpotifyNewMusicAutomation:
                 
             supabase: Client = create_client(supabase_url, supabase_key)
             
-            # Prepare metadata with correct field names
+            # First, get existing metadata to preserve preferences
+            existing_result = supabase.table('images').select(
+                'preferred_track_id, preferred_track_name, preferred_track_image, tracklist_title'
+            ).eq('week_start', week_start).execute()
+            
+            existing_prefs = {}
+            if existing_result.data and len(existing_result.data) > 0:
+                existing_prefs = existing_result.data[0]
+                logger.info(f"📋 Found existing preferences for week {week_start}: {existing_prefs}")
+            
+            # Prepare metadata with correct field names, preserving preferences
             now = datetime.now().isoformat()
             metadata = {
                 'week_start': week_start,
@@ -1186,6 +1311,16 @@ class SpotifyNewMusicAutomation:
                 'created_at': now,
                 'updated_at': now
             }
+            
+            # Preserve existing preferences if they exist
+            if existing_prefs.get('preferred_track_id'):
+                metadata['preferred_track_id'] = existing_prefs['preferred_track_id']
+            if existing_prefs.get('preferred_track_name'):
+                metadata['preferred_track_name'] = existing_prefs['preferred_track_name']
+            if existing_prefs.get('preferred_track_image'):
+                metadata['preferred_track_image'] = existing_prefs['preferred_track_image']
+            if existing_prefs.get('tracklist_title'):
+                metadata['tracklist_title'] = existing_prefs['tracklist_title']
             
             print(f"📝 Saving metadata: {metadata}")
             
@@ -1211,7 +1346,7 @@ class SpotifyNewMusicAutomation:
             traceback.print_exc()
 
     def save_caption_metadata(self, week_start, caption, hashtags, style):
-        """Save caption and hashtags to Supabase database"""
+        """Save caption and hashtags to Supabase database, preserving existing preferences"""
         try:
             from supabase import Client, create_client
 
@@ -1220,6 +1355,15 @@ class SpotifyNewMusicAutomation:
             supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
                 
             supabase: Client = create_client(supabase_url, supabase_key)
+            
+            # First, get existing metadata to preserve preferences
+            existing_result = supabase.table('images').select(
+                'preferred_track_id, preferred_track_name, preferred_track_image, tracklist_title, cover_image_url, tracklist_image_url'
+            ).eq('week_start', week_start).execute()
+            
+            existing_prefs = {}
+            if existing_result.data and len(existing_result.data) > 0:
+                existing_prefs = existing_result.data[0]
             
             # Prepare caption metadata
             now = datetime.now().isoformat()
@@ -1230,6 +1374,20 @@ class SpotifyNewMusicAutomation:
                 'caption_style': style,
                 'updated_at': now
             }
+            
+            # Preserve existing preferences and image URLs
+            if existing_prefs.get('preferred_track_id'):
+                metadata['preferred_track_id'] = existing_prefs['preferred_track_id']
+            if existing_prefs.get('preferred_track_name'):
+                metadata['preferred_track_name'] = existing_prefs['preferred_track_name']
+            if existing_prefs.get('preferred_track_image'):
+                metadata['preferred_track_image'] = existing_prefs['preferred_track_image']
+            if existing_prefs.get('tracklist_title'):
+                metadata['tracklist_title'] = existing_prefs['tracklist_title']
+            if existing_prefs.get('cover_image_url'):
+                metadata['cover_image_url'] = existing_prefs['cover_image_url']
+            if existing_prefs.get('tracklist_image_url'):
+                metadata['tracklist_image_url'] = existing_prefs['tracklist_image_url']
             
             print(f"📝 Saving caption metadata: {len(caption)} chars, {len(hashtags)} hashtags")
             
