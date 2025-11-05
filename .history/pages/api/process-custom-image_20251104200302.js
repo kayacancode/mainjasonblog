@@ -38,11 +38,6 @@ function createTextSVG(text, x, y, fontSize, fill, stroke, strokeWidth = 2, text
  * Process image with branding overlay
  */
 async function processImageWithOverlay(imageUrl, trackName, artistName) {
-    // Suppress Fontconfig warnings in serverless environments
-    if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-        process.env.FONTCONFIG_PATH = '/tmp';
-    }
-    
     // Download image
     const response = await axios.get(imageUrl, {
         responseType: 'arraybuffer',
@@ -284,21 +279,11 @@ export default async function handler(req, res) {
         }
 
         const filename = `${weekStart}_custom_processed.png`;
-        
-        // Try to remove existing file first (for upsert behavior)
-        await supabase.storage
-            .from('instagram-images')
-            .remove([filename])
-            .catch(() => {
-                // Ignore errors if file doesn't exist
-            });
-        
-        // Upload the new file
         const { error: uploadError } = await supabase.storage
             .from('instagram-images')
             .upload(filename, imageBuffer, {
                 contentType: 'image/png',
-                cacheControl: '3600'
+                upsert: true
             });
 
         if (uploadError) {

@@ -5,7 +5,7 @@ import axios from 'axios';
 // Lazy initialization of Supabase client - same pattern as other API endpoints
 function getSupabaseClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
     
     if (!supabaseUrl) {
         throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
