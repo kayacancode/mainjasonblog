@@ -61,7 +61,6 @@ async function processImageWithOverlay(imageUrl, trackName, artistName) {
     
     // Load and resize image
     let image = sharp(imageBuffer);
-    const metadata = await image.metadata();
     
     // Resize to 1080x1080 maintaining aspect ratio, then extend/crop to square
     image = image
@@ -70,39 +69,6 @@ async function processImageWithOverlay(imageUrl, trackName, artistName) {
             position: 'center'
         })
         .ensureAlpha();
-    
-    // Apply dark overlay first (60% opacity black)
-    const darkOverlaySVG = `
-        <svg width="${targetSize}" height="${targetSize}">
-            <rect width="${targetSize}" height="${targetSize}" fill="rgba(0, 0, 0, 0.6)"/>
-        </svg>
-    `;
-    const darkOverlayBuffer = Buffer.from(darkOverlaySVG);
-    image = image.composite([{
-        input: darkOverlayBuffer,
-        blend: 'over'
-    }]);
-    
-    // Create rounded rectangle border overlay
-    const borderSVG = `
-        <svg width="${targetSize}" height="${targetSize}">
-            <rect x="${margin}" y="${margin}" 
-                  width="${targetSize - margin * 2}" 
-                  height="${targetSize - margin * 2}" 
-                  rx="${radius}" 
-                  ry="${radius}" 
-                  fill="none" 
-                  stroke="${pureWhite}" 
-                  stroke-width="${borderWidth}"/>
-        </svg>
-    `;
-    
-    // Apply border overlay
-    const borderBuffer = Buffer.from(borderSVG);
-    image = image.composite([{
-        input: borderBuffer,
-        blend: 'over'
-    }]);
     
     // Calculate text positions and sizes
     const artistText = (artistName || 'Custom').toUpperCase();
@@ -228,12 +194,45 @@ async function processImageWithOverlay(imageUrl, trackName, artistName) {
     
     textSVG += '</svg>';
     
-    // Apply text overlay
+    // Prepare all overlays
+    const darkOverlaySVG = `
+        <svg width="${targetSize}" height="${targetSize}">
+            <rect width="${targetSize}" height="${targetSize}" fill="rgba(0, 0, 0, 0.6)"/>
+        </svg>
+    `;
+    
+    const borderSVG = `
+        <svg width="${targetSize}" height="${targetSize}">
+            <rect x="${margin}" y="${margin}" 
+                  width="${targetSize - margin * 2}" 
+                  height="${targetSize - margin * 2}" 
+                  rx="${radius}" 
+                  ry="${radius}" 
+                  fill="none" 
+                  stroke="${pureWhite}" 
+                  stroke-width="${borderWidth}"/>
+        </svg>
+    `;
+    
+    // Apply all overlays in a single composite operation
+    const darkOverlayBuffer = Buffer.from(darkOverlaySVG);
+    const borderBuffer = Buffer.from(borderSVG);
     const textBuffer = Buffer.from(textSVG);
-    image = image.composite([{
-        input: textBuffer,
-        blend: 'over'
-    }]);
+    
+    image = image.composite([
+        {
+            input: darkOverlayBuffer,
+            blend: 'over'
+        },
+        {
+            input: borderBuffer,
+            blend: 'over'
+        },
+        {
+            input: textBuffer,
+            blend: 'over'
+        }
+    ]);
     
     // Convert to PNG and return buffer
     const processedBuffer = await image.png().toBuffer();
