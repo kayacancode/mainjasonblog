@@ -5,7 +5,7 @@ import axios from 'axios';
 // Lazy initialization of Supabase client - same pattern as other API endpoints
 function getSupabaseClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY;
     
     if (!supabaseUrl) {
         throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
@@ -14,7 +14,7 @@ function getSupabaseClient() {
     if (!supabaseKey) {
         // Try to get from other sources or provide helpful error
         console.error('SUPABASE_SERVICE_KEY not found in environment variables');
-        throw new Error('Missing SUPABASE_SERVICE_KEY. Please add it to your environment (server-side only). You can find it in your Supabase project settings under API > Service Role Key.');
+        throw new Error('Missing SUPABASE_SERVICE_KEY. Please add it to your .env.local file. You can find it in your Supabase project settings under API > Service Role Key.');
     }
     
     return createClient(supabaseUrl, supabaseKey);
@@ -276,9 +276,6 @@ export default async function handler(req, res) {
         let supabase;
         try {
             supabase = getSupabaseClient();
-            // Verify client is created correctly
-            console.log('Supabase client created, URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Missing');
-            console.log('Service key:', process.env.SUPABASE_SERVICE_KEY ? 'Set' : 'Missing');
         } catch (error) {
             return res.status(500).json({ 
                 error: 'Supabase configuration missing',
@@ -288,23 +285,25 @@ export default async function handler(req, res) {
 
         const filename = `${weekStart}_custom_processed.png`;
         
-        // Upload with service key - should bypass RLS policies
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        // Try to remove existing file first (for upsert behavior)
+        await supabase.storage
+            .from('instagram-images')
+            .remove([filename])
+            .catch(() => {
+                // Ignore errors if file doesn't exist
+            });
+        
+        // Upload the new file
+        const { error: uploadError } = await supabase.storage
             .from('instagram-images')
             .upload(filename, imageBuffer, {
                 contentType: 'image/png',
-                cacheControl: '3600',
-                upsert: true
+                cacheControl: '3600'
             });
 
         if (uploadError) {
             console.error('Error uploading processed image:', uploadError);
-            console.error('Upload error details:', JSON.stringify(uploadError, null, 2));
-            return res.status(500).json({ 
-                error: 'Failed to upload processed image', 
-                details: uploadError.message,
-                errorCode: uploadError.statusCode 
-            });
+            return res.status(500).json({ error: 'Failed to upload processed image', details: uploadError.message });
         }
 
         // Get public URL

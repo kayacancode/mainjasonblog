@@ -5,7 +5,7 @@ import axios from 'axios';
 // Lazy initialization of Supabase client - same pattern as other API endpoints
 function getSupabaseClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY;
     
     if (!supabaseUrl) {
         throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
@@ -14,7 +14,7 @@ function getSupabaseClient() {
     if (!supabaseKey) {
         // Try to get from other sources or provide helpful error
         console.error('SUPABASE_SERVICE_KEY not found in environment variables');
-        throw new Error('Missing SUPABASE_SERVICE_KEY. Please add it to your environment (server-side only). You can find it in your Supabase project settings under API > Service Role Key.');
+        throw new Error('Missing SUPABASE_SERVICE_KEY. Please add it to your .env.local file. You can find it in your Supabase project settings under API > Service Role Key.');
     }
     
     return createClient(supabaseUrl, supabaseKey);
@@ -278,7 +278,7 @@ export default async function handler(req, res) {
             supabase = getSupabaseClient();
             // Verify client is created correctly
             console.log('Supabase client created, URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Missing');
-            console.log('Service key:', process.env.SUPABASE_SERVICE_KEY ? 'Set' : 'Missing');
+            console.log('Service key:', process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY ? 'Set' : 'Missing');
         } catch (error) {
             return res.status(500).json({ 
                 error: 'Supabase configuration missing',

@@ -9,3 +9,4 @@ ADD COLUMN IF NOT EXISTS custom_image_url TEXT;
 COMMENT ON COLUMN images.custom_image_url IS 'URL of user-uploaded custom image (already processed with branding overlay)';
 
 
+
