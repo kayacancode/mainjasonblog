@@ -757,7 +757,9 @@ export default function TracksManagement() {
                     metrics = ctx.measureText(artistText);
                 }
                 
+                // Artist name at top (centered, inside border)
                 const artistY = margin + 30;
+                ctx.textBaseline = 'top';
                 ctx.strokeText(artistText, targetSize / 2, artistY);
                 ctx.fillText(artistText, targetSize / 2, artistY);
                 
@@ -775,11 +777,14 @@ export default function TracksManagement() {
                 
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.59)';
                 ctx.lineWidth = 4;
+                ctx.textBaseline = 'top';
+                // Track name at bottom-left (inside border)
                 const trackY = targetSize - margin - 50 - trackFontSize;
                 ctx.strokeText(trackText, margin + 30, trackY);
                 ctx.fillText(trackText, margin + 30, trackY);
                 
                 // Bottom-right stacked NEW / MUSIC / FRIDAY
+                // Order: NEW (top), MUSIC (middle), FRIDAY (bottom)
                 ctx.textAlign = 'right';
                 const rMargin = margin + 50;
                 const bMarginRight = margin + 40;
@@ -791,16 +796,26 @@ export default function TracksManagement() {
                     { text: 'FRIDAY', color: lightGray, fontSize: 50 }
                 ];
                 
-                let stackY = targetSize - bMarginRight;
+                // Calculate total height of stack
+                let totalStackHeight = 0;
+                stackWords.forEach(({ fontSize }) => {
+                    totalStackHeight += fontSize + stackSpacing;
+                });
+                totalStackHeight -= stackSpacing; // Remove last spacing
+                
+                // Start from bottom and work up (inside the border)
+                let stackY = targetSize - bMarginRight - totalStackHeight;
                 stackWords.forEach(({ text, color, fontSize }) => {
                     ctx.font = `bold ${fontSize}px Arial, sans-serif`;
                     ctx.fillStyle = color;
                     ctx.strokeStyle = 'rgba(0, 0, 0, 0.59)';
                     ctx.lineWidth = 4;
                     const x = targetSize - rMargin;
+                    // Use textBaseline for proper vertical alignment
+                    ctx.textBaseline = 'top';
                     ctx.strokeText(text, x, stackY);
                     ctx.fillText(text, x, stackY);
-                    stackY -= fontSize + stackSpacing;
+                    stackY += fontSize + stackSpacing;
                 });
                 
                 // Convert to data URL
