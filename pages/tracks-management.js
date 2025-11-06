@@ -697,7 +697,10 @@ export default function TracksManagement() {
             // Process the selected track's album art with overlay via API
             // Use a unique timestamp to avoid caching old images
             const uniqueId = `preview_${Date.now()}_${track.id}`;
-            const processResponse = await fetch('/api/process-custom-image', {
+            // Allow switching to Python Pillow-based overlay in production via env flag
+            const usePy = process.env.NEXT_PUBLIC_USE_PY_OVERLAY === 'true';
+            const endpoint = usePy ? '/api/process-custom-image-python' : '/api/process-custom-image';
+            const processResponse = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
