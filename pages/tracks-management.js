@@ -686,6 +686,137 @@ export default function TracksManagement() {
         }
     };
 
+    // Client-side preview rendering using Canvas (avoids server-side font issues)
+    const renderPreviewWithCanvas = async (imageUrl, trackName, artistName) => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const targetSize = 1080;
+                const margin = 28;
+                const radius = 40;
+                const borderWidth = 18;
+                
+                canvas.width = targetSize;
+                canvas.height = targetSize;
+                
+                // Draw image (resized and cropped to square)
+                ctx.drawImage(img, 0, 0, targetSize, targetSize);
+                
+                // Dark overlay
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(0, 0, targetSize, targetSize);
+                
+                // White border (rounded rectangle)
+                ctx.strokeStyle = 'rgb(255, 255, 255)';
+                ctx.lineWidth = borderWidth;
+                ctx.beginPath();
+                const x = margin;
+                const y = margin;
+                const w = targetSize - margin * 2;
+                const h = targetSize - margin * 2;
+                // Manual rounded rectangle path
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + w - radius, y);
+                ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+                ctx.lineTo(x + w, y + h - radius);
+                ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+                ctx.lineTo(x + radius, y + h);
+                ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+                ctx.lineTo(x, y + radius);
+                ctx.quadraticCurveTo(x, y, x + radius, y);
+                ctx.closePath();
+                ctx.stroke();
+                
+                // Colors
+                const offWhite = 'rgb(232, 220, 207)';
+                const brandRed = 'rgb(226, 62, 54)';
+                const lightGray = 'rgb(210, 210, 210)';
+                
+                // Text settings
+                const artistText = (artistName || 'Custom').toUpperCase();
+                const trackText = (trackName || 'Custom Image').toUpperCase();
+                
+                // Artist name at top (centered)
+                ctx.fillStyle = offWhite;
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.63)';
+                ctx.lineWidth = 6;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.font = 'bold 160px Arial, sans-serif';
+                
+                // Adjust font size if needed
+                let artistFontSize = 160;
+                const maxWidth = targetSize - (margin * 2) - 40;
+                let metrics = ctx.measureText(artistText);
+                while (metrics.width > maxWidth && artistFontSize > 80) {
+                    artistFontSize -= 10;
+                    ctx.font = `bold ${artistFontSize}px Arial, sans-serif`;
+                    metrics = ctx.measureText(artistText);
+                }
+                
+                const artistY = margin + 30;
+                ctx.strokeText(artistText, targetSize / 2, artistY);
+                ctx.fillText(artistText, targetSize / 2, artistY);
+                
+                // Track name at bottom-left
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 100px Arial, sans-serif';
+                let trackFontSize = 100;
+                const trackMaxWidth = (targetSize / 2) - margin - 20;
+                metrics = ctx.measureText(trackText);
+                while (metrics.width > trackMaxWidth && trackFontSize > 60) {
+                    trackFontSize -= 5;
+                    ctx.font = `bold ${trackFontSize}px Arial, sans-serif`;
+                    metrics = ctx.measureText(trackText);
+                }
+                
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.59)';
+                ctx.lineWidth = 4;
+                const trackY = targetSize - margin - 50 - trackFontSize;
+                ctx.strokeText(trackText, margin + 30, trackY);
+                ctx.fillText(trackText, margin + 30, trackY);
+                
+                // Bottom-right stacked NEW / MUSIC / FRIDAY
+                ctx.textAlign = 'right';
+                const rMargin = margin + 50;
+                const bMarginRight = margin + 40;
+                const stackSpacing = 16;
+                
+                const stackWords = [
+                    { text: 'NEW', color: brandRed, fontSize: 65 },
+                    { text: 'MUSIC', color: lightGray, fontSize: 50 },
+                    { text: 'FRIDAY', color: lightGray, fontSize: 50 }
+                ];
+                
+                let stackY = targetSize - bMarginRight;
+                stackWords.forEach(({ text, color, fontSize }) => {
+                    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                    ctx.fillStyle = color;
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.59)';
+                    ctx.lineWidth = 4;
+                    const x = targetSize - rMargin;
+                    ctx.strokeText(text, x, stackY);
+                    ctx.fillText(text, x, stackY);
+                    stackY -= fontSize + stackSpacing;
+                });
+                
+                // Convert to data URL
+                const dataUrl = canvas.toDataURL('image/png');
+                resolve(dataUrl);
+            };
+            
+            img.onerror = (error) => {
+                reject(new Error('Failed to load image for preview'));
+            };
+            
+            img.src = imageUrl;
+        });
+    };
+
     const processPreviewImage = async (track) => {
         if (!track || !track.album_art_url) {
             setPreviewImageUrl(null);
@@ -694,32 +825,13 @@ export default function TracksManagement() {
 
         setProcessingPreview(true);
         try {
-            // Process the selected track's album art with overlay via API
-            // Use a unique timestamp to avoid caching old images
-            const uniqueId = `preview_${Date.now()}_${track.id}`;
-            const processResponse = await fetch('/api/process-custom-image', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    imageUrl: track.album_art_url,
-                    weekStart: uniqueId,
-                    trackName: track.track_name || 'Custom Image',
-                    artistName: track.artists || 'Custom'
-                })
-            });
-            
-            if (!processResponse.ok) {
-                throw new Error('Failed to process preview image');
-            }
-            
-            const processData = await processResponse.json();
-            if (processData.processedImageUrl) {
-                // Add cache-busting parameter to ensure fresh image
-                const cacheBuster = `?t=${Date.now()}`;
-                setPreviewImageUrl(processData.processedImageUrl + cacheBuster);
-            } else {
-                throw new Error('No processed image URL returned');
-            }
+            // Use client-side canvas rendering for preview (works reliably in browser)
+            const previewDataUrl = await renderPreviewWithCanvas(
+                track.album_art_url,
+                track.track_name || 'Custom Image',
+                track.artists || 'Custom'
+            );
+            setPreviewImageUrl(previewDataUrl);
         } catch (error) {
             console.error('Error processing preview image:', error);
             setPreviewImageUrl(null);
