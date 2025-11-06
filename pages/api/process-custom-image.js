@@ -279,6 +279,18 @@ export default async function handler(req, res) {
             // Verify client is created correctly
             console.log('Supabase client created, URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Missing');
             console.log('Service key:', process.env.SUPABASE_SERVICE_KEY ? 'Set' : 'Missing');
+
+            // Extra diagnostics: list buckets to ensure key+URL belong to same project
+            try {
+                const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+                if (bucketsError) {
+                    console.error('Storage listBuckets error:', bucketsError);
+                } else {
+                    console.log('Storage buckets available:', (buckets || []).map(b => b.name));
+                }
+            } catch (diagErr) {
+                console.error('Storage diagnostics failed:', diagErr);
+            }
         } catch (error) {
             return res.status(500).json({ 
                 error: 'Supabase configuration missing',
