@@ -845,11 +845,12 @@ export default function TracksManagement() {
                     ctx.fillText(line, margin + 30, trackStartY + (index * trackLineHeight));
                 });
                 
-                // Bottom-left stacked NEW / MUSIC / FRIDAY
+                // Bottom-right stacked NEW / MUSIC / FRIDAY
                 // Order: NEW (top), MUSIC (middle), FRIDAY (bottom)
+                // Text is left-aligned but positioned in bottom-right area
                 ctx.textAlign = 'left';
-                const lMargin = margin + 30;
-                const bMarginLeft = margin + 40;
+                const rMargin = margin + 50;
+                const bMarginRight = margin + 40;
                 const stackSpacing = 16;
                 
                 const stackWords = [
@@ -858,23 +859,31 @@ export default function TracksManagement() {
                     { text: 'FRIDAY', color: lightGray, fontSize: 50 }
                 ];
                 
-                // Calculate total height of stack
+                // Calculate total height of stack and find max width
                 let totalStackHeight = 0;
-                stackWords.forEach(({ fontSize }) => {
+                let maxTextWidth = 0;
+                stackWords.forEach(({ text, fontSize }) => {
                     totalStackHeight += fontSize + stackSpacing;
+                    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                    const textMetrics = ctx.measureText(text);
+                    maxTextWidth = Math.max(maxTextWidth, textMetrics.width);
                 });
                 totalStackHeight -= stackSpacing; // Remove last spacing
                 
-                // Start from bottom and work up (inside the border, left-aligned)
-                let stackY = targetSize - bMarginLeft - totalStackHeight;
+                // Position x so text block sits in bottom-right (left-aligned text)
+                // x is where text starts, so we position it so the block ends near right edge
+                const stackX = targetSize - rMargin - maxTextWidth;
+                
+                // Start from bottom and work up (inside the border, left-aligned text in bottom-right area)
+                let stackY = targetSize - bMarginRight - totalStackHeight;
                 stackWords.forEach(({ text, color, fontSize }) => {
                     ctx.font = `bold ${fontSize}px Arial, sans-serif`;
                     ctx.fillStyle = color;
                     ctx.strokeStyle = 'rgba(0, 0, 0, 0.59)';
                     ctx.lineWidth = 4;
                     ctx.textBaseline = 'top';
-                    ctx.strokeText(text, lMargin, stackY);
-                    ctx.fillText(text, lMargin, stackY);
+                    ctx.strokeText(text, stackX, stackY);
+                    ctx.fillText(text, stackX, stackY);
                     stackY += fontSize + stackSpacing;
                 });
                 
