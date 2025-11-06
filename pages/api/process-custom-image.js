@@ -23,6 +23,7 @@ function getSupabaseClient() {
 
 /**
  * Create SVG for text overlay with proper styling
+ * Uses simpler SVG format for better Sharp compatibility
  */
 function createTextSVG(text, x, y, fontSize, fill, stroke, strokeWidth = 2, textAnchor = 'start') {
     const escapedText = text
@@ -32,18 +33,22 @@ function createTextSVG(text, x, y, fontSize, fill, stroke, strokeWidth = 2, text
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 
-    // Normalize rgba() into rgb() + stroke-opacity to improve renderer compatibility
+    // Convert rgba to rgb for stroke (Sharp handles opacity better with fill-opacity)
     let strokeColor = stroke;
-    let strokeOpacityAttr = '';
+    let fillOpacity = '1';
     const rgbaMatch = typeof stroke === 'string' && stroke.match(/rgba\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)/i);
     if (rgbaMatch) {
         const [, r, g, b, a] = rgbaMatch;
         strokeColor = `rgb(${r}, ${g}, ${b})`;
-        strokeOpacityAttr = ` stroke-opacity="${a}"`;
+        fillOpacity = a;
     }
 
-    // Paint stroke first so light text remains readable on darkened photos
-    return `<text x="${x}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="${fill}" stroke="${strokeColor}"${strokeOpacityAttr} stroke-width="${strokeWidth}" paint-order="stroke fill" text-anchor="${textAnchor}" dominant-baseline="hanging">${escapedText}</text>`;
+    // Create two text elements: stroke layer first, then fill layer on top
+    // This ensures text is readable on dark backgrounds
+    const strokeText = `<text x="${x}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth * 2}" stroke-opacity="${fillOpacity}" text-anchor="${textAnchor}" dominant-baseline="hanging">${escapedText}</text>`;
+    const fillText = `<text x="${x}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="${fill}" text-anchor="${textAnchor}" dominant-baseline="hanging">${escapedText}</text>`;
+    
+    return strokeText + fillText;
 }
 
 /**
@@ -161,8 +166,8 @@ async function processImageWithOverlay(imageUrl, trackName, artistName) {
         }
     }
     
-    // Create text overlay SVG
-    let textSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="${targetSize}" height="${targetSize}" text-rendering="optimizeLegibility">`;
+    // Create text overlay SVG with proper XML declaration for better compatibility
+    let textSVG = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="${targetSize}" height="${targetSize}" viewBox="0 0 ${targetSize} ${targetSize}">`;
     
     // Artist name at top (centered)
     const artistY = margin + 30;
@@ -211,30 +216,16 @@ async function processImageWithOverlay(imageUrl, trackName, artistName) {
     
     textSVG += '</svg>';
     
-    // Prepare all overlays
-    const darkOverlaySVG = `
-        <svg width="${targetSize}" height="${targetSize}">
-            <rect width="${targetSize}" height="${targetSize}" fill="rgba(0, 0, 0, 0.6)"/>
-        </svg>
-    `;
+    // Prepare all overlays with proper XML declarations
+    const darkOverlaySVG = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="${targetSize}" height="${targetSize}" viewBox="0 0 ${targetSize} ${targetSize}"><rect width="${targetSize}" height="${targetSize}" fill="rgba(0, 0, 0, 0.6)"/></svg>`;
     
-    const borderSVG = `
-        <svg width="${targetSize}" height="${targetSize}">
-            <rect x="${margin}" y="${margin}" 
-                  width="${targetSize - margin * 2}" 
-                  height="${targetSize - margin * 2}" 
-                  rx="${radius}" 
-                  ry="${radius}" 
-                  fill="none" 
-                  stroke="${pureWhite}" 
-                  stroke-width="${borderWidth}"/>
-        </svg>
-    `;
+    const borderSVG = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" width="${targetSize}" height="${targetSize}" viewBox="0 0 ${targetSize} ${targetSize}"><rect x="${margin}" y="${margin}" width="${targetSize - margin * 2}" height="${targetSize - margin * 2}" rx="${radius}" ry="${radius}" fill="none" stroke="${pureWhite}" stroke-width="${borderWidth}"/></svg>`;
     
     // Apply all overlays in a single composite operation
-    const darkOverlayBuffer = Buffer.from(darkOverlaySVG);
-    const borderBuffer = Buffer.from(borderSVG);
-    const textBuffer = Buffer.from(textSVG);
+    // Ensure buffers are created with proper encoding
+    const darkOverlayBuffer = Buffer.from(darkOverlaySVG, 'utf-8');
+    const borderBuffer = Buffer.from(borderSVG, 'utf-8');
+    const textBuffer = Buffer.from(textSVG, 'utf-8');
     
     image = image.composite([
         {
