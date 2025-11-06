@@ -739,60 +739,111 @@ export default function TracksManagement() {
                 const artistText = (artistName || 'Custom').toUpperCase();
                 const trackText = (trackName || 'Custom Image').toUpperCase();
                 
-                // Artist name at top (centered)
+                // Artist name at top (centered) - with dynamic sizing and word wrapping
                 ctx.fillStyle = offWhite;
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.63)';
                 ctx.lineWidth = 6;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
-                ctx.font = 'bold 160px Arial, sans-serif';
                 
-                // Adjust font size if needed
                 let artistFontSize = 160;
-                const maxWidth = targetSize - (margin * 2) - 40;
+                const availableWidth = targetSize - (margin * 2) - 40;
+                let artistLines = [artistText];
+                
+                // Calculate optimal font size for artist name
+                ctx.font = `bold ${artistFontSize}px Arial, sans-serif`;
                 let metrics = ctx.measureText(artistText);
-                while (metrics.width > maxWidth && artistFontSize > 80) {
+                
+                // Reduce font size if text is too wide
+                while (metrics.width > availableWidth && artistFontSize > 80) {
                     artistFontSize -= 10;
                     ctx.font = `bold ${artistFontSize}px Arial, sans-serif`;
                     metrics = ctx.measureText(artistText);
                 }
                 
-                // Artist name at top (centered, inside border) - with dynamic sizing and wrapping
-                let artistY = margin + 30;
-                ctx.textBaseline = 'top';
-                
-                // Handle multi-line artist name if needed
-                if (artistLines.length > 1) {
-                    const artistLineHeight = artistFontSize * 1.2;
-                    artistLines.forEach((line, index) => {
-                        ctx.font = `bold ${artistFontSize}px Arial, sans-serif`;
-                        ctx.strokeText(line, targetSize / 2, artistY + (index * artistLineHeight));
-                        ctx.fillText(line, targetSize / 2, artistY + (index * artistLineHeight));
-                    });
-                } else {
-                    ctx.strokeText(artistText, targetSize / 2, artistY);
-                    ctx.fillText(artistText, targetSize / 2, artistY);
+                // If still too wide, split into multiple lines
+                if (metrics.width > availableWidth && artistFontSize <= 80) {
+                    artistFontSize = 100;
+                    ctx.font = `bold ${artistFontSize}px Arial, sans-serif`;
+                    const words = artistText.split(' ');
+                    artistLines = [];
+                    let currentLine = '';
+                    
+                    for (const word of words) {
+                        const testLine = currentLine ? `${currentLine} ${word}` : word;
+                        const testMetrics = ctx.measureText(testLine);
+                        if (testMetrics.width > availableWidth && currentLine) {
+                            artistLines.push(currentLine);
+                            currentLine = word;
+                        } else {
+                            currentLine = testLine;
+                        }
+                    }
+                    if (currentLine) {
+                        artistLines.push(currentLine);
+                    }
                 }
                 
-                // Track name at bottom-left
+                // Render artist name (single or multi-line)
+                const artistY = margin + 30;
+                const artistLineHeight = artistFontSize * 1.2;
+                artistLines.forEach((line, index) => {
+                    ctx.font = `bold ${artistFontSize}px Arial, sans-serif`;
+                    ctx.strokeText(line, targetSize / 2, artistY + (index * artistLineHeight));
+                    ctx.fillText(line, targetSize / 2, artistY + (index * artistLineHeight));
+                });
+                
+                // Track name at bottom-left - with dynamic sizing and word wrapping
                 ctx.textAlign = 'left';
                 ctx.font = 'bold 100px Arial, sans-serif';
                 let trackFontSize = 100;
                 const trackMaxWidth = (targetSize / 2) - margin - 20;
+                let trackLines = [trackText];
+                
                 metrics = ctx.measureText(trackText);
+                // Reduce font size if needed
                 while (metrics.width > trackMaxWidth && trackFontSize > 60) {
                     trackFontSize -= 5;
                     ctx.font = `bold ${trackFontSize}px Arial, sans-serif`;
                     metrics = ctx.measureText(trackText);
                 }
                 
+                // If still too wide, split into multiple lines
+                if (metrics.width > trackMaxWidth && trackFontSize <= 60) {
+                    trackFontSize = 75;
+                    ctx.font = `bold ${trackFontSize}px Arial, sans-serif`;
+                    const words = trackText.split(' ');
+                    trackLines = [];
+                    let currentLine = '';
+                    
+                    for (const word of words) {
+                        const testLine = currentLine ? `${currentLine} ${word}` : word;
+                        const testMetrics = ctx.measureText(testLine);
+                        if (testMetrics.width > trackMaxWidth && currentLine) {
+                            trackLines.push(currentLine);
+                            currentLine = word;
+                        } else {
+                            currentLine = testLine;
+                        }
+                    }
+                    if (currentLine) {
+                        trackLines.push(currentLine);
+                    }
+                }
+                
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.59)';
                 ctx.lineWidth = 4;
                 ctx.textBaseline = 'top';
-                // Track name at bottom-left (inside border)
-                const trackY = targetSize - margin - 50 - trackFontSize;
-                ctx.strokeText(trackText, margin + 30, trackY);
-                ctx.fillText(trackText, margin + 30, trackY);
+                ctx.fillStyle = offWhite;
+                
+                // Render track name (single or multi-line) at bottom-left
+                const trackLineHeight = trackFontSize * 1.2;
+                const trackStartY = targetSize - margin - 50 - (trackLines.length * trackLineHeight);
+                trackLines.forEach((line, index) => {
+                    ctx.font = `bold ${trackFontSize}px Arial, sans-serif`;
+                    ctx.strokeText(line, margin + 30, trackStartY + (index * trackLineHeight));
+                    ctx.fillText(line, margin + 30, trackStartY + (index * trackLineHeight));
+                });
                 
                 // Bottom-left stacked NEW / MUSIC / FRIDAY
                 // Order: NEW (top), MUSIC (middle), FRIDAY (bottom)
