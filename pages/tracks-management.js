@@ -757,11 +757,22 @@ export default function TracksManagement() {
                     metrics = ctx.measureText(artistText);
                 }
                 
-                // Artist name at top (centered, inside border)
-                const artistY = margin + 30;
+                // Artist name at top (centered, inside border) - with dynamic sizing and wrapping
+                let artistY = margin + 30;
                 ctx.textBaseline = 'top';
-                ctx.strokeText(artistText, targetSize / 2, artistY);
-                ctx.fillText(artistText, targetSize / 2, artistY);
+                
+                // Handle multi-line artist name if needed
+                if (artistLines.length > 1) {
+                    const artistLineHeight = artistFontSize * 1.2;
+                    artistLines.forEach((line, index) => {
+                        ctx.font = `bold ${artistFontSize}px Arial, sans-serif`;
+                        ctx.strokeText(line, targetSize / 2, artistY + (index * artistLineHeight));
+                        ctx.fillText(line, targetSize / 2, artistY + (index * artistLineHeight));
+                    });
+                } else {
+                    ctx.strokeText(artistText, targetSize / 2, artistY);
+                    ctx.fillText(artistText, targetSize / 2, artistY);
+                }
                 
                 // Track name at bottom-left
                 ctx.textAlign = 'left';
@@ -783,11 +794,11 @@ export default function TracksManagement() {
                 ctx.strokeText(trackText, margin + 30, trackY);
                 ctx.fillText(trackText, margin + 30, trackY);
                 
-                // Bottom-right stacked NEW / MUSIC / FRIDAY
+                // Bottom-left stacked NEW / MUSIC / FRIDAY
                 // Order: NEW (top), MUSIC (middle), FRIDAY (bottom)
-                ctx.textAlign = 'right';
-                const rMargin = margin + 50;
-                const bMarginRight = margin + 40;
+                ctx.textAlign = 'left';
+                const lMargin = margin + 30;
+                const bMarginLeft = margin + 40;
                 const stackSpacing = 16;
                 
                 const stackWords = [
@@ -803,18 +814,16 @@ export default function TracksManagement() {
                 });
                 totalStackHeight -= stackSpacing; // Remove last spacing
                 
-                // Start from bottom and work up (inside the border)
-                let stackY = targetSize - bMarginRight - totalStackHeight;
+                // Start from bottom and work up (inside the border, left-aligned)
+                let stackY = targetSize - bMarginLeft - totalStackHeight;
                 stackWords.forEach(({ text, color, fontSize }) => {
                     ctx.font = `bold ${fontSize}px Arial, sans-serif`;
                     ctx.fillStyle = color;
                     ctx.strokeStyle = 'rgba(0, 0, 0, 0.59)';
                     ctx.lineWidth = 4;
-                    const x = targetSize - rMargin;
-                    // Use textBaseline for proper vertical alignment
                     ctx.textBaseline = 'top';
-                    ctx.strokeText(text, x, stackY);
-                    ctx.fillText(text, x, stackY);
+                    ctx.strokeText(text, lMargin, stackY);
+                    ctx.fillText(text, lMargin, stackY);
                     stackY += fontSize + stackSpacing;
                 });
                 
