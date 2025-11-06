@@ -5,7 +5,8 @@ import axios from 'axios';
 // Lazy initialization of Supabase client - same pattern as other API endpoints
 function getSupabaseClient() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+    // Use anon key as requested; requires storage policies to allow public uploads
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
     if (!supabaseUrl) {
         throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable');
@@ -13,8 +14,8 @@ function getSupabaseClient() {
     
     if (!supabaseKey) {
         // Try to get from other sources or provide helpful error
-        console.error('SUPABASE_SERVICE_KEY not found in environment variables');
-        throw new Error('Missing SUPABASE_SERVICE_KEY. Please add it to your environment (server-side only). You can find it in your Supabase project settings under API > Service Role Key.');
+        console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY not found in environment variables');
+        throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY. Please add it to your environment from Supabase Settings > API.');
     }
     
     return createClient(supabaseUrl, supabaseKey);
@@ -278,19 +279,10 @@ export default async function handler(req, res) {
             supabase = getSupabaseClient();
             // Verify client is created correctly
             console.log('Supabase client created, URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Missing');
-            console.log('Service key:', process.env.SUPABASE_SERVICE_KEY ? 'Set' : 'Missing');
+            console.log('Anon key:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Missing');
 
             // Extra diagnostics: list buckets to ensure key+URL belong to same project
-            try {
-                const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-                if (bucketsError) {
-                    console.error('Storage listBuckets error:', bucketsError);
-                } else {
-                    console.log('Storage buckets available:', (buckets || []).map(b => b.name));
-                }
-            } catch (diagErr) {
-                console.error('Storage diagnostics failed:', diagErr);
-            }
+            // With anon key, listBuckets is typically not allowed; skip bucket diagnostics
         } catch (error) {
             return res.status(500).json({ 
                 error: 'Supabase configuration missing',
