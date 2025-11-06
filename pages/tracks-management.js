@@ -690,9 +690,8 @@ export default function TracksManagement() {
     const renderPreviewWithCanvas = async (imageUrl, trackName, artistName) => {
         return new Promise((resolve, reject) => {
             const img = new Image();
-            img.crossOrigin = 'anonymous';
             
-            img.onload = () => {
+            const renderCanvas = () => {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 const targetSize = 1080;
@@ -809,10 +808,20 @@ export default function TracksManagement() {
                 resolve(dataUrl);
             };
             
-            img.onerror = (error) => {
-                reject(new Error('Failed to load image for preview'));
+            // Try with CORS first, fallback without if it fails
+            img.onload = renderCanvas;
+            img.onerror = () => {
+                // If CORS fails, try without CORS (may not work but worth trying)
+                if (img.crossOrigin === 'anonymous') {
+                    img.crossOrigin = null;
+                    img.src = imageUrl;
+                } else {
+                    reject(new Error('Failed to load image for preview. CORS may be blocking the image.'));
+                }
             };
             
+            // Start with CORS enabled
+            img.crossOrigin = 'anonymous';
             img.src = imageUrl;
         });
     };
