@@ -741,9 +741,9 @@ class SpotifyNewMusicAutomation:
         canvas = Image.new('RGB', (canvas_width, canvas_height), self.config.SPOTIFY_BLACK)
         draw = ImageDraw.Draw(canvas)
         
-        # Sort tracks by popularity - limit to top 10
-        sorted_tracks = sorted(tracks[:10], 
-                             key=lambda x: x.get('popularity', 0), reverse=True)
+        # Sort tracks by popularity first, then limit to top 10
+        sorted_tracks = sorted(tracks, 
+                             key=lambda x: x.get('popularity', 0), reverse=True)[:10]
         
         # Load fonts using same Helvetica Neue Bold as single artist image
         def load_font_prefer_helvetica(size: int, condensed: bool = False):

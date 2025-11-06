@@ -217,6 +217,33 @@ export default function TracksManagement() {
         }
     };
 
+    // Helper function to regenerate tracklist for a specific week
+    const regenerateTracklistForWeek = async (weekStart) => {
+        if (!weekStart) return;
+        
+        try {
+            console.log(`Regenerating tracklist for week: ${weekStart}`);
+            const response = await fetch('/api/regenerate-tracklist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ weekStart })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Failed to regenerate tracklist:', errorData);
+                // Don't show alert - just log the error silently
+            } else {
+                console.log('Tracklist regenerated successfully');
+                // Refresh tracks to get updated image URLs
+                fetchTracks();
+            }
+        } catch (error) {
+            console.error('Error regenerating tracklist:', error);
+            // Don't show alert - just log the error silently
+        }
+    };
+
     const handleAddTrack = async (e) => {
         e.preventDefault();
         
@@ -253,7 +280,12 @@ export default function TracksManagement() {
                 track_name: '', artists: '', album: '', spotify_url: '',
                 album_art_url: '', popularity: 0, playlist_name: '', tags: []
             });
-            fetchTracks();
+            await fetchTracks();
+            
+            // Regenerate tracklist for this week (only top 10 tracks will be used)
+            if (latestWeek) {
+                await regenerateTracklistForWeek(latestWeek);
+            }
         } catch (error) {
             console.error('Error adding track:', error);
         }
@@ -269,6 +301,9 @@ export default function TracksManagement() {
         }
         
         try {
+            // Store week_start before updating (in case it changes)
+            const oldWeekStart = editingTrack?.week_start;
+            
             // Convert tags string to proper array format for Supabase
             const cleanFormData = {
                 ...formData,
@@ -276,6 +311,8 @@ export default function TracksManagement() {
                     ? (formData.tags.trim() === '' ? [] : formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag))
                     : (Array.isArray(formData.tags) ? formData.tags : [])
             };
+            
+            const newWeekStart = cleanFormData.week_start || oldWeekStart;
 
             const { error } = await supabase
                 .from('tracks')
@@ -292,7 +329,17 @@ export default function TracksManagement() {
                 track_name: '', artists: '', album: '', spotify_url: '',
                 album_art_url: '', popularity: 0, playlist_name: '', tags: []
             });
-            fetchTracks();
+            await fetchTracks();
+            
+            // Regenerate tracklist for both old and new weeks if week_start changed
+            const weeksToRegenerate = new Set();
+            if (oldWeekStart) weeksToRegenerate.add(oldWeekStart);
+            if (newWeekStart && newWeekStart !== oldWeekStart) weeksToRegenerate.add(newWeekStart);
+            
+            // Regenerate tracklists for all affected weeks
+            for (const weekStart of weeksToRegenerate) {
+                await regenerateTracklistForWeek(weekStart);
+            }
         } catch (error) {
             console.error('Error updating track:', error);
         }
@@ -301,13 +348,22 @@ export default function TracksManagement() {
     const handleDeleteTrack = async (id) => {
         if (confirm('Are you sure you want to delete this track?')) {
             try {
+                // Get the track's week_start before deleting
+                const track = tracks.find(t => t.id === id);
+                const weekStart = track?.week_start;
+                
                 const { error } = await supabase
                     .from('tracks')
                     .delete()
                     .eq('id', id);
 
                 if (error) throw error;
-                fetchTracks();
+                await fetchTracks();
+                
+                // Regenerate tracklist for this week if week_start exists
+                if (weekStart) {
+                    await regenerateTracklistForWeek(weekStart);
+                }
             } catch (error) {
                 console.error('Error deleting track:', error);
             }

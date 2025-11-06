@@ -31,8 +31,19 @@ function createTextSVG(text, x, y, fontSize, fill, stroke, strokeWidth = 2, text
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
-    
-    return `<text x="${x}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" text-anchor="${textAnchor}" dominant-baseline="hanging">${escapedText}</text>`;
+
+    // Normalize rgba() into rgb() + stroke-opacity to improve renderer compatibility
+    let strokeColor = stroke;
+    let strokeOpacityAttr = '';
+    const rgbaMatch = typeof stroke === 'string' && stroke.match(/rgba\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)/i);
+    if (rgbaMatch) {
+        const [, r, g, b, a] = rgbaMatch;
+        strokeColor = `rgb(${r}, ${g}, ${b})`;
+        strokeOpacityAttr = ` stroke-opacity="${a}"`;
+    }
+
+    // Paint stroke first so light text remains readable on darkened photos
+    return `<text x="${x}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="${fill}" stroke="${strokeColor}"${strokeOpacityAttr} stroke-width="${strokeWidth}" paint-order="stroke fill" text-anchor="${textAnchor}" dominant-baseline="hanging">${escapedText}</text>`;
 }
 
 /**
@@ -151,7 +162,7 @@ async function processImageWithOverlay(imageUrl, trackName, artistName) {
     }
     
     // Create text overlay SVG
-    let textSVG = `<svg width="${targetSize}" height="${targetSize}">`;
+    let textSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="${targetSize}" height="${targetSize}" text-rendering="optimizeLegibility">`;
     
     // Artist name at top (centered)
     const artistY = margin + 30;
