@@ -45,8 +45,10 @@ function createTextSVG(text, x, y, fontSize, fill, stroke, strokeWidth = 2, text
 
     // Create two text elements: stroke layer first, then fill layer on top
     // This ensures text is readable on dark backgrounds
-    const strokeText = `<text x="${x}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth * 2}" stroke-opacity="${fillOpacity}" text-anchor="${textAnchor}" dominant-baseline="hanging">${escapedText}</text>`;
-    const fillText = `<text x="${x}" y="${y}" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="bold" fill="${fill}" text-anchor="${textAnchor}" dominant-baseline="hanging">${escapedText}</text>`;
+    // Use simpler font-family for better Sharp compatibility
+    const fontFamily = 'Arial, sans-serif';
+    const strokeText = `<text x="${x}" y="${y}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="bold" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth * 2}" stroke-opacity="${fillOpacity}" text-anchor="${textAnchor}" dominant-baseline="hanging">${escapedText}</text>`;
+    const fillText = `<text x="${x}" y="${y}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="bold" fill="${fill}" text-anchor="${textAnchor}" dominant-baseline="hanging">${escapedText}</text>`;
     
     return strokeText + fillText;
 }
@@ -227,20 +229,37 @@ async function processImageWithOverlay(imageUrl, trackName, artistName) {
     const borderBuffer = Buffer.from(borderSVG, 'utf-8');
     const textBuffer = Buffer.from(textSVG, 'utf-8');
     
-    image = image.composite([
-        {
-            input: darkOverlayBuffer,
-            blend: 'over'
-        },
-        {
-            input: borderBuffer,
-            blend: 'over'
-        },
-        {
-            input: textBuffer,
-            blend: 'over'
-        }
-    ]);
+    // Composite overlays - ensure text is rendered last so it appears on top
+    // Try to composite with text, but if it fails, at least return the image with border and overlay
+    try {
+        image = image.composite([
+            {
+                input: darkOverlayBuffer,
+                blend: 'over'
+            },
+            {
+                input: borderBuffer,
+                blend: 'over'
+            },
+            {
+                input: textBuffer,
+                blend: 'over'
+            }
+        ]);
+    } catch (compositeError) {
+        console.error('Error compositing text overlay, trying without text:', compositeError);
+        // Fallback: composite without text if text rendering fails
+        image = image.composite([
+            {
+                input: darkOverlayBuffer,
+                blend: 'over'
+            },
+            {
+                input: borderBuffer,
+                blend: 'over'
+            }
+        ]);
+    }
     
     // Convert to PNG and return buffer
     const processedBuffer = await image.png().toBuffer();
