@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-11-07T09:06:57.763728",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "5BDo6TzD8q0oNtqhhXU3nx",
+      "name": "Do It",
+      "artist": "underscores",
+      "album": "Do It",
+      "popularity": 44,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273d7cdfc6e94a4cd80319f1caa",
+      "spotify_url": "https://open.spotify.com/track/5BDo6TzD8q0oNtqhhXU3nx",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "69UYgpv6dhNOA5Ld8vjD9l",
+      "name": "ON&ON",
+      "artist": "Sam Gellaitry",
+      "album": "ON&ON",
+      "popularity": 33,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2735597d6cd0a95577d0532b18d",
+      "spotify_url": "https://open.spotify.com/track/69UYgpv6dhNOA5Ld8vjD9l",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "3V4Cr62Dp1bQo5B98k3sDs",
+      "name": "Evangeline",
+      "artist": "Whitney, Madison Cunningham",
+      "album": "Evangeline",
+      "popularity": 32,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2737eb200d922091f9ac230ea6f",
+      "spotify_url": "https://open.spotify.com/track/3V4Cr62Dp1bQo5B98k3sDs",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "2uvcftCCrCr2pprXUJ6Vjr",
+      "name": "Love Who You Love",
+      "artist": "Romy",
+      "album": "Love Who You Love",
+      "popularity": 26,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273ff667f7f365610aa0fe48f95",
+      "spotify_url": "https://open.spotify.com/track/2uvcftCCrCr2pprXUJ6Vjr",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "4oVO4fGNRRvEn0CRuFO4qv",
+      "name": "La Perla",
+      "artist": "ROSALÍA, Yahritza Y Su Esencia",
+      "album": "LUX",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27393ee2e2f2dfb7de9befcc164",
+      "spotify_url": "https://open.spotify.com/track/4oVO4fGNRRvEn0CRuFO4qv",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "1kRGYmeLf3vkKaMwD0pYpd",
+      "name": "FMB pt 2 (feat. Hurricane Wisdom)",
+      "artist": "wolfacejoeyy, Hurricane Wisdom",
+      "album": "FMB pt 2 (feat. Hurricane Wisdom)",
+      "popularity": 10,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273e349563e3c6ff1edf5923f9f",
+      "spotify_url": "https://open.spotify.com/track/1kRGYmeLf3vkKaMwD0pYpd",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "2lpLHJXgSGFU5GuIk8qzgs",
+      "name": "New Trip (feat. Yeat & BNYX®)",
+      "artist": "Quavo, Yeat, BNYX®",
+      "album": "New Trip (feat. Yeat & BNYX®)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273a4b60ff473609fd7167f608b",
+      "spotify_url": "https://open.spotify.com/track/2lpLHJXgSGFU5GuIk8qzgs",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "0LfU4PlA0TbNqXOPkEBjZ0",
+      "name": "P.O.L.O.",
+      "artist": "A$AP Ferg",
+      "album": "P.O.L.O.",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273129e843c28a97d4c917ce657",
+      "spotify_url": "https://open.spotify.com/track/0LfU4PlA0TbNqXOPkEBjZ0",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "0lx6wsFK0GgmO8sZn1Em85",
+      "name": "200",
+      "artist": "sosocamo",
+      "album": "200",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273ce0993038aac2df0e084a947",
+      "spotify_url": "https://open.spotify.com/track/0lx6wsFK0GgmO8sZn1Em85",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "78qVD9sN4z5xuBstCJ6RF2",
+      "name": "Try To Love",
+      "artist": "Lil Baby",
+      "album": "Try To Love",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273c9a3d018d8b23b380606e709",
+      "spotify_url": "https://open.spotify.com/track/78qVD9sN4z5xuBstCJ6RF2",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}
