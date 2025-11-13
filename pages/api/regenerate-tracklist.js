@@ -53,93 +53,68 @@ export default async function handler(req, res) {
         const tracksJsonPath = join(process.cwd(), 'pages/api', `tracks_${Date.now()}.json`);
         writeFileSync(tracksJsonPath, JSON.stringify(topTracks, null, 2));
 
-        // Create a temporary Python script to generate the tracklist (no external spotipy dependency)
+        // Create a temporary Python script to use main.py's create_tracklist_image method
         const tempScript = `
 import sys
 import os
 import json
-from datetime import datetime
-from PIL import Image, ImageDraw, ImageFont
+
+# Add spotify_api directory to path
+script_dir = os.path.dirname(os.path.abspath(__file__))
+spotify_api_dir = os.path.join(script_dir, 'spotify_api')
+sys.path.insert(0, spotify_api_dir)
 
 # Read tracks from JSON file
 tracks_json_path = sys.argv[1]
 week_start = sys.argv[2]
 
 with open(tracks_json_path, 'r') as f:
-    tracks = json.load(f)
+    tracks_data = json.load(f)
 
-def load_font(size):
-    candidates = [
-        "/System/Library/Fonts/HelveticaNeue.ttc",
-        "/System/Library/Fonts/Helvetica.ttc",
-        "/Library/Fonts/HelveticaNeue.ttc",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "Arial.ttf",
-    ]
-    for path in candidates:
-        try:
-            return ImageFont.truetype(path, size=size)
-        except Exception:
-            continue
-    return ImageFont.load_default()
+# Convert tracks to format expected by main.py
+# Map track_name/name to 'name' and artists/artist to 'artist'
+formatted_tracks = []
+for t in tracks_data:
+    formatted_track = {
+        'name': t.get('track_name') or t.get('name') or 'Unknown Track',
+        'artist': t.get('artists') or t.get('artist') or 'Unknown Artist',
+        'popularity': t.get('popularity', 0),
+        'week_start': week_start
+    }
+    formatted_tracks.append(formatted_track)
 
-def create_tracklist_image(tracks, out_path):
-    canvas_w, canvas_h = 1080, 1080
-    bg = (0, 0, 0)
-    off_white = (232, 220, 207)
-    red = (226, 62, 54)
-    gray = (210, 210, 210)
-    margin = 60
+# Import and use main.py's create_tracklist_image
+# Handle missing spotipy gracefully since we don't need it for tracklist generation
+try:
+    from main import SpotifyNewMusicAutomation, SpotifyConfig
+except ImportError as e:
+    # If spotipy is missing, we can still use the method by importing directly
+    # Set up minimal environment
+    import importlib.util
+    main_path = os.path.join(spotify_api_dir, 'main.py')
+    spec = importlib.util.spec_from_file_location("main", main_path)
+    main_module = importlib.util.module_from_spec(spec)
+    # Mock spotipy to avoid import error
+    import sys
+    from unittest.mock import MagicMock
+    sys.modules['spotipy'] = MagicMock()
+    sys.modules['spotipy.oauth2'] = MagicMock()
+    spec.loader.exec_module(main_module)
+    SpotifyNewMusicAutomation = main_module.SpotifyNewMusicAutomation
+    SpotifyConfig = main_module.SpotifyConfig
 
-    img = Image.new('RGB', (canvas_w, canvas_h), bg)
-    draw = ImageDraw.Draw(img)
+config = SpotifyConfig()
+# Set output directory to pages/api/output
+config.OUTPUT_DIR = os.path.join(os.path.dirname(tracks_json_path), 'output')
+os.makedirs(config.OUTPUT_DIR, exist_ok=True)
 
-    title_font = load_font(50)
-    track_font = load_font(36)
-    artist_font = load_font(28)
-    small_font = load_font(26)
+automation = SpotifyNewMusicAutomation.__new__(SpotifyNewMusicAutomation)
+automation.config = config
+automation.spotify = None
 
-    # Titles
-    title = "New Music Out Now"
-    draw.text((margin, margin), title, fill=off_white, font=title_font)
-
-    # Subtitle using week_start
-    try:
-        friday_date = datetime.strptime(week_start, '%Y-%m-%d')
-    except Exception:
-        friday_date = datetime.now()
-    subtitle = "New Music Friday - " + friday_date.strftime('%B %d, %Y')
-    draw.text((margin, margin + 60), subtitle, fill=gray, font=small_font)
-
-    # Tracklist
-    y = margin + 120
-    line_gap = 16
-    for idx, t in enumerate(tracks[:10], start=1):
-        name = t.get('track_name') or t.get('name') or 'Unknown Track'
-        artists = t.get('artists') or t.get('artist') or 'Unknown Artist'
-        draw.text((margin, y), f"{idx}. {name}", fill=off_white, font=track_font, stroke_width=1, stroke_fill=(0,0,0))
-        y += 42
-        draw.text((margin, y), artists, fill=gray, font=artist_font)
-        y += 42 + line_gap
-
-    # Bottom-right NEW / MUSIC / FRIDAY
-    stack = [("NEW", red, 40), ("MUSIC", gray, 34), ("FRIDAY", gray, 34)]
-    total_h = sum(size + 10 for _, _, size in stack) - 10
-    y_stack = canvas_h - margin - total_h
-    for text, color, size in stack:
-        f = load_font(size)
-        bbox = draw.textbbox((0,0), text, font=f)
-        w = bbox[2]-bbox[0]
-        draw.text((canvas_w - margin - w, y_stack), text, fill=color, font=f)
-        y_stack += size + 10
-
-    img.save(out_path)
-
-out_dir = os.path.join(os.path.dirname(tracks_json_path), 'output')
-os.makedirs(out_dir, exist_ok=True)
-tracklist_path = os.path.join(out_dir, f"{week_start}_tracklist.png")
-create_tracklist_image(tracks, tracklist_path)
+# Generate tracklist
+tracklist_filename = f"{week_start}_tracklist.png"
+tracklist_path = automation.create_tracklist_image(formatted_tracks, tracklist_filename)
 
 print(json.dumps({"success": True, "tracklist_path": tracklist_path}))
 `;

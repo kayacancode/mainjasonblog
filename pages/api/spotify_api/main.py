@@ -537,29 +537,6 @@ class SpotifyNewMusicAutomation:
             # Create a subtle background overlay to improve text readability
             black_overlay = Image.new('RGBA', target_size, (0, 0, 0, 60))  # 60/255 = ~24% opacity
             
-            # Add ISWT branding in bottom-right corner before final composite
-            iswt_text = "ISWT"
-            iswt_font = load_font_prefer_helvetica(int(50 * size_multiplier), condensed=False)  # Larger font
-            iswt_bbox = draw_overlay.textbbox((0, 0), iswt_text, font=iswt_font)
-            iswt_width = iswt_bbox[2] - iswt_bbox[0]
-            iswt_height = iswt_bbox[3] - iswt_bbox[1]
-            iswt_x = target_size[0] - iswt_width - 50  # 50px margin from right
-            iswt_y = target_size[1] - iswt_height - 50  # 50px margin from bottom
-            
-            # Create a semi-transparent background for better visibility
-            padding = 8
-            bg_rect = [
-                iswt_x - padding,
-                iswt_y - padding,
-                iswt_x + iswt_width + padding,
-                iswt_y + iswt_height + padding
-            ]
-            draw_overlay.rectangle(bg_rect, fill=(0, 0, 0, 180))  # Dark semi-transparent background
-            
-            # Draw ISWT with white text and subtle shadow on overlay
-            draw_overlay.text((iswt_x + 2, iswt_y + 2), iswt_text, fill=(0, 0, 0, 220), font=iswt_font)  # Shadow (RGBA for overlay)
-            draw_overlay.text((iswt_x, iswt_y), iswt_text, fill=pure_white, font=iswt_font)
-            
             # Composite the overlays onto the artist image
             artist_image = artist_image.convert('RGBA')
             # First apply the subtle black overlay
@@ -835,11 +812,11 @@ class SpotifyNewMusicAutomation:
         title_width = title_bbox[2] - title_bbox[0]
         title_x = (canvas_width - title_width) // 2
         
+        draw.text((title_x, 15), title, fill=self.config.SPOTIFY_WHITE, font=title_font)
+        
         subtitle_bbox = draw.textbbox((0, 0), subtitle, font=artist_font)
         subtitle_width = subtitle_bbox[2] - subtitle_bbox[0]
         subtitle_x = (canvas_width - subtitle_width) // 2
-        
-        draw.text((title_x, 15), title, fill=self.config.SPOTIFY_WHITE, font=title_font)
         draw.text((subtitle_x, 70), subtitle, fill=self.config.SPOTIFY_WHITE, font=artist_font)
         
         # Track list - more padding and better spacing
@@ -910,28 +887,36 @@ class SpotifyNewMusicAutomation:
         draw.text((footer_x, canvas_height - 40), footer_text, 
                  fill=self.config.SPOTIFY_GRAY, font=artist_font)
         
-        # Add ISWT branding in bottom-right corner
-        iswt_text = "ISWT"
-        iswt_font = load_font_prefer_helvetica(int(42 * size_multiplier), condensed=False)  # Larger font
-        iswt_bbox = draw.textbbox((0, 0), iswt_text, font=iswt_font)
-        iswt_width = iswt_bbox[2] - iswt_bbox[0]
-        iswt_height = iswt_bbox[3] - iswt_bbox[1]
-        iswt_x = canvas_width - iswt_width - 40  # 40px margin from right
-        iswt_y = canvas_height - iswt_height - 40  # 40px margin from bottom
-        
-        # Create a semi-transparent background for better visibility
-        padding = 10
-        bg_rect = [
-            iswt_x - padding,
-            iswt_y - padding,
-            iswt_x + iswt_width + padding,
-            iswt_y + iswt_height + padding
-        ]
-        draw.rectangle(bg_rect, fill=(0, 0, 0, 200))  # Dark semi-transparent background
-        
-        # Draw ISWT with white text and subtle shadow
-        draw.text((iswt_x + 2, iswt_y + 2), iswt_text, fill=(0, 0, 0), font=iswt_font)  # Shadow
-        draw.text((iswt_x, iswt_y), iswt_text, fill=self.config.SPOTIFY_WHITE, font=iswt_font)
+        # Add logo branding in bottom-right corner (replacing ISWT text)
+        logo_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'public', 'tlogo.png')
+        try:
+            logo = Image.open(logo_path)
+            if logo.mode != 'RGBA':
+                logo = logo.convert('RGBA')
+            
+            # Scale logo proportionally to occupy similar space as previous text
+            target_logo_height = int(48 * size_multiplier)
+            logo_aspect_ratio = logo.width / logo.height
+            target_logo_width = int(target_logo_height * logo_aspect_ratio)
+            logo_resized = logo.resize((target_logo_width, target_logo_height), Image.Resampling.LANCZOS)
+            
+            logo_x = canvas_width - target_logo_width - 40
+            logo_y = canvas_height - target_logo_height - 40
+            
+            padding = 10
+            bg_rect = [
+                logo_x - padding,
+                logo_y - padding,
+                logo_x + target_logo_width + padding,
+                logo_y + target_logo_height + padding
+            ]
+            draw.rectangle(bg_rect, fill=(0, 0, 0, 200))
+            
+            canvas_rgba = canvas.convert('RGBA')
+            canvas_rgba.paste(logo_resized, (logo_x, logo_y), logo_resized)
+            canvas = canvas_rgba.convert('RGB')
+        except Exception as e:
+            logger.warning(f"⚠️ Could not load logo from {logo_path}: {e}. Skipping logo branding.")
         
         # Save tracklist
         output_path = os.path.join(self.config.OUTPUT_DIR, output_filename)
