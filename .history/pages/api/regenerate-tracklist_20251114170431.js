@@ -1,8 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
-import { spawn } from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { join } from 'path';
-import { unlinkSync, readFileSync, mkdirSync } from 'fs';
+import { writeFileSync, unlinkSync, readFileSync, mkdirSync } from 'fs';
 import { tmpdir } from 'os';
+
+const execAsync = promisify(exec);
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -113,40 +116,16 @@ print(json.dumps({"success": True, "tracklist_path": tracklist_path}))
 
         let result = null;
         try {
-            // Execute Python script with tracks JSON via stdin using spawn
-            const pythonProcess = spawn('python3', ['-c', pythonScript, weekStart, imagePath], {
-                cwd: projectRoot,
-                env: { ...process.env, PROJECT_ROOT: projectRoot },
-                stdio: ['pipe', 'pipe', 'pipe']
-            });
-
-            // Write tracks JSON to stdin
-            pythonProcess.stdin.write(JSON.stringify(formattedTracks));
-            pythonProcess.stdin.end();
-
-            // Collect stdout and stderr
-            let stdout = '';
-            let stderr = '';
-            
-            pythonProcess.stdout.on('data', (data) => {
-                stdout += data.toString();
-            });
-
-            pythonProcess.stderr.on('data', (data) => {
-                stderr += data.toString();
-            });
-
-            // Wait for process to complete
-            await new Promise((resolve, reject) => {
-                pythonProcess.on('close', (code) => {
-                    if (code !== 0) {
-                        reject(new Error(`Python process exited with code ${code}: ${stderr}`));
-                    } else {
-                        resolve();
-                    }
-                });
-                pythonProcess.on('error', reject);
-            });
+            // Execute Python script with tracks JSON via stdin
+            const { stdout, stderr } = await execAsync(
+                `python3 -c ${JSON.stringify(pythonScript)} "${weekStart}" "${imagePath}"`,
+                {
+                    maxBuffer: 10 * 1024 * 1024,
+                    cwd: projectRoot,
+                    env: { ...process.env, PROJECT_ROOT: projectRoot },
+                    input: JSON.stringify(formattedTracks)
+                }
+            );
 
             if (stderr && !stderr.includes('DeprecationWarning')) {
                 console.warn('Python stderr:', stderr);
@@ -158,10 +137,9 @@ print(json.dumps({"success": True, "tracklist_path": tracklist_path}))
                 return res.status(500).json({ error: result.error || 'Failed to regenerate tracklist' });
             }
 
-            // Read the generated image file and upload directly to Supabase
+            // Read the generated image file and upload via Supabase JS client
             const imageBuffer = readFileSync(result.tracklist_path);
             const filename = `${weekStart}_tracklist.png`;
-            
             const { error: uploadError } = await supabase.storage
                 .from('instagram-images')
                 .upload(filename, imageBuffer, {
@@ -205,17 +183,21 @@ print(json.dumps({"success": True, "tracklist_path": tracklist_path}))
                 details: error.message 
             });
         } finally {
-            // Cleanup: only the generated image file (everything else is in memory)
+            // Cleanup temp files
             try {
-                if (result && result.tracklist_path && result.tracklist_path.startsWith(tmpDir)) {
+                if (tempScriptPath) unlinkSync(tempScriptPath);
+            } catch (e) {
+                console.warn('Failed to cleanup temp script:', e);
+            }
+            try {
+                if (tracksJsonPath) unlinkSync(tracksJsonPath);
+            } catch (e) {
+                console.warn('Failed to cleanup tracks JSON file:', e);
+            }
+            try {
+                // Cleanup generated image file from /tmp
+                if (result && result.tracklist_path) {
                     unlinkSync(result.tracklist_path);
-                    // Try to remove the output directory if empty
-                    try {
-                        const dir = require('path').dirname(result.tracklist_path);
-                        require('fs').rmdirSync(dir);
-                    } catch (e) {
-                        // Directory not empty or already removed, ignore
-                    }
                 }
             } catch (e) {
                 console.warn('Failed to cleanup generated image:', e);

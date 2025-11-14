@@ -31,7 +31,3 @@ create policy "Public update instagram-images"
 --   on storage.objects for delete
 --   using (bucket_id = 'instagram-images');
 
-
-
-
-
