@@ -244,6 +244,55 @@ export default function TracksManagement() {
         }
     };
 
+    // Helper function to regenerate both graphics (cover and tracklist) for a specific week
+    const regenerateBothGraphics = async (weekStart) => {
+        if (!weekStart) return;
+        
+        if (!confirm(`Are you sure you want to regenerate both graphics (cover image and tracklist) for this week? This may take a few moments.`)) {
+            return;
+        }
+        
+        try {
+            console.log(`🔄 Regenerating both graphics for week: ${weekStart}`);
+            
+            // Regenerate tracklist first
+            const tracklistResponse = await fetch('/api/regenerate-tracklist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ weekStart })
+            });
+            
+            let tracklistSuccess = false;
+            if (!tracklistResponse.ok) {
+                const errorData = await tracklistResponse.json();
+                console.error('Failed to regenerate tracklist:', errorData);
+            } else {
+                tracklistSuccess = true;
+                console.log('✅ Tracklist regenerated successfully');
+            }
+            
+            // Note: Cover image regeneration requires running the full automation flow
+            // which is typically done via GitHub Actions or the automation script
+            // For now, we'll regenerate the tracklist and inform the user about the cover image
+            if (tracklistSuccess) {
+                alert(`✅ Tracklist graphic regenerated successfully!\n\nℹ️ Note: To regenerate the cover image, please use the automation flow or ensure a cover track is selected in Settings.`);
+            } else {
+                alert(`❌ Failed to regenerate tracklist. Check console for details.`);
+            }
+            
+            // Refresh tracks and images to get updated URLs
+            await fetchTracks();
+            // Refresh week images status
+            if (weekStart) {
+                await fetchWeekImages(weekStart);
+            }
+            
+        } catch (error) {
+            console.error('Error regenerating graphics:', error);
+            alert(`❌ Error regenerating graphics: ${error.message}`);
+        }
+    };
+
     const handleAddTrack = async (e) => {
         e.preventDefault();
         
@@ -282,9 +331,44 @@ export default function TracksManagement() {
             });
             await fetchTracks();
             
-            // Regenerate tracklist for this week (only top 10 tracks will be used)
+            // Check if the newly added track is in the top 10 by popularity
+            // Only regenerate tracklist if it would be included
             if (latestWeek) {
-                await regenerateTracklistForWeek(latestWeek);
+                // Fetch all tracks for this week (including the newly added one)
+                const { data: allTracks, error: tracksError } = await supabase
+                    .from('tracks')
+                    .select('*')
+                    .eq('week_start', latestWeek)
+                    .order('popularity', { ascending: false });
+                
+                if (!tracksError && allTracks && allTracks.length > 0) {
+                    // Sort by popularity (descending) to get top 10
+                    const sortedTracks = [...allTracks].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+                    const top10Tracks = sortedTracks.slice(0, 10);
+                    
+                    // Find the newly added track in the sorted list
+                    // We'll identify it by matching the form data (track_name and artists)
+                    const newTrackName = cleanFormData.track_name?.toLowerCase().trim();
+                    const newTrackArtists = cleanFormData.artists?.toLowerCase().trim();
+                    
+                    const newTrackInTop10 = top10Tracks.some(track => {
+                        const trackName = (track.track_name || '').toLowerCase().trim();
+                        const trackArtists = (track.artists || '').toLowerCase().trim();
+                        return trackName === newTrackName && trackArtists === newTrackArtists;
+                    });
+                    
+                    if (newTrackInTop10) {
+                        console.log(`🔄 New track "${cleanFormData.track_name}" is in the top 10. Regenerating tracklist...`);
+                        await regenerateTracklistForWeek(latestWeek);
+                    } else {
+                        console.log(`ℹ️ New track "${cleanFormData.track_name}" (popularity: ${cleanFormData.popularity || 0}) is not in the top 10. Skipping tracklist regeneration.`);
+                        console.log(`📊 Top 10 tracks have popularity range: ${top10Tracks[top10Tracks.length - 1]?.popularity || 0} to ${top10Tracks[0]?.popularity || 0}`);
+                    }
+                } else {
+                    // If we can't fetch tracks or there are no tracks, regenerate anyway to be safe
+                    console.log('⚠️ Could not fetch tracks to check top 10. Regenerating tracklist anyway...');
+                    await regenerateTracklistForWeek(latestWeek);
+                }
             }
         } catch (error) {
             console.error('Error adding track:', error);
@@ -331,13 +415,23 @@ export default function TracksManagement() {
             });
             await fetchTracks();
             
-            // Regenerate tracklist for both old and new weeks if week_start changed
+            // Always regenerate tracklist for affected weeks when a track is updated
+            // This ensures the tracklist reflects any changes (popularity, name, artist, etc.)
             const weeksToRegenerate = new Set();
-            if (oldWeekStart) weeksToRegenerate.add(oldWeekStart);
-            if (newWeekStart && newWeekStart !== oldWeekStart) weeksToRegenerate.add(newWeekStart);
+            
+            // Add old week if it exists and is different from new week
+            if (oldWeekStart && oldWeekStart !== newWeekStart) {
+                weeksToRegenerate.add(oldWeekStart);
+            }
+            
+            // Add new week
+            if (newWeekStart) {
+                weeksToRegenerate.add(newWeekStart);
+            }
             
             // Regenerate tracklists for all affected weeks
             for (const weekStart of weeksToRegenerate) {
+                console.log(`🔄 Regenerating tracklist for week ${weekStart} due to track update...`);
                 await regenerateTracklistForWeek(weekStart);
             }
         } catch (error) {
@@ -348,9 +442,10 @@ export default function TracksManagement() {
     const handleDeleteTrack = async (id) => {
         if (confirm('Are you sure you want to delete this track?')) {
             try {
-                // Get the track's week_start before deleting
+                // Get the track's week_start and popularity before deleting
                 const track = tracks.find(t => t.id === id);
                 const weekStart = track?.week_start;
+                const trackPopularity = track?.popularity || 0;
                 
                 const { error } = await supabase
                     .from('tracks')
@@ -360,9 +455,34 @@ export default function TracksManagement() {
                 if (error) throw error;
                 await fetchTracks();
                 
-                // Regenerate tracklist for this week if week_start exists
+                // Check if deleted track was in top 10 and regenerate if needed
                 if (weekStart) {
-                    await regenerateTracklistForWeek(weekStart);
+                    // Fetch remaining tracks to check if deleted track was in top 10
+                    const { data: remainingTracks } = await supabase
+                        .from('tracks')
+                        .select('*')
+                        .eq('week_start', weekStart)
+                        .order('popularity', { ascending: false });
+                    
+                    if (remainingTracks) {
+                        const sortedTracks = [...remainingTracks].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+                        const top10Tracks = sortedTracks.slice(0, 10);
+                        const minTop10Popularity = top10Tracks.length > 0 
+                            ? Math.min(...top10Tracks.map(t => t.popularity || 0))
+                            : 0;
+                        
+                        // If deleted track was in top 10 (its popularity was >= current min), regenerate
+                        if (trackPopularity >= minTop10Popularity || remainingTracks.length < 10) {
+                            console.log(`🔄 Deleted track was in top 10 (popularity: ${trackPopularity}). Regenerating tracklist...`);
+                            await regenerateTracklistForWeek(weekStart);
+                        } else {
+                            console.log(`ℹ️ Deleted track (popularity: ${trackPopularity}) was not in top 10. Skipping regeneration.`);
+                        }
+                    } else {
+                        // If we can't fetch tracks, regenerate anyway to be safe
+                        console.log('⚠️ Could not fetch remaining tracks. Regenerating tracklist anyway...');
+                        await regenerateTracklistForWeek(weekStart);
+                    }
                 }
             } catch (error) {
                 console.error('Error deleting track:', error);
@@ -440,6 +560,10 @@ export default function TracksManagement() {
         if (!confirm(confirmMessage)) return;
 
         try {
+            // Get tracks and their week_start values before deleting
+            const tracksToDelete = tracks.filter(t => selectedTracks.has(t.id));
+            const affectedWeeks = new Set(tracksToDelete.map(t => t.week_start).filter(Boolean));
+            
             if (permanent) {
                 // Permanent delete
                 const { error } = await supabase
@@ -449,7 +573,7 @@ export default function TracksManagement() {
                 
                 if (error) throw error;
             } else {
-                // Archive (soft delete)
+                // Archive (soft delete) - archived tracks won't show in tracklist anyway
                 const { error } = await supabase
                     .from('tracks')
                     .update({ 
@@ -463,7 +587,40 @@ export default function TracksManagement() {
             // Clear selection and refresh
             setSelectedTracks(new Set());
             setSelectAll(false);
-            fetchTracks();
+            await fetchTracks();
+            
+            // Regenerate tracklists for all affected weeks
+            // Check if any deleted tracks were in top 10
+            for (const weekStart of affectedWeeks) {
+                const { data: remainingTracks } = await supabase
+                    .from('tracks')
+                    .select('*')
+                    .eq('week_start', weekStart)
+                    .order('popularity', { ascending: false });
+                
+                if (remainingTracks) {
+                    const deletedTracksInWeek = tracksToDelete.filter(t => t.week_start === weekStart);
+                    const sortedTracks = [...remainingTracks].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+                    const top10Tracks = sortedTracks.slice(0, 10);
+                    const minTop10Popularity = top10Tracks.length > 0 
+                        ? Math.min(...top10Tracks.map(t => t.popularity || 0))
+                        : 0;
+                    
+                    // Check if any deleted track was in top 10
+                    const hadTop10Track = deletedTracksInWeek.some(t => 
+                        (t.popularity || 0) >= minTop10Popularity || remainingTracks.length < 10
+                    );
+                    
+                    if (hadTop10Track || deletedTracksInWeek.length > 0) {
+                        console.log(`🔄 Regenerating tracklist for week ${weekStart} after bulk ${action}...`);
+                        await regenerateTracklistForWeek(weekStart);
+                    }
+                } else {
+                    // If we can't fetch tracks, regenerate anyway to be safe
+                    console.log(`⚠️ Could not fetch remaining tracks for week ${weekStart}. Regenerating anyway...`);
+                    await regenerateTracklistForWeek(weekStart);
+                }
+            }
             
             alert(`Successfully ${action}d ${selectedTracks.size} track(s)`);
         } catch (error) {
@@ -1804,6 +1961,13 @@ export default function TracksManagement() {
                                                     title="Configure cover image and tracklist title"
                                                 >
                                                     ⚙️ Settings
+                                                </button>
+                                                <button
+                                                    onClick={() => regenerateBothGraphics(week)}
+                                                    className="text-orange-600 hover:text-orange-800 text-xs sm:text-sm underline px-2 py-1 rounded hover:bg-orange-50 transition-colors font-medium"
+                                                    title="Regenerate both cover image and tracklist graphic"
+                                                >
+                                                    🔄 Regenerate Graphics
                                                 </button>
                                                 {/* Instagram Post Creation Button - Show if both images and caption are available */}
                                                 {weekImageStatus[week] && weekCaptionStatus[week] && (
