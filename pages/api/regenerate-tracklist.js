@@ -1,11 +1,28 @@
 import { createClient } from '@supabase/supabase-js';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import sharp from 'sharp';
 import { join } from 'path';
-import { unlinkSync, readFileSync, mkdirSync, writeFileSync } from 'fs';
-import { tmpdir } from 'os';
+import { readFileSync } from 'fs';
 
-const execAsync = promisify(exec);
+const CANVAS_WIDTH = 1080;
+const CANVAS_HEIGHT = 1080;
+const HEADER_HEIGHT = 140;
+const TRACK_START_Y = HEADER_HEIGHT + 70;
+const TRACK_ROW_HEIGHT = 78;
+const TRACK_MARGIN_X = 70;
+const FOOTER_Y = CANVAS_HEIGHT - 45;
+const BRAND_RED = '#E23E36';
+const BACKGROUND = '#191414';
+const TEXT_WHITE = '#FFFFFF';
+const TEXT_GRAY = '#B3B3B3';
+
+const projectRoot = process.cwd();
+const logoPath = join(projectRoot, 'public', 'tlogo.png');
+let logoBuffer = null;
+try {
+    logoBuffer = readFileSync(logoPath);
+} catch (error) {
+    console.warn('Tracklist logo not found, continuing without it:', error.message);
+}
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -50,7 +67,6 @@ export default async function handler(req, res) {
 
         console.log(`📊 Using top ${topTracks.length} tracks (sorted by popularity)`);
 
-        // Format tracks for Python script (pass via stdin, no file needed)
         const formattedTracks = topTracks.map(t => ({
             name: t.track_name || t.name || 'Unknown Track',
             artist: t.artists || t.artist || 'Unknown Artist',
@@ -58,170 +74,51 @@ export default async function handler(req, res) {
             week_start: weekStart
         }));
 
-        // Use /tmp only for the final image output (PIL requires file system)
-        const tmpDir = tmpdir();
-        const timestamp = Date.now();
-        const outputDir = join(tmpDir, `tracklist_${timestamp}`);
-        mkdirSync(outputDir, { recursive: true });
-        const imagePath = join(outputDir, `${weekStart}_tracklist.png`);
-
-        const projectRoot = process.cwd();
-        const spotifyApiDir = join(projectRoot, 'pages/api/spotify_api');
-        
-        // Write tracks to a temporary JSON file in /tmp (like the working endpoint does)
-        const tracksJsonPath = join(tmpDir, `tracks_${timestamp}.json`);
-        writeFileSync(tracksJsonPath, JSON.stringify(formattedTracks, null, 2));
-        
-        // Python script that reads from JSON file and writes image to specified path
-        // Using the same pattern as process-custom-image-python.js
-        const pythonScript = `
-import sys
-import os
-import json
-
-# Get project root and spotify_api directory from environment
-project_root = os.environ.get('PROJECT_ROOT', '${projectRoot.replace(/\\/g, '/')}')
-spotify_api_dir = os.path.join(project_root, 'pages', 'api', 'spotify_api')
-sys.path.insert(0, spotify_api_dir)
-
-# Read tracks from JSON file
-tracks_json_path = sys.argv[1]
-week_start = sys.argv[2]
-output_path = sys.argv[3]
-
-with open(tracks_json_path, 'r') as f:
-    tracks_data = json.load(f)
-
-# Import and use main.py's create_tracklist_image
-try:
-    from main import SpotifyNewMusicAutomation, SpotifyConfig
-except ImportError:
-    # If spotipy is missing, import directly
-    import importlib.util
-    main_path = os.path.join(spotify_api_dir, 'main.py')
-    spec = importlib.util.spec_from_file_location("main", main_path)
-    main_module = importlib.util.module_from_spec(spec)
-    from unittest.mock import MagicMock
-    sys.modules['spotipy'] = MagicMock()
-    sys.modules['spotipy.oauth2'] = MagicMock()
-    spec.loader.exec_module(main_module)
-    SpotifyNewMusicAutomation = main_module.SpotifyNewMusicAutomation
-    SpotifyConfig = main_module.SpotifyConfig
-
-config = SpotifyConfig()
-config.OUTPUT_DIR = os.path.dirname(output_path)
-os.makedirs(config.OUTPUT_DIR, exist_ok=True)
-
-automation = SpotifyNewMusicAutomation.__new__(SpotifyNewMusicAutomation)
-automation.config = config
-automation.spotify = None
-
-# Generate tracklist image
-tracklist_path = automation.create_tracklist_image(tracks_data, os.path.basename(output_path))
-
-print(json.dumps({"success": True, "tracklist_path": tracklist_path}))
-`;
-
-        // Write Python script to /tmp (like the working endpoint does)
-        const tempScriptPath = join(tmpDir, `regenerate_tracklist_${timestamp}.py`);
-        writeFileSync(tempScriptPath, pythonScript);
-
-        let result = null;
+        let imageBuffer = null;
         try {
-            // Execute Python script using exec (like the working endpoint)
-            const { stdout, stderr } = await execAsync(
-                `python3 "${tempScriptPath}" "${tracksJsonPath}" "${weekStart}" "${imagePath}"`,
-                {
-                    maxBuffer: 10 * 1024 * 1024,
-                    cwd: projectRoot,
-                    env: { ...process.env, PROJECT_ROOT: projectRoot }
-                }
-            );
-
-            if (stderr && !stderr.includes('DeprecationWarning')) {
-                console.warn('Python stderr:', stderr);
-            }
-
-            result = JSON.parse(stdout || '{}');
-
-            if (!result.success || !result.tracklist_path) {
-                return res.status(500).json({ error: result.error || 'Failed to regenerate tracklist' });
-            }
-
-            // Read the generated image file and upload directly to Supabase
-            const imageBuffer = readFileSync(result.tracklist_path);
-            const filename = `${weekStart}_tracklist.png`;
-            
-            const { error: uploadError } = await supabase.storage
-                .from('instagram-images')
-                .upload(filename, imageBuffer, {
-                    contentType: 'image/png',
-                    cacheControl: '3600',
-                    upsert: true,
-                });
-
-            if (uploadError) {
-                console.error('Upload error:', uploadError);
-                return res.status(500).json({ error: 'Failed to upload tracklist image' });
-            }
-
-            const { data } = supabase.storage
-                .from('instagram-images')
-                .getPublicUrl(filename);
-
-            // Upsert into images table
-            const { data: existing, error: checkError } = await supabase
-                .from('images')
-                .select('week_start')
-                .eq('week_start', weekStart)
-                .single();
-
-            const payload = { week_start: weekStart, tracklist_image_url: data.publicUrl, updated_at: new Date().toISOString() };
-            if (existing && !checkError) {
-                await supabase.from('images').update(payload).eq('week_start', weekStart);
-            } else {
-                payload.created_at = new Date().toISOString();
-                await supabase.from('images').insert(payload);
-            }
-
-            console.log(`✅ Tracklist regenerated successfully: ${data.publicUrl}`);
-
-            return res.status(200).json({ success: true, tracklist_url: data.publicUrl, message: 'Tracklist regenerated successfully' });
-
+            imageBuffer = await generateTracklistImage(formattedTracks, weekStart);
         } catch (error) {
-            console.error('Error executing Python script:', error);
-            return res.status(500).json({ 
-                error: 'Failed to regenerate tracklist',
-                details: error.message 
-            });
-        } finally {
-            // Cleanup temp files (like the working endpoint does)
-            try {
-                if (tempScriptPath) unlinkSync(tempScriptPath);
-            } catch (e) {
-                console.warn('Failed to cleanup temp script:', e);
-            }
-            try {
-                if (tracksJsonPath) unlinkSync(tracksJsonPath);
-            } catch (e) {
-                console.warn('Failed to cleanup tracks JSON file:', e);
-            }
-            try {
-                // Cleanup generated image file from /tmp
-                if (result && result.tracklist_path) {
-                    unlinkSync(result.tracklist_path);
-                    // Try to remove the output directory if empty
-                    try {
-                        const dir = require('path').dirname(result.tracklist_path);
-                        require('fs').rmdirSync(dir);
-                    } catch (e) {
-                        // Directory not empty or already removed, ignore
-                    }
-                }
-            } catch (e) {
-                console.warn('Failed to cleanup generated image:', e);
-            }
+            console.error('Failed to generate tracklist image via Sharp:', error);
+            return res.status(500).json({ error: 'Failed to generate tracklist image', details: error.message });
         }
+
+        const filename = `${weekStart}_tracklist.png`;
+        
+        const { error: uploadError } = await supabase.storage
+            .from('instagram-images')
+            .upload(filename, imageBuffer, {
+                contentType: 'image/png',
+                cacheControl: '3600',
+                upsert: true,
+            });
+
+        if (uploadError) {
+            console.error('Upload error:', uploadError);
+            return res.status(500).json({ error: 'Failed to upload tracklist image' });
+        }
+
+        const { data } = supabase.storage
+            .from('instagram-images')
+            .getPublicUrl(filename);
+
+        // Upsert into images table
+        const { data: existing, error: checkError } = await supabase
+            .from('images')
+            .select('week_start')
+            .eq('week_start', weekStart)
+            .single();
+
+        const payload = { week_start: weekStart, tracklist_image_url: data.publicUrl, updated_at: new Date().toISOString() };
+        if (existing && !checkError) {
+            await supabase.from('images').update(payload).eq('week_start', weekStart);
+        } else {
+            payload.created_at = new Date().toISOString();
+            await supabase.from('images').insert(payload);
+        }
+
+        console.log(`✅ Tracklist regenerated successfully: ${data.publicUrl}`);
+
+        return res.status(200).json({ success: true, tracklist_url: data.publicUrl, message: 'Tracklist regenerated successfully' });
 
     } catch (error) {
         console.error('Error regenerating tracklist:', error);
@@ -232,3 +129,116 @@ print(json.dumps({"success": True, "tracklist_path": tracklist_path}))
     }
 }
 
+function escapeForSvg(text = '') {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function truncateText(text = '', max = 32) {
+    if (!text) return '';
+    if (text.length <= max) return text;
+    return `${text.slice(0, max - 3)}...`;
+}
+
+function getFridayDate(weekStart) {
+    if (weekStart) {
+        const parsed = new Date(`${weekStart}T00:00:00Z`);
+        if (!Number.isNaN(parsed.getTime())) {
+            return parsed;
+        }
+    }
+
+    const today = new Date();
+    const dayOfWeek = today.getUTCDay(); // 0 Sunday ... 6 Saturday
+    const fridayOffset = (dayOfWeek >= 5 ? dayOfWeek - 5 : dayOfWeek + 2);
+    const friday = new Date(today);
+    friday.setUTCDate(today.getUTCDate() - fridayOffset);
+    return friday;
+}
+
+function formatFridayLabel(weekStart) {
+    const friday = getFridayDate(weekStart);
+    return friday.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+async function generateTracklistImage(tracks, weekStart) {
+    const subtitle = `New Music Friday - ${formatFridayLabel(weekStart)}`;
+    const trackItems = tracks.map((track, index) => {
+        const baseY = TRACK_START_Y + index * TRACK_ROW_HEIGHT;
+        const number = `${index + 1}`.padStart(2, '0');
+        const trackName = truncateText(track.name || 'Unknown Track', 34);
+        const artistName = truncateText(track.artist || 'Unknown Artist', 42);
+        const escapedTrack = escapeForSvg(trackName);
+        const escapedArtist = escapeForSvg(artistName);
+
+        return `
+            <text class="track-number" x="${TRACK_MARGIN_X}" y="${baseY}">${number}.</text>
+            <text class="track-title" x="${TRACK_MARGIN_X + 80}" y="${baseY}">${escapedTrack}</text>
+            <text class="track-artist" x="${TRACK_MARGIN_X + 80}" y="${baseY + 30}">${escapedArtist}</text>
+        `;
+    }).join('\n');
+
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>
+    <svg width="${CANVAS_WIDTH}" height="${CANVAS_HEIGHT}" viewBox="0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+        <style>
+            .title { font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 700; font-size: 52px; fill: ${TEXT_WHITE}; }
+            .subtitle { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 30px; fill: ${TEXT_WHITE}; }
+            .track-number { font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 600; font-size: 36px; fill: ${TEXT_GRAY}; }
+            .track-title { font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 700; font-size: 36px; fill: ${TEXT_WHITE}; }
+            .track-artist { font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 500; font-size: 26px; fill: ${TEXT_GRAY}; }
+            .footer { font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 500; font-size: 28px; fill: ${TEXT_GRAY}; }
+        </style>
+        <rect width="100%" height="100%" fill="${BACKGROUND}" />
+        <rect width="100%" height="${HEADER_HEIGHT}" fill="${BRAND_RED}" />
+        <text class="title" x="50%" y="60" text-anchor="middle">New Music Out Now</text>
+        <text class="subtitle" x="50%" y="105" text-anchor="middle">${escapeForSvg(subtitle)}</text>
+        ${trackItems}
+        <text class="footer" x="50%" y="${FOOTER_Y}" text-anchor="middle">Suave's new music friday recap</text>
+    </svg>`;
+
+    let pngBuffer = await sharp(Buffer.from(svg)).png({ quality: 95 }).toBuffer();
+    pngBuffer = await addLogoOverlay(pngBuffer);
+    return pngBuffer;
+}
+
+async function addLogoOverlay(buffer) {
+    if (!logoBuffer) {
+        return buffer;
+    }
+
+    try {
+        const targetHeight = 80;
+        const resizedLogo = await sharp(logoBuffer).resize({ height: targetHeight }).png().toBuffer();
+        const metadata = await sharp(resizedLogo).metadata();
+        const logoWidth = Math.round(metadata.width || 0);
+        const logoHeight = Math.round(metadata.height || targetHeight);
+        const padding = 14;
+        const margin = 45;
+        const logoLeft = CANVAS_WIDTH - logoWidth - margin;
+        const logoTop = CANVAS_HEIGHT - logoHeight - margin;
+
+        const backgroundBuffer = await sharp({
+            create: {
+                width: logoWidth + padding * 2,
+                height: logoHeight + padding * 2,
+                channels: 4,
+                background: { r: 0, g: 0, b: 0, alpha: 0.75 }
+            }
+        }).png().toBuffer();
+
+        return await sharp(buffer)
+            .composite([
+                { input: backgroundBuffer, left: Math.max(Math.round(logoLeft - padding), 0), top: Math.max(Math.round(logoTop - padding), 0) },
+                { input: resizedLogo, left: Math.max(Math.round(logoLeft), 0), top: Math.max(Math.round(logoTop), 0) }
+            ])
+            .png()
+            .toBuffer();
+    } catch (error) {
+        console.warn('Failed to add logo overlay to tracklist:', error);
+        return buffer;
+    }
+}
