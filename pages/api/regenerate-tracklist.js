@@ -76,21 +76,44 @@ export default async function handler(req, res) {
 
         let imageBuffer = null;
         try {
-            imageBuffer = await generateTracklistImage(formattedTracks, weekStart);
+            // Suppress fontconfig warnings by redirecting stderr temporarily
+            // Fontconfig errors are harmless warnings but can clutter logs
+            const originalStderrWrite = process.stderr.write;
+            let fontconfigWarningSuppressed = false;
+            
+            process.stderr.write = function(chunk, encoding, fd) {
+                const message = chunk.toString();
+                // Suppress fontconfig warnings but allow other errors through
+                if (message.includes('Fontconfig') || message.includes('fontconfig')) {
+                    fontconfigWarningSuppressed = true;
+                    return true; // Suppress the warning
+                }
+                return originalStderrWrite.apply(process.stderr, arguments);
+            };
+            
+            try {
+                imageBuffer = await generateTracklistImage(formattedTracks, weekStart);
+            } finally {
+                // Restore original stderr
+                process.stderr.write = originalStderrWrite;
+                if (fontconfigWarningSuppressed) {
+                    console.log('ℹ️ Suppressed fontconfig warning (harmless in serverless environments)');
+                }
+            }
         } catch (error) {
             console.error('Failed to generate tracklist image via Sharp:', error);
             return res.status(500).json({ error: 'Failed to generate tracklist image', details: error.message });
         }
 
-        const filename = `${weekStart}_tracklist.png`;
+            const filename = `${weekStart}_tracklist.png`;
         
-        const { error: uploadError } = await supabase.storage
-            .from('instagram-images')
-            .upload(filename, imageBuffer, {
-                contentType: 'image/png',
+            const { error: uploadError } = await supabase.storage
+                .from('instagram-images')
+                .upload(filename, imageBuffer, {
+                    contentType: 'image/png',
                 cacheControl: '0',
-                upsert: true,
-            });
+                    upsert: true,
+                });
 
         if (uploadError) {
             console.error('Upload error:', uploadError);
@@ -190,16 +213,22 @@ async function generateTracklistImage(tracks, weekStart) {
         `;
     }).join('\n');
 
+    // Use system fonts that are more likely to be available in serverless environments
+    // Fallback to sans-serif which Sharp can handle without fontconfig
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
     <svg width="${CANVAS_WIDTH}" height="${CANVAS_HEIGHT}" viewBox="0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-        <style>
-            .title { font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 700; font-size: 52px; fill: ${TEXT_WHITE}; }
-            .subtitle { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 30px; fill: ${TEXT_WHITE}; }
-            .track-number { font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 600; font-size: 36px; fill: ${TEXT_GRAY}; }
-            .track-title { font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 700; font-size: 36px; fill: ${TEXT_WHITE}; }
-            .track-artist { font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 500; font-size: 26px; fill: ${TEXT_GRAY}; }
-            .footer { font-family: 'Helvetica Neue', Arial, sans-serif; font-weight: 500; font-size: 28px; fill: ${TEXT_GRAY}; }
-        </style>
+        <defs>
+            <style type="text/css">
+                <![CDATA[
+                    .title { font-family: Arial, 'DejaVu Sans', sans-serif; font-weight: 700; font-size: 52px; fill: ${TEXT_WHITE}; }
+                    .subtitle { font-family: Arial, 'DejaVu Sans', sans-serif; font-size: 30px; fill: ${TEXT_WHITE}; }
+                    .track-number { font-family: Arial, 'DejaVu Sans', sans-serif; font-weight: 600; font-size: 36px; fill: ${TEXT_GRAY}; }
+                    .track-title { font-family: Arial, 'DejaVu Sans', sans-serif; font-weight: 700; font-size: 36px; fill: ${TEXT_WHITE}; }
+                    .track-artist { font-family: Arial, 'DejaVu Sans', sans-serif; font-weight: 500; font-size: 26px; fill: ${TEXT_GRAY}; }
+                    .footer { font-family: Arial, 'DejaVu Sans', sans-serif; font-weight: 500; font-size: 28px; fill: ${TEXT_GRAY}; }
+                ]]>
+            </style>
+        </defs>
         <rect width="100%" height="100%" fill="${BACKGROUND}" />
         <rect width="100%" height="${HEADER_HEIGHT}" fill="${BRAND_RED}" />
         <text class="title" x="50%" y="60" text-anchor="middle">New Music Out Now</text>
@@ -208,9 +237,29 @@ async function generateTracklistImage(tracks, weekStart) {
         <text class="footer" x="50%" y="${FOOTER_Y}" text-anchor="middle">Suave's new music friday recap</text>
     </svg>`;
 
-    let pngBuffer = await sharp(Buffer.from(svg)).png({ quality: 95 }).toBuffer();
-    pngBuffer = await addLogoOverlay(pngBuffer);
-    return pngBuffer;
+    try {
+        // Sharp handles SVG rendering - fontconfig warnings are harmless but we suppress them
+        // by using standard font names that don't require system font resolution
+        let pngBuffer = await sharp(Buffer.from(svg), {
+            density: 72, // Standard DPI for consistent rendering
+        })
+        .png({ 
+            quality: 95,
+            compressionLevel: 9
+        })
+        .toBuffer();
+        
+        // Verify we got a valid image buffer
+        if (!pngBuffer || pngBuffer.length === 0) {
+            throw new Error('Generated image buffer is empty');
+        }
+        
+        pngBuffer = await addLogoOverlay(pngBuffer);
+        return pngBuffer;
+    } catch (error) {
+        console.error('Error generating tracklist image with Sharp:', error);
+        throw error;
+    }
 }
 
 async function addLogoOverlay(buffer) {
