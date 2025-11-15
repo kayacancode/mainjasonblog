@@ -74,46 +74,28 @@ export default async function handler(req, res) {
             week_start: weekStart
         }));
 
+        // Suppress Fontconfig warnings in serverless environments (same fix as process-custom-image.js)
+        if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+            process.env.FONTCONFIG_PATH = '/tmp';
+        }
+        
         let imageBuffer = null;
         try {
-            // Suppress fontconfig warnings by redirecting stderr temporarily
-            // Fontconfig errors are harmless warnings but can clutter logs
-            const originalStderrWrite = process.stderr.write;
-            let fontconfigWarningSuppressed = false;
-            
-            process.stderr.write = function(chunk, encoding, fd) {
-                const message = chunk.toString();
-                // Suppress fontconfig warnings but allow other errors through
-                if (message.includes('Fontconfig') || message.includes('fontconfig')) {
-                    fontconfigWarningSuppressed = true;
-                    return true; // Suppress the warning
-                }
-                return originalStderrWrite.apply(process.stderr, arguments);
-            };
-            
-            try {
-                imageBuffer = await generateTracklistImage(formattedTracks, weekStart);
-            } finally {
-                // Restore original stderr
-                process.stderr.write = originalStderrWrite;
-                if (fontconfigWarningSuppressed) {
-                    console.log('ℹ️ Suppressed fontconfig warning (harmless in serverless environments)');
-                }
-            }
+            imageBuffer = await generateTracklistImage(formattedTracks, weekStart);
         } catch (error) {
             console.error('Failed to generate tracklist image via Sharp:', error);
             return res.status(500).json({ error: 'Failed to generate tracklist image', details: error.message });
         }
 
-            const filename = `${weekStart}_tracklist.png`;
+        const filename = `${weekStart}_tracklist.png`;
         
-            const { error: uploadError } = await supabase.storage
-                .from('instagram-images')
-                .upload(filename, imageBuffer, {
-                    contentType: 'image/png',
+        const { error: uploadError } = await supabase.storage
+            .from('instagram-images')
+            .upload(filename, imageBuffer, {
+                contentType: 'image/png',
                 cacheControl: '0',
-                    upsert: true,
-                });
+                upsert: true,
+            });
 
         if (uploadError) {
             console.error('Upload error:', uploadError);
