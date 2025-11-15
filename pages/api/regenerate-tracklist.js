@@ -1,8 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
-import { spawn } from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { join } from 'path';
-import { unlinkSync, readFileSync, mkdirSync } from 'fs';
+import { unlinkSync, readFileSync, mkdirSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
+
+const execAsync = promisify(exec);
 
 // Initialize Supabase client
 const supabase = createClient(
@@ -65,7 +68,12 @@ export default async function handler(req, res) {
         const projectRoot = process.cwd();
         const spotifyApiDir = join(projectRoot, 'pages/api/spotify_api');
         
-        // Python script that reads from stdin and writes image to specified path
+        // Write tracks to a temporary JSON file in /tmp (like the working endpoint does)
+        const tracksJsonPath = join(tmpDir, `tracks_${timestamp}.json`);
+        writeFileSync(tracksJsonPath, JSON.stringify(formattedTracks, null, 2));
+        
+        // Python script that reads from JSON file and writes image to specified path
+        // Using the same pattern as process-custom-image-python.js
         const pythonScript = `
 import sys
 import os
@@ -76,10 +84,13 @@ project_root = os.environ.get('PROJECT_ROOT', '${projectRoot.replace(/\\/g, '/')
 spotify_api_dir = os.path.join(project_root, 'pages', 'api', 'spotify_api')
 sys.path.insert(0, spotify_api_dir)
 
-# Read tracks JSON from stdin
-tracks_data = json.load(sys.stdin)
-week_start = sys.argv[1]
-output_path = sys.argv[2]
+# Read tracks from JSON file
+tracks_json_path = sys.argv[1]
+week_start = sys.argv[2]
+output_path = sys.argv[3]
+
+with open(tracks_json_path, 'r') as f:
+    tracks_data = json.load(f)
 
 # Import and use main.py's create_tracklist_image
 try:
@@ -111,42 +122,21 @@ tracklist_path = automation.create_tracklist_image(tracks_data, os.path.basename
 print(json.dumps({"success": True, "tracklist_path": tracklist_path}))
 `;
 
+        // Write Python script to /tmp (like the working endpoint does)
+        const tempScriptPath = join(tmpDir, `regenerate_tracklist_${timestamp}.py`);
+        writeFileSync(tempScriptPath, pythonScript);
+
         let result = null;
         try {
-            // Execute Python script with tracks JSON via stdin using spawn
-            const pythonProcess = spawn('python3', ['-c', pythonScript, weekStart, imagePath], {
-                cwd: projectRoot,
-                env: { ...process.env, PROJECT_ROOT: projectRoot },
-                stdio: ['pipe', 'pipe', 'pipe']
-            });
-
-            // Write tracks JSON to stdin
-            pythonProcess.stdin.write(JSON.stringify(formattedTracks));
-            pythonProcess.stdin.end();
-
-            // Collect stdout and stderr
-            let stdout = '';
-            let stderr = '';
-            
-            pythonProcess.stdout.on('data', (data) => {
-                stdout += data.toString();
-            });
-
-            pythonProcess.stderr.on('data', (data) => {
-                stderr += data.toString();
-            });
-
-            // Wait for process to complete
-            await new Promise((resolve, reject) => {
-                pythonProcess.on('close', (code) => {
-                    if (code !== 0) {
-                        reject(new Error(`Python process exited with code ${code}: ${stderr}`));
-                    } else {
-                        resolve();
-                    }
-                });
-                pythonProcess.on('error', reject);
-            });
+            // Execute Python script using exec (like the working endpoint)
+            const { stdout, stderr } = await execAsync(
+                `python3 "${tempScriptPath}" "${tracksJsonPath}" "${weekStart}" "${imagePath}"`,
+                {
+                    maxBuffer: 10 * 1024 * 1024,
+                    cwd: projectRoot,
+                    env: { ...process.env, PROJECT_ROOT: projectRoot }
+                }
+            );
 
             if (stderr && !stderr.includes('DeprecationWarning')) {
                 console.warn('Python stderr:', stderr);
@@ -205,9 +195,20 @@ print(json.dumps({"success": True, "tracklist_path": tracklist_path}))
                 details: error.message 
             });
         } finally {
-            // Cleanup: only the generated image file (everything else is in memory)
+            // Cleanup temp files (like the working endpoint does)
             try {
-                if (result && result.tracklist_path && result.tracklist_path.startsWith(tmpDir)) {
+                if (tempScriptPath) unlinkSync(tempScriptPath);
+            } catch (e) {
+                console.warn('Failed to cleanup temp script:', e);
+            }
+            try {
+                if (tracksJsonPath) unlinkSync(tracksJsonPath);
+            } catch (e) {
+                console.warn('Failed to cleanup tracks JSON file:', e);
+            }
+            try {
+                // Cleanup generated image file from /tmp
+                if (result && result.tracklist_path) {
                     unlinkSync(result.tracklist_path);
                     // Try to remove the output directory if empty
                     try {
