@@ -223,19 +223,19 @@ async function generateTracklistImage(tracks, weekStart) {
         `;
     }).join('\n');
 
-    // Use sans-serif only - Sharp's librsvg will use default font which works in serverless
-    // Removing specific font names to avoid fontconfig issues
+    // Use DejaVu Sans which is commonly available in Linux serverless environments
+    // Fallback to Liberation Sans and Noto Sans, then sans-serif
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
     <svg width="${CANVAS_WIDTH}" height="${CANVAS_HEIGHT}" viewBox="0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <style type="text/css">
                 <![CDATA[
-                    .title { font-family: sans-serif; font-weight: bold; font-size: 52px; fill: ${TEXT_WHITE}; }
-                    .subtitle { font-family: sans-serif; font-size: 30px; fill: ${TEXT_WHITE}; }
-                    .track-number { font-family: sans-serif; font-weight: bold; font-size: 36px; fill: ${TEXT_GRAY}; }
-                    .track-title { font-family: sans-serif; font-weight: bold; font-size: 36px; fill: ${TEXT_WHITE}; }
-                    .track-artist { font-family: sans-serif; font-size: 26px; fill: ${TEXT_GRAY}; }
-                    .footer { font-family: sans-serif; font-size: 28px; fill: ${TEXT_GRAY}; }
+                    .title { font-family: 'DejaVu Sans', 'Liberation Sans', 'Noto Sans', sans-serif; font-weight: bold; font-size: 52px; fill: ${TEXT_WHITE}; }
+                    .subtitle { font-family: 'DejaVu Sans', 'Liberation Sans', 'Noto Sans', sans-serif; font-size: 30px; fill: ${TEXT_WHITE}; }
+                    .track-number { font-family: 'DejaVu Sans', 'Liberation Sans', 'Noto Sans', sans-serif; font-weight: bold; font-size: 36px; fill: ${TEXT_GRAY}; }
+                    .track-title { font-family: 'DejaVu Sans', 'Liberation Sans', 'Noto Sans', sans-serif; font-weight: bold; font-size: 36px; fill: ${TEXT_WHITE}; }
+                    .track-artist { font-family: 'DejaVu Sans', 'Liberation Sans', 'Noto Sans', sans-serif; font-size: 26px; fill: ${TEXT_GRAY}; }
+                    .footer { font-family: 'DejaVu Sans', 'Liberation Sans', 'Noto Sans', sans-serif; font-size: 28px; fill: ${TEXT_GRAY}; }
                 ]]>
             </style>
         </defs>
