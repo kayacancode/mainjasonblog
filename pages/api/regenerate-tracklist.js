@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
 import { join } from 'path';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync, mkdirSync, existsSync } from 'fs';
 
 const CANVAS_WIDTH = 1080;
 const CANVAS_HEIGHT = 1080;
@@ -74,9 +74,37 @@ export default async function handler(req, res) {
             week_start: weekStart
         }));
 
-        // Suppress Fontconfig warnings in serverless environments (same fix as process-custom-image.js)
+        // Setup fontconfig for serverless environments (based on Stack Overflow solution)
+        // https://stackoverflow.com/questions/77603798/using-fonts-in-next-js-api-route
         if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-            process.env.FONTCONFIG_PATH = '/tmp';
+            const fontsDir = join(process.cwd(), 'fonts');
+            const fontsConfPath = join(fontsDir, 'fonts.conf');
+            
+            // Set FONTCONFIG_PATH to point to directory containing fonts.conf
+            // In Vercel, this will be /var/task/fonts, but we use process.cwd() to be flexible
+            process.env.FONTCONFIG_PATH = fontsDir;
+            
+            // Ensure fonts directory is read (this ensures fonts are included in serverless bundle)
+            try {
+                if (existsSync(fontsDir)) {
+                    const fontFiles = readdirSync(fontsDir);
+                    console.log(`📁 Fonts directory found with ${fontFiles.length} files:`, fontFiles);
+                } else {
+                    console.warn(`⚠️ Fonts directory not found at: ${fontsDir}`);
+                }
+            } catch (error) {
+                console.warn('⚠️ Could not read fonts directory:', error.message);
+            }
+            
+            // Create cache directory for fontconfig
+            const cacheDir = '/tmp/fonts-cache';
+            try {
+                if (!existsSync(cacheDir)) {
+                    mkdirSync(cacheDir, { recursive: true });
+                }
+            } catch (error) {
+                console.warn('⚠️ Could not create fontconfig cache directory:', error.message);
+            }
         }
         
         let imageBuffer = null;
