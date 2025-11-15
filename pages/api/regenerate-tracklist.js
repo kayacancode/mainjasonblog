@@ -88,7 +88,7 @@ export default async function handler(req, res) {
             .from('instagram-images')
             .upload(filename, imageBuffer, {
                 contentType: 'image/png',
-                cacheControl: '3600',
+                cacheControl: '0',
                 upsert: true,
             });
 
@@ -101,6 +101,14 @@ export default async function handler(req, res) {
             .from('instagram-images')
             .getPublicUrl(filename);
 
+        if (!data || !data.publicUrl) {
+            console.error('Missing public URL after upload');
+            return res.status(500).json({ error: 'Failed to resolve tracklist URL after upload' });
+        }
+
+        const cacheBuster = Date.now();
+        const tracklistUrl = `${data.publicUrl}?v=${cacheBuster}`;
+
         // Upsert into images table
         const { data: existing, error: checkError } = await supabase
             .from('images')
@@ -108,7 +116,7 @@ export default async function handler(req, res) {
             .eq('week_start', weekStart)
             .single();
 
-        const payload = { week_start: weekStart, tracklist_image_url: data.publicUrl, updated_at: new Date().toISOString() };
+        const payload = { week_start: weekStart, tracklist_image_url: tracklistUrl, updated_at: new Date().toISOString() };
         if (existing && !checkError) {
             await supabase.from('images').update(payload).eq('week_start', weekStart);
         } else {
@@ -116,9 +124,9 @@ export default async function handler(req, res) {
             await supabase.from('images').insert(payload);
         }
 
-        console.log(`✅ Tracklist regenerated successfully: ${data.publicUrl}`);
+        console.log(`✅ Tracklist regenerated successfully: ${tracklistUrl}`);
 
-        return res.status(200).json({ success: true, tracklist_url: data.publicUrl, message: 'Tracklist regenerated successfully' });
+        return res.status(200).json({ success: true, tracklist_url: tracklistUrl, message: 'Tracklist regenerated successfully' });
 
     } catch (error) {
         console.error('Error regenerating tracklist:', error);

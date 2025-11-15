@@ -136,6 +136,7 @@ except Exception as e:
                 .from('instagram-images')
                 .upload(filename, imageBuffer, {
                     contentType: 'image/png',
+                    cacheControl: '0',
                     upsert: true
                 });
 
@@ -144,14 +145,22 @@ except Exception as e:
                 return res.status(500).json({ error: 'Failed to upload processed image' });
             }
 
-            // Get public URL
+            // Get public URL with cache busting
             const { data } = supabase.storage
                 .from('instagram-images')
                 .getPublicUrl(filename);
 
+            if (!data || !data.publicUrl) {
+                console.error('Missing public URL for processed image');
+                return res.status(500).json({ error: 'Failed to resolve processed image URL' });
+            }
+
+            const cacheBuster = Date.now();
+            const processedImageUrl = `${data.publicUrl}?v=${cacheBuster}`;
+
             return res.status(200).json({
                 success: true,
-                processedImageUrl: data.publicUrl
+                processedImageUrl
             });
 
         } finally {
@@ -171,7 +180,6 @@ except Exception as e:
         });
     }
 }
-
 
 
 
