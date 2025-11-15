@@ -217,12 +217,46 @@ export default function TracksManagement() {
         }
     };
 
+    // Helper function to check if a track is/would be in the top 10 for a given week
+    const isTrackInTop10 = async (weekStart, trackId, trackPopularity) => {
+        if (!weekStart) return false;
+        
+        try {
+            const { data: allTracks } = await supabase
+                .from('tracks')
+                .select('*')
+                .eq('week_start', weekStart)
+                .order('popularity', { ascending: false });
+            
+            if (!allTracks || allTracks.length === 0) return false;
+            
+            const sortedTracks = [...allTracks].sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+            const top10Tracks = sortedTracks.slice(0, 10);
+            const minTop10Popularity = top10Tracks.length > 0 
+                ? Math.min(...top10Tracks.map(t => t.popularity || 0))
+                : 0;
+            
+            // Check if the track is in top 10 by ID
+            const trackInTop10 = top10Tracks.some(t => t.id === trackId);
+            
+            // If track not found by ID, check if its popularity would qualify it for top 10
+            // This handles cases where track was moved to another week
+            const wouldBeInTop10 = (trackPopularity || 0) >= minTop10Popularity || allTracks.length < 10;
+            
+            return trackInTop10 || wouldBeInTop10;
+        } catch (error) {
+            console.error('Error checking top 10:', error);
+            // If we can't check, assume it might be in top 10 to be safe
+            return true;
+        }
+    };
+
     // Helper function to regenerate tracklist for a specific week
     const regenerateTracklistForWeek = async (weekStart) => {
         if (!weekStart) return;
         
         try {
-            console.log(`Regenerating tracklist for week: ${weekStart}`);
+            console.log(`🔄 Regenerating tracklist for week: ${weekStart}`);
             const response = await fetch('/api/regenerate-tracklist', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -234,62 +268,13 @@ export default function TracksManagement() {
                 console.error('Failed to regenerate tracklist:', errorData);
                 // Don't show alert - just log the error silently
             } else {
-                console.log('Tracklist regenerated successfully');
+                console.log('✅ Tracklist regenerated successfully');
                 // Refresh tracks to get updated image URLs
                 fetchTracks();
             }
         } catch (error) {
             console.error('Error regenerating tracklist:', error);
             // Don't show alert - just log the error silently
-        }
-    };
-
-    // Helper function to regenerate both graphics (cover and tracklist) for a specific week
-    const regenerateBothGraphics = async (weekStart) => {
-        if (!weekStart) return;
-        
-        if (!confirm(`Are you sure you want to regenerate both graphics (cover image and tracklist) for this week? This may take a few moments.`)) {
-            return;
-        }
-        
-        try {
-            console.log(`🔄 Regenerating both graphics for week: ${weekStart}`);
-            
-            // Regenerate tracklist first
-            const tracklistResponse = await fetch('/api/regenerate-tracklist', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ weekStart })
-            });
-            
-            let tracklistSuccess = false;
-            if (!tracklistResponse.ok) {
-                const errorData = await tracklistResponse.json();
-                console.error('Failed to regenerate tracklist:', errorData);
-            } else {
-                tracklistSuccess = true;
-                console.log('✅ Tracklist regenerated successfully');
-            }
-            
-            // Note: Cover image regeneration requires running the full automation flow
-            // which is typically done via GitHub Actions or the automation script
-            // For now, we'll regenerate the tracklist and inform the user about the cover image
-            if (tracklistSuccess) {
-                alert(`✅ Tracklist graphic regenerated successfully!\n\nℹ️ Note: To regenerate the cover image, please use the automation flow or ensure a cover track is selected in Settings.`);
-            } else {
-                alert(`❌ Failed to regenerate tracklist. Check console for details.`);
-            }
-            
-            // Refresh tracks and images to get updated URLs
-            await fetchTracks();
-            // Refresh week images status
-            if (weekStart) {
-                await fetchWeekImages(weekStart);
-            }
-            
-        } catch (error) {
-            console.error('Error regenerating graphics:', error);
-            alert(`❌ Error regenerating graphics: ${error.message}`);
         }
     };
 
@@ -415,24 +400,59 @@ export default function TracksManagement() {
             });
             await fetchTracks();
             
-            // Always regenerate tracklist for affected weeks when a track is updated
-            // This ensures the tracklist reflects any changes (popularity, name, artist, etc.)
-            const weeksToRegenerate = new Set();
+            // Check if track update affects top 10 and regenerate only if needed
+            const oldPopularity = editingTrack?.popularity || 0;
+            const newPopularity = cleanFormData.popularity || 0;
+            const popularityChanged = oldPopularity !== newPopularity;
+            
+            // Check if track name or artist changed (affects display)
+            const trackInfoChanged = 
+                (cleanFormData.track_name && cleanFormData.track_name !== editingTrack.track_name) ||
+                (cleanFormData.artists && cleanFormData.artists !== editingTrack.artists);
+            
+            const weeksToCheck = new Set();
             
             // Add old week if it exists and is different from new week
             if (oldWeekStart && oldWeekStart !== newWeekStart) {
-                weeksToRegenerate.add(oldWeekStart);
+                weeksToCheck.add(oldWeekStart);
             }
             
             // Add new week
             if (newWeekStart) {
-                weeksToRegenerate.add(newWeekStart);
+                weeksToCheck.add(newWeekStart);
             }
             
-            // Regenerate tracklists for all affected weeks
-            for (const weekStart of weeksToRegenerate) {
-                console.log(`🔄 Regenerating tracklist for week ${weekStart} due to track update...`);
-                await regenerateTracklistForWeek(weekStart);
+            // Check each affected week to see if regeneration is needed
+            for (const weekStart of weeksToCheck) {
+                let shouldRegenerate = false;
+                
+                if (weekStart === oldWeekStart && oldWeekStart !== newWeekStart) {
+                    // Track moved from old week - check if it was in top 10 there
+                    // Since track is already moved, check if old popularity would have been in top 10
+                    const wasInTop10 = await isTrackInTop10(weekStart, editingTrack.id, oldPopularity);
+                    if (wasInTop10) {
+                        shouldRegenerate = true;
+                        console.log(`🔄 Track was in top 10 of old week (popularity: ${oldPopularity}). Regenerating...`);
+                    }
+                } else if (weekStart === newWeekStart) {
+                    // Track is in new week - check if it's in top 10 or if changes affect display
+                    const isInTop10 = await isTrackInTop10(weekStart, editingTrack.id, newPopularity);
+                    
+                    if (isInTop10 || trackInfoChanged) {
+                        shouldRegenerate = true;
+                        if (isInTop10) {
+                            console.log(`🔄 Updated track is in top 10 (popularity: ${newPopularity}). Regenerating...`);
+                        } else if (trackInfoChanged) {
+                            console.log(`🔄 Track info changed (name/artist). Regenerating...`);
+                        }
+                    }
+                }
+                
+                if (shouldRegenerate) {
+                    await regenerateTracklistForWeek(weekStart);
+                } else {
+                    console.log(`ℹ️ Updated track (popularity: ${newPopularity}) does not affect top 10. Skipping regeneration for week ${weekStart}.`);
+                }
             }
         } catch (error) {
             console.error('Error updating track:', error);
@@ -1961,13 +1981,6 @@ export default function TracksManagement() {
                                                     title="Configure cover image and tracklist title"
                                                 >
                                                     ⚙️ Settings
-                                                </button>
-                                                <button
-                                                    onClick={() => regenerateBothGraphics(week)}
-                                                    className="text-orange-600 hover:text-orange-800 text-xs sm:text-sm underline px-2 py-1 rounded hover:bg-orange-50 transition-colors font-medium"
-                                                    title="Regenerate both cover image and tracklist graphic"
-                                                >
-                                                    🔄 Regenerate Graphics
                                                 </button>
                                                 {/* Instagram Post Creation Button - Show if both images and caption are available */}
                                                 {weekImageStatus[week] && weekCaptionStatus[week] && (
