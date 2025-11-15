@@ -195,19 +195,19 @@ async function generateTracklistImage(tracks, weekStart) {
         `;
     }).join('\n');
 
-    // Use system fonts that are more likely to be available in serverless environments
-    // Fallback to sans-serif which Sharp can handle without fontconfig
+    // Use sans-serif only - Sharp's librsvg will use default font which works in serverless
+    // Removing specific font names to avoid fontconfig issues
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
     <svg width="${CANVAS_WIDTH}" height="${CANVAS_HEIGHT}" viewBox="0 0 ${CANVAS_WIDTH} ${CANVAS_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <style type="text/css">
                 <![CDATA[
-                    .title { font-family: Arial, 'DejaVu Sans', sans-serif; font-weight: 700; font-size: 52px; fill: ${TEXT_WHITE}; }
-                    .subtitle { font-family: Arial, 'DejaVu Sans', sans-serif; font-size: 30px; fill: ${TEXT_WHITE}; }
-                    .track-number { font-family: Arial, 'DejaVu Sans', sans-serif; font-weight: 600; font-size: 36px; fill: ${TEXT_GRAY}; }
-                    .track-title { font-family: Arial, 'DejaVu Sans', sans-serif; font-weight: 700; font-size: 36px; fill: ${TEXT_WHITE}; }
-                    .track-artist { font-family: Arial, 'DejaVu Sans', sans-serif; font-weight: 500; font-size: 26px; fill: ${TEXT_GRAY}; }
-                    .footer { font-family: Arial, 'DejaVu Sans', sans-serif; font-weight: 500; font-size: 28px; fill: ${TEXT_GRAY}; }
+                    .title { font-family: sans-serif; font-weight: bold; font-size: 52px; fill: ${TEXT_WHITE}; }
+                    .subtitle { font-family: sans-serif; font-size: 30px; fill: ${TEXT_WHITE}; }
+                    .track-number { font-family: sans-serif; font-weight: bold; font-size: 36px; fill: ${TEXT_GRAY}; }
+                    .track-title { font-family: sans-serif; font-weight: bold; font-size: 36px; fill: ${TEXT_WHITE}; }
+                    .track-artist { font-family: sans-serif; font-size: 26px; fill: ${TEXT_GRAY}; }
+                    .footer { font-family: sans-serif; font-size: 28px; fill: ${TEXT_GRAY}; }
                 ]]>
             </style>
         </defs>
