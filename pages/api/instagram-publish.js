@@ -136,12 +136,26 @@ async function getInstagramAccessToken(pageAccessToken) {
             console.log('🔍 Using page ID:', pageIdData.id);
             console.log('🔍 Using token:', actualPageToken.substring(0, 20) + '...');
             
+            // Try to get Instagram account with nested fields
             const instagramResponse = await fetch(
                 `${INSTAGRAM_API_BASE}/${pageIdData.id}?access_token=${actualPageToken}&fields=instagram_business_account{id,username,name}`
             );
             console.log('📊 Instagram response status:', instagramResponse.status);
-            const instagramData = await instagramResponse.json();
+            let instagramData = await instagramResponse.json();
             console.log('📊 Instagram response data:', JSON.stringify(instagramData, null, 2));
+            
+            // If nested query fails, try simple field
+            if (instagramData.error || !instagramData.instagram_business_account) {
+                console.log('🔍 Nested query failed, trying simple field...');
+                const simpleResponse = await fetch(
+                    `${INSTAGRAM_API_BASE}/${pageIdData.id}?access_token=${actualPageToken}&fields=instagram_business_account`
+                );
+                const simpleData = await simpleResponse.json();
+                console.log('📊 Simple Instagram response:', JSON.stringify(simpleData, null, 2));
+                if (!simpleData.error && simpleData.instagram_business_account) {
+                    instagramData = simpleData;
+                }
+            }
             
             // Also try to get all fields to see what's available
             console.log('🔍 Getting all page fields...');
@@ -308,10 +322,23 @@ async function uploadMediaToInstagram(mediaUrl, accessToken, instagramAccountId)
         };
         
         console.log('📤 Sending media container request:', JSON.stringify({
-            url: `${INSTAGRAM_API_BASE}/${instagramAccountId}/media`,
-            image_url: mediaUrl.substring(0, 100) + '...',
-            has_access_token: !!accessToken
+            endpoint: `${INSTAGRAM_API_BASE}/${instagramAccountId}/media`,
+            image_url: mediaUrl,
+            image_url_length: mediaUrl.length,
+            access_token_length: accessToken ? accessToken.length : 0,
+            has_access_token: !!accessToken,
+            instagram_account_id: instagramAccountId
         }, null, 2));
+        
+        // Verify the Instagram account ID format (should be numeric)
+        if (!/^\d+$/.test(instagramAccountId)) {
+            throw new Error(`Invalid Instagram Account ID format: ${instagramAccountId}. Expected numeric ID.`);
+        }
+        
+        // Verify image URL is HTTPS and publicly accessible
+        if (!mediaUrl.startsWith('http://') && !mediaUrl.startsWith('https://')) {
+            throw new Error(`Invalid image URL format: ${mediaUrl}. Must be HTTP/HTTPS URL.`);
+        }
         
         const containerResponse = await fetch(
             `${INSTAGRAM_API_BASE}/${instagramAccountId}/media`,
@@ -543,14 +570,31 @@ export default async function handler(req, res) {
         // Verify image URLs are accessible
         console.log('🔍 Verifying image URLs are publicly accessible...');
         try {
-            const coverUrlCheck = await fetch(cleanCoverUrl, { method: 'HEAD' });
+            const coverUrlCheck = await fetch(cleanCoverUrl, { 
+                method: 'HEAD',
+                redirect: 'follow'
+            });
             console.log('📊 Cover image URL status:', coverUrlCheck.status);
+            console.log('📊 Cover image URL headers:', Object.fromEntries(coverUrlCheck.headers.entries()));
+            
             if (!coverUrlCheck.ok) {
+                // Try GET to see the actual error
+                const getCheck = await fetch(cleanCoverUrl, { method: 'GET' });
+                console.log('📊 Cover image GET check status:', getCheck.status);
                 throw new Error(`Cover image URL is not accessible: ${coverUrlCheck.status} ${coverUrlCheck.statusText}`);
+            }
+            
+            // Check content type
+            const contentType = coverUrlCheck.headers.get('content-type');
+            console.log('📊 Cover image content type:', contentType);
+            if (contentType && !contentType.startsWith('image/')) {
+                console.warn('⚠️ Cover image might not be a valid image type:', contentType);
             }
         } catch (urlError) {
             console.error('❌ Cover image URL check failed:', urlError.message);
-            throw new Error(`Cover image URL is not publicly accessible: ${urlError.message}`);
+            console.error('❌ Full error:', urlError);
+            // Don't throw here - let Instagram API handle it and give us better error
+            console.warn('⚠️ Continuing despite URL check failure - Instagram API will validate');
         }
         
         // Upload cover image
