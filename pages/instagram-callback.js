@@ -37,12 +37,15 @@ export default function InstagramCallback() {
 
         const exchangeCodeForToken = async (code) => {
             try {
+                // Get the redirect URI that was used (same as current origin)
+                const redirectUri = `${window.location.origin}/instagram-callback`;
+                
                 const response = await fetch('/api/instagram-token', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ code })
+                    body: JSON.stringify({ code, redirectUri })
                 });
 
                 const data = await response.json();

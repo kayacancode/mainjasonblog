@@ -8,7 +8,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { code } = req.body;
+    const { code, redirectUri } = req.body;
 
     if (!code) {
         return res.status(400).json({ error: 'Authorization code is required' });
@@ -17,10 +17,10 @@ export default async function handler(req, res) {
     try {
         const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
         const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
-        // Use the same redirect URI logic as the client-side
-        const REDIRECT_URI = process.env.NODE_ENV === 'production' 
+        // Use the redirect URI from the client, or fallback to default
+        const REDIRECT_URI = redirectUri || (process.env.NODE_ENV === 'production' 
             ? 'https://www.insuavewetrust.com/instagram-callback'
-            : 'http://localhost:3000/instagram-callback';
+            : 'http://localhost:3000/instagram-callback');
 
         console.log('🔍 Environment check:', {
             NODE_ENV: process.env.NODE_ENV,
