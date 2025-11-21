@@ -85,10 +85,33 @@ export default async function handler(req, res) {
             });
         }
 
+        // Check token permissions to help diagnose issues
+        const accessToken = longLivedData.access_token || tokenData.access_token;
+        console.log('🔍 Checking token permissions...');
+        try {
+            const debugTokenResponse = await fetch(
+                `https://graph.facebook.com/v18.0/debug_token?input_token=${accessToken}&access_token=${FACEBOOK_APP_ID}|${FACEBOOK_APP_SECRET}`
+            );
+            const debugTokenData = await debugTokenResponse.json();
+            console.log('📊 Token debug info:', JSON.stringify(debugTokenData, null, 2));
+            
+            if (debugTokenData.data && debugTokenData.data.scopes) {
+                console.log('📋 Token scopes:', debugTokenData.data.scopes);
+                const hasPagePermissions = debugTokenData.data.scopes.some(scope => 
+                    scope.includes('pages') || scope.includes('instagram')
+                );
+                if (!hasPagePermissions) {
+                    console.warn('⚠️ Token may not have required page permissions');
+                }
+            }
+        } catch (debugError) {
+            console.warn('Could not debug token:', debugError.message);
+        }
+
         // Now get the Page Access Token
         console.log('🔄 Getting Page Access Token...');
         const pageTokenResponse = await fetch(
-            `https://graph.facebook.com/v18.0/me/accounts?access_token=${longLivedData.access_token}`
+            `https://graph.facebook.com/v18.0/me/accounts?access_token=${longLivedData.access_token}&fields=id,name,access_token,instagram_business_account`
         );
         
         console.log('📊 Page token response status:', pageTokenResponse.status);
@@ -99,7 +122,108 @@ export default async function handler(req, res) {
             console.error('Page token error:', pageTokenData.error);
             return res.status(400).json({
                 error: `Page token failed: ${pageTokenData.error.message}`,
-                details: pageTokenData.error
+                details: pageTokenData.error,
+                hint: 'Make sure you granted page permissions during OAuth and have admin access to the Facebook Page.'
+            });
+        }
+
+        // Check if data array exists and has items
+        if (!pageTokenData.data || pageTokenData.data.length === 0) {
+            console.error('No pages found in /me/accounts. This usually means:');
+            console.error('1. User does not have admin access to any Facebook Pages');
+            console.error('2. Page permissions were not granted during OAuth');
+            console.error('3. The access token does not have pages_show_list permission');
+            
+            // Try to access the page directly by name as fallback
+            console.log('🔍 Trying to access page directly by name...');
+            const directPageResponse = await fetch(
+                `https://graph.facebook.com/v18.0/InSuaveWeTrust?access_token=${longLivedData.access_token}&fields=id,name,access_token`
+            );
+            
+            console.log('📊 Direct page response status:', directPageResponse.status);
+            const directPageData = await directPageResponse.json();
+            console.log('📊 Direct page data:', JSON.stringify(directPageData, null, 2));
+            
+            if (directPageData.error || !directPageData.id) {
+                console.error('Direct page access error:', directPageData.error);
+                
+                // Check if we have a fallback page token in environment variables
+                const fallbackPageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+                if (fallbackPageToken) {
+                    console.log('🔍 Found FACEBOOK_PAGE_ACCESS_TOKEN in environment, trying fallback...');
+                    try {
+                        // Verify the fallback token works with the page
+                        const fallbackPageResponse = await fetch(
+                            `https://graph.facebook.com/v18.0/InSuaveWeTrust?access_token=${fallbackPageToken}&fields=id,name`
+                        );
+                        const fallbackPageData = await fallbackPageResponse.json();
+                        
+                        if (!fallbackPageData.error && fallbackPageData.id) {
+                            console.log('✅ Fallback token works! Using environment page token.');
+                            return res.status(200).json({
+                                access_token: fallbackPageToken,
+                                page_id: fallbackPageData.id,
+                                page_name: fallbackPageData.name,
+                                expires_in: longLivedData.expires_in,
+                                note: 'Using fallback page token from environment variables'
+                            });
+                        }
+                    } catch (fallbackError) {
+                        console.error('Fallback token failed:', fallbackError);
+                    }
+                }
+                
+                return res.status(400).json({
+                    error: 'No Facebook Pages found. Please ensure:',
+                    details: [
+                        '1. You have admin access to the "In Suave We Trust" Facebook Page',
+                        '2. You granted page permissions during the OAuth flow',
+                        '3. The Facebook Page exists and is accessible',
+                        '4. You are logged in with the correct Facebook account'
+                    ],
+                    apiError: directPageData.error || 'Page not found',
+                    hint: 'Try re-authenticating and make sure to grant all requested permissions, especially page-related permissions. If you continue to have issues, you may need to set FACEBOOK_PAGE_ACCESS_TOKEN in your environment variables.'
+                });
+            }
+            
+            // If we can access the page directly, we still need a page access token
+            // Try to get it by requesting the page's access_token field
+            console.log('✅ Found page via direct access:', directPageData.name, 'ID:', directPageData.id);
+            
+            // If direct access doesn't provide access_token, we need to use /me/accounts
+            // But since that's empty, we'll return an error with instructions
+            if (!directPageData.access_token) {
+                // Check for fallback token
+                const fallbackPageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+                if (fallbackPageToken) {
+                    console.log('🔍 Using fallback page token from environment...');
+                    return res.status(200).json({
+                        access_token: fallbackPageToken,
+                        page_id: directPageData.id,
+                        page_name: directPageData.name,
+                        expires_in: longLivedData.expires_in,
+                        note: 'Using fallback page token from environment variables'
+                    });
+                }
+                
+                return res.status(400).json({
+                    error: 'Page found but cannot get Page Access Token',
+                    details: [
+                        'The page exists but you need to grant page management permissions.',
+                        'Please re-authenticate and ensure you grant all page-related permissions.',
+                        'You must be an admin of the Facebook Page to get its access token.',
+                        'Alternatively, set FACEBOOK_PAGE_ACCESS_TOKEN in your environment variables.'
+                    ],
+                    pageId: directPageData.id,
+                    pageName: directPageData.name
+                });
+            }
+            
+            return res.status(200).json({
+                access_token: directPageData.access_token,
+                page_id: directPageData.id,
+                page_name: directPageData.name,
+                expires_in: longLivedData.expires_in
             });
         }
 
@@ -109,7 +233,7 @@ export default async function handler(req, res) {
         );
 
         if (!targetPage) {
-            console.error('Target page not found in /me/accounts:', pageTokenData.data.map(p => p.name));
+            console.error('Target page not found in /me/accounts. Available pages:', pageTokenData.data.map(p => p.name));
             
             // Try to access the page directly by name
             console.log('🔍 Trying to access page directly by name...');
@@ -121,12 +245,17 @@ export default async function handler(req, res) {
             const directPageData = await directPageResponse.json();
             console.log('📊 Direct page data:', JSON.stringify(directPageData, null, 2));
             
-            if (directPageData.error) {
+            if (directPageData.error || !directPageData.id) {
                 console.error('Direct page access error:', directPageData.error);
                 return res.status(400).json({
-                    error: 'In Suave We Trust page not found and direct access failed',
-                    details: directPageData.error,
-                    availablePages: pageTokenData.data.map(p => p.name)
+                    error: 'In Suave We Trust page not found',
+                    details: [
+                        'The page was not found in your list of managed pages.',
+                        'Make sure you are an admin of the "In Suave We Trust" Facebook Page.',
+                        'Try re-authenticating and granting all page permissions.'
+                    ],
+                    availablePages: pageTokenData.data.map(p => ({ name: p.name, id: p.id })),
+                    apiError: directPageData.error
                 });
             }
             
