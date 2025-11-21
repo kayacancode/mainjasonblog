@@ -447,6 +447,15 @@ async function createInstagramPost(mediaIds, caption, accessToken, instagramAcco
     }
 }
 
+// Configure API route to accept larger request bodies (up to 10MB)
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: '10mb',
+        },
+    },
+};
+
 /**
  * Main function to publish Instagram post
  */
