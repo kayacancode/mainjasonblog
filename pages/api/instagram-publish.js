@@ -556,15 +556,24 @@ export default async function handler(req, res) {
         // Upload media to Instagram
         const mediaIds = [];
         
+        // Check if URLs are data URIs (Instagram API doesn't support data URIs)
+        if (coverImageUrl && coverImageUrl.startsWith('data:')) {
+            throw new Error('Cover image URL is a data URI. Instagram API requires publicly accessible HTTP/HTTPS URLs. Please ensure images are uploaded to Supabase storage or another hosting service.');
+        }
+        
+        if (tracklistImageUrl && tracklistImageUrl.startsWith('data:')) {
+            throw new Error('Tracklist image URL is a data URI. Instagram API requires publicly accessible HTTP/HTTPS URLs. Please ensure images are uploaded to Supabase storage or another hosting service.');
+        }
+        
         // Clean image URLs (remove query parameters and trailing characters)
         const cleanCoverUrl = coverImageUrl.split('?')[0];
         const cleanTracklistUrl = tracklistImageUrl ? tracklistImageUrl.split('?')[0] : null;
         
-        console.log('🔍 Original cover URL:', coverImageUrl);
-        console.log('🔍 Cleaned cover URL:', cleanCoverUrl);
+        console.log('🔍 Original cover URL:', coverImageUrl.substring(0, 100) + (coverImageUrl.length > 100 ? '...' : ''));
+        console.log('🔍 Cleaned cover URL:', cleanCoverUrl.substring(0, 100) + (cleanCoverUrl.length > 100 ? '...' : ''));
         if (tracklistImageUrl) {
-            console.log('🔍 Original tracklist URL:', tracklistImageUrl);
-            console.log('🔍 Cleaned tracklist URL:', cleanTracklistUrl);
+            console.log('🔍 Original tracklist URL:', tracklistImageUrl.substring(0, 100) + (tracklistImageUrl.length > 100 ? '...' : ''));
+            console.log('🔍 Cleaned tracklist URL:', cleanTracklistUrl ? cleanTracklistUrl.substring(0, 100) + (cleanTracklistUrl.length > 100 ? '...' : '') : 'null');
         }
         
         // Verify image URLs are accessible
