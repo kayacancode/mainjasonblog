@@ -21,14 +21,16 @@ const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
 async function getInstagramAccessToken(pageAccessToken) {
     try {
         console.log('🔍 Getting Instagram access token...');
-        console.log('Page Access Token:', pageAccessToken.substring(0, 20) + '...');
+        console.log('Page Access Token received:', pageAccessToken ? pageAccessToken.substring(0, 20) + '...' : 'undefined');
         
-        // Use the provided page access token from environment variables
-        const directPageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+        // Use the provided page access token from OAuth flow, or fallback to environment variable
+        const directPageToken = pageAccessToken || process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
         
         if (!directPageToken) {
-            throw new Error('FACEBOOK_PAGE_ACCESS_TOKEN not configured in environment variables');
+            throw new Error('Page Access Token not provided and FACEBOOK_PAGE_ACCESS_TOKEN not configured in environment variables');
         }
+        
+        console.log('🔍 Using page access token:', directPageToken.substring(0, 20) + '...');
         
         console.log('🔍 Trying direct page access with provided token...');
         const response = await fetch(
@@ -89,14 +91,27 @@ async function getInstagramAccessToken(pageAccessToken) {
         // Try to access the page directly by ID (if we can find it)
         console.log('🔍 Trying to access page directly by ID...');
         const pageIdResponse = await fetch(
-            `${INSTAGRAM_API_BASE}/InSuaveWeTrust?access_token=${directPageToken}&fields=id,name,instagram_business_account`
+            `${INSTAGRAM_API_BASE}/573102763032589?access_token=${directPageToken}&fields=id,name,instagram_business_account`
         );
         console.log('📊 Page ID response status:', pageIdResponse.status);
         const pageIdData = await pageIdResponse.json();
         console.log('📊 Page ID response data:', JSON.stringify(pageIdData, null, 2));
         
+        // If direct page access fails, try by name
+        if (pageIdData.error || !pageIdData.id) {
+            console.log('🔍 Direct page ID access failed, trying by name...');
+            const pageNameResponse = await fetch(
+                `${INSTAGRAM_API_BASE}/InSuaveWeTrust?access_token=${directPageToken}&fields=id,name,instagram_business_account`
+            );
+            const pageNameData = await pageNameResponse.json();
+            console.log('📊 Page name response:', JSON.stringify(pageNameData, null, 2));
+            if (!pageNameData.error && pageNameData.id) {
+                Object.assign(pageIdData, pageNameData);
+            }
+        }
+        
         // Now try to get Instagram Business account info
-        if (pageIdData.id) {
+        if (pageIdData.id && !pageIdData.error) {
             // Try to get the actual Page Access Token from the page
             console.log('🔍 Trying to get Page Access Token from page...');
             const pageTokenResponse = await fetch(
@@ -286,6 +301,18 @@ async function uploadMediaToInstagram(mediaUrl, accessToken, instagramAccountId)
         console.log('🔑 Access Token:', accessToken ? accessToken.substring(0, 20) + '...' : 'undefined');
         
         // Step 1: Create media container
+        // Instagram API requires the image_url to be publicly accessible
+        const requestBody = {
+            image_url: mediaUrl,
+            access_token: accessToken
+        };
+        
+        console.log('📤 Sending media container request:', JSON.stringify({
+            url: `${INSTAGRAM_API_BASE}/${instagramAccountId}/media`,
+            image_url: mediaUrl.substring(0, 100) + '...',
+            has_access_token: !!accessToken
+        }, null, 2));
+        
         const containerResponse = await fetch(
             `${INSTAGRAM_API_BASE}/${instagramAccountId}/media`,
             {
@@ -293,10 +320,7 @@ async function uploadMediaToInstagram(mediaUrl, accessToken, instagramAccountId)
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    image_url: mediaUrl,
-                    access_token: accessToken
-                })
+                body: JSON.stringify(requestBody)
             }
         );
         
@@ -305,7 +329,8 @@ async function uploadMediaToInstagram(mediaUrl, accessToken, instagramAccountId)
         console.log('📊 Container response data:', JSON.stringify(containerData, null, 2));
         
         if (containerData.error) {
-            throw new Error(`Instagram API Error: ${containerData.error.message}`);
+            console.error('❌ Instagram API Error:', containerData.error);
+            throw new Error(`Instagram API Error: ${containerData.error.message} (Code: ${containerData.error.code}, Type: ${containerData.error.type})`);
         }
         
         const containerId = containerData.id;
@@ -482,7 +507,24 @@ export default async function handler(req, res) {
         }
         
         // Get Instagram access token
-        const { instagramAccountId, pageAccessToken: instagramAccessToken } = await getInstagramAccessToken(pageAccessToken);
+        const instagramData = await getInstagramAccessToken(pageAccessToken);
+        console.log('📊 Instagram data returned:', JSON.stringify({
+            instagramAccountId: instagramData.instagramAccountId,
+            hasPageAccessToken: !!instagramData.pageAccessToken,
+            pageId: instagramData.pageId,
+            pageName: instagramData.pageName
+        }, null, 2));
+        
+        const instagramAccountId = instagramData.instagramAccountId;
+        const instagramAccessToken = instagramData.pageAccessToken;
+        
+        if (!instagramAccountId) {
+            throw new Error('Instagram Account ID not found. Please ensure your Facebook Page is connected to an Instagram Business account.');
+        }
+        
+        if (!instagramAccessToken) {
+            throw new Error('Instagram Access Token not found. Please check your page access token.');
+        }
         
         // Upload media to Instagram
         const mediaIds = [];
@@ -496,6 +538,19 @@ export default async function handler(req, res) {
         if (tracklistImageUrl) {
             console.log('🔍 Original tracklist URL:', tracklistImageUrl);
             console.log('🔍 Cleaned tracklist URL:', cleanTracklistUrl);
+        }
+        
+        // Verify image URLs are accessible
+        console.log('🔍 Verifying image URLs are publicly accessible...');
+        try {
+            const coverUrlCheck = await fetch(cleanCoverUrl, { method: 'HEAD' });
+            console.log('📊 Cover image URL status:', coverUrlCheck.status);
+            if (!coverUrlCheck.ok) {
+                throw new Error(`Cover image URL is not accessible: ${coverUrlCheck.status} ${coverUrlCheck.statusText}`);
+            }
+        } catch (urlError) {
+            console.error('❌ Cover image URL check failed:', urlError.message);
+            throw new Error(`Cover image URL is not publicly accessible: ${urlError.message}`);
         }
         
         // Upload cover image
