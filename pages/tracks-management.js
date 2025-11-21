@@ -1153,54 +1153,50 @@ export default function TracksManagement() {
             
             // If a cover track is selected, process its album art with overlay
             if (selectedCoverTrack && selectedCoverTrack.album_art_url) {
-                // If we already have a preview image URL, reuse it (avoids reprocessing)
-                if (previewImageUrl) {
-                    customImageUrl = previewImageUrl;
-                } else {
-                    // Otherwise, process it now
-                    setProcessingImage(true);
-                    try {
-                        // Process the selected track's album art with overlay via API
-                        const processResponse = await fetch('/api/process-custom-image', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                imageUrl: selectedCoverTrack.album_art_url,
-                                weekStart: settingsWeek,
-                                trackName: selectedCoverTrack.track_name || 'Custom Image',
-                                artistName: selectedCoverTrack.artists || 'Custom'
-                            })
-                        });
-                        
-                        if (!processResponse.ok) {
-                            let errorMessage = 'Failed to process image with overlay';
-                            try {
-                                const errorData = await processResponse.json();
-                                errorMessage = errorData.error || errorData.details || errorMessage;
-                                if (errorData.details) {
-                                    errorMessage += `: ${errorData.details}`;
-                                }
-                            } catch (e) {
-                                errorMessage = `HTTP ${processResponse.status}: ${processResponse.statusText}`;
+                // Always process via API to get Supabase URL (don't use preview data URI)
+                // Preview is only for display, not for saving
+                setProcessingImage(true);
+                try {
+                    // Process the selected track's album art with overlay via API
+                    const processResponse = await fetch('/api/process-custom-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            imageUrl: selectedCoverTrack.album_art_url,
+                            weekStart: settingsWeek,
+                            trackName: selectedCoverTrack.track_name || 'Custom Image',
+                            artistName: selectedCoverTrack.artists || 'Custom'
+                        })
+                    });
+                    
+                    if (!processResponse.ok) {
+                        let errorMessage = 'Failed to process image with overlay';
+                        try {
+                            const errorData = await processResponse.json();
+                            errorMessage = errorData.error || errorData.details || errorMessage;
+                            if (errorData.details) {
+                                errorMessage += `: ${errorData.details}`;
                             }
-                            throw new Error(errorMessage);
+                        } catch (e) {
+                            errorMessage = `HTTP ${processResponse.status}: ${processResponse.statusText}`;
                         }
-                        
-                        const processData = await processResponse.json();
-                        if (processData.processedImageUrl) {
-                            customImageUrl = processData.processedImageUrl;
-                        } else {
-                            throw new Error('No processed image URL returned from server');
-                        }
-                    } catch (error) {
-                        console.error('Error processing image with overlay:', error);
-                        alert('Failed to process image with overlay: ' + error.message);
-                        setProcessingImage(false);
-                        setSavingSettings(false);
-                        return;
-                    } finally {
-                        setProcessingImage(false);
+                        throw new Error(errorMessage);
                     }
+                    
+                    const processData = await processResponse.json();
+                    if (processData.processedImageUrl) {
+                        customImageUrl = processData.processedImageUrl;
+                    } else {
+                        throw new Error('No processed image URL returned from server');
+                    }
+                } catch (error) {
+                    console.error('Error processing image with overlay:', error);
+                    alert('Failed to process image with overlay: ' + error.message);
+                    setProcessingImage(false);
+                    setSavingSettings(false);
+                    return;
+                } finally {
+                    setProcessingImage(false);
                 }
             }
             
@@ -1297,10 +1293,23 @@ export default function TracksManagement() {
             setPostMessage('');
 
             const weekStart = currentWeekImages.week_start;
-            const coverImageUrl = currentWeekImages.cover_image_url;
-            const tracklistImageUrl = currentWeekImages.tracklist_image_url;
+            let coverImageUrl = currentWeekImages.cover_image_url;
+            let tracklistImageUrl = currentWeekImages.tracklist_image_url;
             const caption = currentWeekCaption.caption;
             const hashtags = currentWeekCaption.hashtags || [];
+
+            // Validate URLs are not data URIs (Instagram API requires HTTP/HTTPS URLs)
+            if (coverImageUrl && coverImageUrl.startsWith('data:')) {
+                alert('Error: Cover image URL is a data URI. Please regenerate the images for this week to get proper Supabase storage URLs.');
+                setPostMessage('Error: Invalid image URL format. Please regenerate images.');
+                return;
+            }
+            
+            if (tracklistImageUrl && tracklistImageUrl.startsWith('data:')) {
+                alert('Error: Tracklist image URL is a data URI. Please regenerate the images for this week to get proper Supabase storage URLs.');
+                setPostMessage('Error: Invalid image URL format. Please regenerate images.');
+                return;
+            }
 
             const result = await instagramPublisher.handleCreatePost(
                 weekStart,
@@ -2016,10 +2025,23 @@ export default function TracksManagement() {
                                                                 setPostMessage('');
 
                                                                 const weekStart = imagesData.week_start;
-                                                                const coverImageUrl = imagesData.cover_image_url;
-                                                                const tracklistImageUrl = imagesData.tracklist_image_url;
+                                                                let coverImageUrl = imagesData.cover_image_url;
+                                                                let tracklistImageUrl = imagesData.tracklist_image_url;
                                                                 const caption = captionData.caption;
                                                                 const hashtags = captionData.hashtags || [];
+
+                                                                // Validate URLs are not data URIs (Instagram API requires HTTP/HTTPS URLs)
+                                                                if (coverImageUrl && coverImageUrl.startsWith('data:')) {
+                                                                    alert('Error: Cover image URL is a data URI. Please regenerate the images for this week to get proper Supabase storage URLs.');
+                                                                    setPostMessage('Error: Invalid image URL format. Please regenerate images.');
+                                                                    return;
+                                                                }
+                                                                
+                                                                if (tracklistImageUrl && tracklistImageUrl.startsWith('data:')) {
+                                                                    alert('Error: Tracklist image URL is a data URI. Please regenerate the images for this week to get proper Supabase storage URLs.');
+                                                                    setPostMessage('Error: Invalid image URL format. Please regenerate images.');
+                                                                    return;
+                                                                }
 
                                                                 const result = await instagramPublisher.handleCreatePost(
                                                                     weekStart,
