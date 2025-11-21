@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-11-21T09:06:53.279553",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "5b2nQ3pCgh8hfM6DH2rt8S",
+      "name": "Lipdance",
+      "artist": "Obongjayar",
+      "album": "Paradise Now & Forever",
+      "popularity": 5,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2731837d9299b3fd52ab7863344",
+      "spotify_url": "https://open.spotify.com/track/5b2nQ3pCgh8hfM6DH2rt8S",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "2oPCpj9ezVq5D6IJNAGkL2",
+      "name": "NOBODY'S GIRL",
+      "artist": "Tate McRae",
+      "album": "SO CLOSE TO WHAT??? (deluxe)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273c40dccc1952bb5ed96986869",
+      "spotify_url": "https://open.spotify.com/track/2oPCpj9ezVq5D6IJNAGkL2",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "7fIIi2KQB2AUqRgmpreKYj",
+      "name": "Cold (feat. Post Malone)",
+      "artist": "BigXthaPlug, Post Malone",
+      "album": "I Hope You're Happy (Deluxe)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273c593242e8f7516b1168fe2ef",
+      "spotify_url": "https://open.spotify.com/track/7fIIi2KQB2AUqRgmpreKYj",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "6Wxn79EwKPQvYerlctheGx",
+      "name": "The Girl in the Bubble",
+      "artist": "Ariana Grande",
+      "album": "Wicked: For Good – The Soundtrack",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2733a81e76442b1aa620895a211",
+      "spotify_url": "https://open.spotify.com/track/6Wxn79EwKPQvYerlctheGx",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "0xHAfrziD261HeNYVmYqNF",
+      "name": "Única",
+      "artist": "Tainy, KAROL G",
+      "album": "Única",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273ab3034447a0c92745b31d321",
+      "spotify_url": "https://open.spotify.com/track/0xHAfrziD261HeNYVmYqNF",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "4Ox4SdpdkRCjf3eXzyWeIC",
+      "name": "If I Wanted To",
+      "artist": "Eem Triplin",
+      "album": "If I Wanted To",
+      "popularity": 14,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273bd664c077cbb842ea9afd973",
+      "spotify_url": "https://open.spotify.com/track/4Ox4SdpdkRCjf3eXzyWeIC",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "3GTcDTmwv59jmHwxlpamfe",
+      "name": "A+",
+      "artist": "Key Glock",
+      "album": "A+",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2733ab6e37a2d1d99744f0cbcb9",
+      "spotify_url": "https://open.spotify.com/track/3GTcDTmwv59jmHwxlpamfe",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "3APjki9rRNZylV6BVS6eFW",
+      "name": "BIG DAWG",
+      "artist": "A$AP Ferg",
+      "album": "BIG DAWG",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273a2af9a4eac774b02286d654a",
+      "spotify_url": "https://open.spotify.com/track/3APjki9rRNZylV6BVS6eFW",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "7KVkMVxVs3GqO7Vzy9hzjk",
+      "name": "MR DND",
+      "artist": "Nemzzz",
+      "album": "From Me 2 U",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2736bf2567d130eeba2328cc1d6",
+      "spotify_url": "https://open.spotify.com/track/7KVkMVxVs3GqO7Vzy9hzjk",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "3IRFqPeYcy351vC0o7Pshu",
+      "name": "One More Day",
+      "artist": "Blanco, Kidwild",
+      "album": "Paradise On A Lifeboat",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2730ef24e5f3aa4e74f79c5c771",
+      "spotify_url": "https://open.spotify.com/track/3IRFqPeYcy351vC0o7Pshu",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}
