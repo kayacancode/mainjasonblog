@@ -88,6 +88,8 @@ export default async function handler(req, res) {
         // Check token permissions to help diagnose issues
         const accessToken = longLivedData.access_token || tokenData.access_token;
         console.log('🔍 Checking token permissions...');
+        let tokenScopes = [];
+        let tokenUserId = null;
         try {
             const debugTokenResponse = await fetch(
                 `https://graph.facebook.com/v18.0/debug_token?input_token=${accessToken}&access_token=${FACEBOOK_APP_ID}|${FACEBOOK_APP_SECRET}`
@@ -95,9 +97,13 @@ export default async function handler(req, res) {
             const debugTokenData = await debugTokenResponse.json();
             console.log('📊 Token debug info:', JSON.stringify(debugTokenData, null, 2));
             
-            if (debugTokenData.data && debugTokenData.data.scopes) {
-                console.log('📋 Token scopes:', debugTokenData.data.scopes);
-                const hasPagePermissions = debugTokenData.data.scopes.some(scope => 
+            if (debugTokenData.data) {
+                tokenScopes = debugTokenData.data.scopes || [];
+                tokenUserId = debugTokenData.data.user_id;
+                console.log('📋 Token scopes:', tokenScopes);
+                console.log('👤 Token user ID:', tokenUserId);
+                
+                const hasPagePermissions = tokenScopes.some(scope => 
                     scope.includes('pages') || scope.includes('instagram')
                 );
                 if (!hasPagePermissions) {
@@ -110,13 +116,34 @@ export default async function handler(req, res) {
 
         // Now get the Page Access Token
         console.log('🔄 Getting Page Access Token...');
-        const pageTokenResponse = await fetch(
+        
+        // Try multiple endpoints to get pages
+        let pageTokenData = null;
+        let pageTokenResponse = null;
+        
+        // First try /me/accounts (standard endpoint)
+        console.log('🔍 Trying /me/accounts endpoint...');
+        pageTokenResponse = await fetch(
             `https://graph.facebook.com/v18.0/me/accounts?access_token=${longLivedData.access_token}&fields=id,name,access_token,instagram_business_account`
         );
-        
+        pageTokenData = await pageTokenResponse.json();
         console.log('📊 Page token response status:', pageTokenResponse.status);
-        const pageTokenData = await pageTokenResponse.json();
         console.log('📊 Page token data:', JSON.stringify(pageTokenData, null, 2));
+        
+        // If empty, try /me/pages (alternative endpoint)
+        if ((!pageTokenData.data || pageTokenData.data.length === 0) && !pageTokenData.error) {
+            console.log('🔍 Trying /me/pages endpoint as alternative...');
+            const pagesResponse = await fetch(
+                `https://graph.facebook.com/v18.0/me/pages?access_token=${longLivedData.access_token}&fields=id,name,access_token,instagram_business_account`
+            );
+            const pagesData = await pagesResponse.json();
+            console.log('📊 Pages response:', JSON.stringify(pagesData, null, 2));
+            
+            if (pagesData.data && pagesData.data.length > 0) {
+                pageTokenData = pagesData;
+                console.log('✅ Found pages via /me/pages endpoint');
+            }
+        }
 
         if (pageTokenData.error) {
             console.error('Page token error:', pageTokenData.error);
@@ -173,6 +200,20 @@ export default async function handler(req, res) {
                     }
                 }
                 
+                // Get user info to help diagnose
+                let userInfo = null;
+                try {
+                    const userInfoResponse = await fetch(
+                        `https://graph.facebook.com/v18.0/me?access_token=${accessToken}&fields=id,name`
+                    );
+                    const userInfoData = await userInfoResponse.json();
+                    if (!userInfoData.error) {
+                        userInfo = userInfoData;
+                    }
+                } catch (e) {
+                    console.warn('Could not get user info:', e.message);
+                }
+                
                 return res.status(400).json({
                     error: 'No Facebook Pages found. Please ensure:',
                     details: [
@@ -181,8 +222,20 @@ export default async function handler(req, res) {
                         '3. The Facebook Page exists and is accessible',
                         '4. You are logged in with the correct Facebook account'
                     ],
-                    apiError: directPageData.error || 'Page not found',
-                    hint: 'Try re-authenticating and make sure to grant all requested permissions, especially page-related permissions. If you continue to have issues, you may need to set FACEBOOK_PAGE_ACCESS_TOKEN in your environment variables.'
+                    diagnostic: {
+                        tokenScopes: tokenScopes,
+                        hasPagePermissions: tokenScopes.some(s => s.includes('pages')),
+                        userId: tokenUserId || userInfo?.id,
+                        userName: userInfo?.name,
+                        apiError: directPageData.error || 'Page not found'
+                    },
+                    hint: 'Try re-authenticating and make sure to grant all requested permissions, especially page-related permissions. If you continue to have issues, you may need to set FACEBOOK_PAGE_ACCESS_TOKEN in your environment variables.',
+                    troubleshooting: [
+                        'Go to Facebook Page Settings → Page Roles and verify you are listed as an Admin',
+                        'During OAuth, make sure to click "Continue" on all permission screens',
+                        'Check that the Facebook App has the required permissions configured',
+                        'Try logging out of Facebook and logging back in, then re-authenticate'
+                    ]
                 });
             }
             
