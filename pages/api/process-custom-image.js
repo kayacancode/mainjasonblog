@@ -1,8 +1,60 @@
+// CRITICAL: Set fontconfig path BEFORE importing Sharp
+// Sharp initializes fontconfig when imported, so we must set FONTCONFIG_PATH first
+// If FONTCONFIG_PATH is already set in Vercel env vars, use that; otherwise set it programmatically
+if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const { join } = require('path');
+    const { existsSync } = require('fs');
+    
+    // Use existing FONTCONFIG_PATH from env if set, otherwise determine it
+    if (!process.env.FONTCONFIG_PATH) {
+        const localFontsDir = join(process.cwd(), 'fonts');
+        const vercelFontsDir = '/var/task/fonts';
+        
+        // Try Vercel path first, then fall back to local
+        let fontsDir = vercelFontsDir;
+        if (!existsSync(vercelFontsDir) && existsSync(localFontsDir)) {
+            fontsDir = localFontsDir;
+        }
+        
+        // Set FONTCONFIG_PATH before Sharp is imported
+        process.env.FONTCONFIG_PATH = fontsDir;
+    }
+    
+    // Set FONTCONFIG_FILE explicitly to point to fonts.conf
+    // In Vercel, this will be /var/task/fonts/fonts.conf
+    const fontsDir = process.env.FONTCONFIG_PATH;
+    const fontsConfFile = join(fontsDir, 'fonts.conf');
+    process.env.FONTCONFIG_FILE = fontsConfFile;
+    
+    console.log(`🔧 Fontconfig setup (before Sharp import): FONTCONFIG_PATH=${process.env.FONTCONFIG_PATH}, FONTCONFIG_FILE=${process.env.FONTCONFIG_FILE}`);
+}
+
 import { createClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
 import axios from 'axios';
 import { join } from 'path';
 import { existsSync, readdirSync, mkdirSync } from 'fs';
+
+// Ensure fonts directory is read at module load (ensures it's included in Vercel build)
+// This must happen after imports but ensures fonts are bundled
+// Read both the directory and the fonts.conf file to ensure they're included
+if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
+    const fontsDir = join(process.cwd(), 'fonts');
+    try {
+        if (existsSync(fontsDir)) {
+            const files = readdirSync(fontsDir); // Read directory to ensure it's included in bundle
+            // Also read fonts.conf file to ensure it's included
+            const fontsConfPath = join(fontsDir, 'fonts.conf');
+            if (existsSync(fontsConfPath)) {
+                require('fs').readFileSync(fontsConfPath, 'utf-8'); // Read file to ensure it's bundled
+            }
+            console.log(`📦 Fonts bundled: ${files.length} files including fonts.conf`);
+        }
+    } catch (error) {
+        // Ignore errors at module load, but log for debugging
+        console.warn('⚠️ Could not read fonts directory at module load:', error.message);
+    }
+}
 
 // Lazy initialization of Supabase client - same pattern as other API endpoints
 function getSupabaseClient() {
@@ -62,28 +114,19 @@ function createTextSVG(text, x, y, fontSize, fill, stroke, strokeWidth = 2, text
  * Process image with branding overlay
  */
 async function processImageWithOverlay(imageUrl, trackName, artistName) {
-    // Setup fontconfig for serverless environments (same as regenerate-tracklist.js)
+    // Fontconfig is already set up at module level (before Sharp import)
+    // Just verify and log the setup for debugging
     if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-        // In Vercel, fonts are at /var/task/fonts, but we also check process.cwd() for local dev
-        const localFontsDir = join(process.cwd(), 'fonts');
-        const vercelFontsDir = '/var/task/fonts';
+        const fontsDir = process.env.FONTCONFIG_PATH || '/var/task/fonts';
+        console.log(`🔧 Fontconfig: FONTCONFIG_PATH=${process.env.FONTCONFIG_PATH}, FONTCONFIG_FILE=${process.env.FONTCONFIG_FILE || 'not set'}`);
         
-        // Try Vercel path first, then fall back to local
-        let fontsDir = vercelFontsDir;
-        if (!existsSync(vercelFontsDir) && existsSync(localFontsDir)) {
-            fontsDir = localFontsDir;
-        }
-        
-        // Set FONTCONFIG_PATH to point to directory containing fonts.conf
-        process.env.FONTCONFIG_PATH = fontsDir;
-        
-        // Ensure fonts directory is read (this ensures fonts are included in serverless bundle)
+        // Verify fonts directory exists
         try {
             if (existsSync(fontsDir)) {
                 const fontFiles = readdirSync(fontsDir);
                 console.log(`📁 Fonts directory found at ${fontsDir} with ${fontFiles.length} files:`, fontFiles);
             } else {
-                console.warn(`⚠️ Fonts directory not found at: ${fontsDir} or ${localFontsDir}`);
+                console.warn(`⚠️ Fonts directory not found at: ${fontsDir}`);
             }
         } catch (error) {
             console.warn('⚠️ Could not read fonts directory:', error.message);
