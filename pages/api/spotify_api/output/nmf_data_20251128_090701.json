@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-11-28T09:07:03.219744",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "1k0JAiH11gHL9dc5dfQjQr",
+      "name": "NOT CUTE ANYMORE",
+      "artist": "ILLIT",
+      "album": "NOT CUTE ANYMORE",
+      "popularity": 70,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2733d09075f6c7fabe9a7234cb3",
+      "spotify_url": "https://open.spotify.com/track/1k0JAiH11gHL9dc5dfQjQr",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5qoxoHoinybFBRdJ5LGyAA",
+      "name": "Chanel Boy",
+      "artist": "Lil Uzi Vert",
+      "album": "Chanel Boy",
+      "popularity": 64,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2735aac6ebedb2089fa8a968485",
+      "spotify_url": "https://open.spotify.com/track/5qoxoHoinybFBRdJ5LGyAA",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "2WFPlR4bqnE0q80A6XndyH",
+      "name": "EXISTED",
+      "artist": "WesGhost",
+      "album": "EXISTED",
+      "popularity": 46,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2737e9ef8d7c9740985b95a0be4",
+      "spotify_url": "https://open.spotify.com/track/2WFPlR4bqnE0q80A6XndyH",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "1p5i2fVazI6bUVmwWTJfaj",
+      "name": "Typewriter (feat. Kenny Mason)",
+      "artist": "MAVI, Kenny Mason",
+      "album": "The Pilot",
+      "popularity": 41,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273697d5ad100ae536d9bc8dd39",
+      "spotify_url": "https://open.spotify.com/track/1p5i2fVazI6bUVmwWTJfaj",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "0mKK1wzmqVelwP0f0gBjhT",
+      "name": "TELL ME. FT. LIL BABY & 42 DUGG.",
+      "artist": "YFN Lucci, 42 Dugg, Lil Baby",
+      "album": "ALREADY LEGEND. (THANK YOU Edition)",
+      "popularity": 34,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27343100505128a86f7ff217758",
+      "spotify_url": "https://open.spotify.com/track/0mKK1wzmqVelwP0f0gBjhT",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "1kL6AAomGbnxALWj7JRmiM",
+      "name": "SHOT O'CLOCK",
+      "artist": "Cash Cobain, SLIZZY ENT, B Jack$, Vontee the Singer",
+      "album": "SLIZZY POPE PRESENTS: SLIZZGIVING",
+      "popularity": 1,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2737a13aa56f35c856d2d3850ae",
+      "spotify_url": "https://open.spotify.com/track/1kL6AAomGbnxALWj7JRmiM",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "5O8DRfuboQYiXKfVCmqcMW",
+      "name": "GET IT TOGETHER",
+      "artist": "SLIZZY ENT, Vontee the Singer, Chow Lee, Sekai",
+      "album": "SLIZZY POPE PRESENTS: SLIZZGIVING",
+      "popularity": 1,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2737a13aa56f35c856d2d3850ae",
+      "spotify_url": "https://open.spotify.com/track/5O8DRfuboQYiXKfVCmqcMW",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "3MxMwreQVfntETE5np8Qwf",
+      "name": "DEM BOYZ",
+      "artist": "A$AP Ferg",
+      "album": "FLIP PHONE SHORTY - STRICTLY FOR DA STREETZ VOL. 1",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2730bd5a5069220c903bbcc223d",
+      "spotify_url": "https://open.spotify.com/track/3MxMwreQVfntETE5np8Qwf",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "3CMSSoYFKQgFiLCLJeClfJ",
+      "name": "FOCUS ON ME",
+      "artist": "A$AP Ferg, Denzel Curry",
+      "album": "FLIP PHONE SHORTY - STRICTLY FOR DA STREETZ VOL. 1",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2730bd5a5069220c903bbcc223d",
+      "spotify_url": "https://open.spotify.com/track/3CMSSoYFKQgFiLCLJeClfJ",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "1d94WA0KdviIHSKlyDN2VF",
+      "name": "Booga",
+      "artist": "Central Cee",
+      "album": "Booga",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273744a249d524a418e4ecb05ac",
+      "spotify_url": "https://open.spotify.com/track/1d94WA0KdviIHSKlyDN2VF",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}
