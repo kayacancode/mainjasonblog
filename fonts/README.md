@@ -21,3 +21,4 @@ Recommended fonts for serverless compatibility:
 
 Set `FONTCONFIG_PATH` in Vercel to `/var/task/fonts` (or let the code set it automatically).
 
+

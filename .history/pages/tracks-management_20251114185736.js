@@ -217,7 +217,7 @@ export default function TracksManagement() {
         }
     };
 
-    // Helper function to check if a track is/would be in the top 10 for a given week
+    // Helper function to check if a track is in the top 10 for a given week
     const isTrackInTop10 = async (weekStart, trackId, trackPopularity) => {
         if (!weekStart) return false;
         
@@ -236,11 +236,8 @@ export default function TracksManagement() {
                 ? Math.min(...top10Tracks.map(t => t.popularity || 0))
                 : 0;
             
-            // Check if the track is in top 10 by ID
+            // Check if the track is in top 10 by ID or if its popularity qualifies it
             const trackInTop10 = top10Tracks.some(t => t.id === trackId);
-            
-            // If track not found by ID, check if its popularity would qualify it for top 10
-            // This handles cases where track was moved to another week
             const wouldBeInTop10 = (trackPopularity || 0) >= minTop10Popularity || allTracks.length < 10;
             
             return trackInTop10 || wouldBeInTop10;
@@ -1153,50 +1150,54 @@ export default function TracksManagement() {
             
             // If a cover track is selected, process its album art with overlay
             if (selectedCoverTrack && selectedCoverTrack.album_art_url) {
-                // Always process via API to get Supabase URL (don't use preview data URI)
-                // Preview is only for display, not for saving
-                setProcessingImage(true);
-                try {
-                    // Process the selected track's album art with overlay via API
-                    const processResponse = await fetch('/api/process-custom-image', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            imageUrl: selectedCoverTrack.album_art_url,
-                            weekStart: settingsWeek,
-                            trackName: selectedCoverTrack.track_name || 'Custom Image',
-                            artistName: selectedCoverTrack.artists || 'Custom'
-                        })
-                    });
-                    
-                    if (!processResponse.ok) {
-                        let errorMessage = 'Failed to process image with overlay';
-                        try {
-                            const errorData = await processResponse.json();
-                            errorMessage = errorData.error || errorData.details || errorMessage;
-                            if (errorData.details) {
-                                errorMessage += `: ${errorData.details}`;
+                // If we already have a preview image URL, reuse it (avoids reprocessing)
+                if (previewImageUrl) {
+                    customImageUrl = previewImageUrl;
+                } else {
+                    // Otherwise, process it now
+                    setProcessingImage(true);
+                    try {
+                        // Process the selected track's album art with overlay via API
+                        const processResponse = await fetch('/api/process-custom-image', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                imageUrl: selectedCoverTrack.album_art_url,
+                                weekStart: settingsWeek,
+                                trackName: selectedCoverTrack.track_name || 'Custom Image',
+                                artistName: selectedCoverTrack.artists || 'Custom'
+                            })
+                        });
+                        
+                        if (!processResponse.ok) {
+                            let errorMessage = 'Failed to process image with overlay';
+                            try {
+                                const errorData = await processResponse.json();
+                                errorMessage = errorData.error || errorData.details || errorMessage;
+                                if (errorData.details) {
+                                    errorMessage += `: ${errorData.details}`;
+                                }
+                            } catch (e) {
+                                errorMessage = `HTTP ${processResponse.status}: ${processResponse.statusText}`;
                             }
-                        } catch (e) {
-                            errorMessage = `HTTP ${processResponse.status}: ${processResponse.statusText}`;
+                            throw new Error(errorMessage);
                         }
-                        throw new Error(errorMessage);
+                        
+                        const processData = await processResponse.json();
+                        if (processData.processedImageUrl) {
+                            customImageUrl = processData.processedImageUrl;
+                        } else {
+                            throw new Error('No processed image URL returned from server');
+                        }
+                    } catch (error) {
+                        console.error('Error processing image with overlay:', error);
+                        alert('Failed to process image with overlay: ' + error.message);
+                        setProcessingImage(false);
+                        setSavingSettings(false);
+                        return;
+                    } finally {
+                        setProcessingImage(false);
                     }
-                    
-                    const processData = await processResponse.json();
-                    if (processData.processedImageUrl) {
-                        customImageUrl = processData.processedImageUrl;
-                    } else {
-                        throw new Error('No processed image URL returned from server');
-                    }
-                } catch (error) {
-                    console.error('Error processing image with overlay:', error);
-                    alert('Failed to process image with overlay: ' + error.message);
-                    setProcessingImage(false);
-                    setSavingSettings(false);
-                    return;
-                } finally {
-                    setProcessingImage(false);
                 }
             }
             
@@ -1293,23 +1294,10 @@ export default function TracksManagement() {
             setPostMessage('');
 
             const weekStart = currentWeekImages.week_start;
-            let coverImageUrl = currentWeekImages.cover_image_url;
-            let tracklistImageUrl = currentWeekImages.tracklist_image_url;
+            const coverImageUrl = currentWeekImages.cover_image_url;
+            const tracklistImageUrl = currentWeekImages.tracklist_image_url;
             const caption = currentWeekCaption.caption;
             const hashtags = currentWeekCaption.hashtags || [];
-
-            // Validate URLs are not data URIs (Instagram API requires HTTP/HTTPS URLs)
-            if (coverImageUrl && coverImageUrl.startsWith('data:')) {
-                alert('Error: Cover image URL is a data URI. Please regenerate the images for this week to get proper Supabase storage URLs.');
-                setPostMessage('Error: Invalid image URL format. Please regenerate images.');
-                return;
-            }
-            
-            if (tracklistImageUrl && tracklistImageUrl.startsWith('data:')) {
-                alert('Error: Tracklist image URL is a data URI. Please regenerate the images for this week to get proper Supabase storage URLs.');
-                setPostMessage('Error: Invalid image URL format. Please regenerate images.');
-                return;
-            }
 
             const result = await instagramPublisher.handleCreatePost(
                 weekStart,
@@ -1359,9 +1347,7 @@ export default function TracksManagement() {
         const images = await fetchWeekImages(weekString);
         
         // If there's a preferred track, add its album art as the first image
-        // BUT only if there's no custom_image_url (processed image with overlay)
-        // The custom_image_url should be the primary cover image
-        if (images && images.preferred_track_image && !images.custom_image_url) {
+        if (images && images.preferred_track_image) {
             images.selected_cover_track_image = images.preferred_track_image;
             images.selected_cover_track_name = images.preferred_track_name;
         }
@@ -2027,23 +2013,10 @@ export default function TracksManagement() {
                                                                 setPostMessage('');
 
                                                                 const weekStart = imagesData.week_start;
-                                                                let coverImageUrl = imagesData.cover_image_url;
-                                                                let tracklistImageUrl = imagesData.tracklist_image_url;
+                                                                const coverImageUrl = imagesData.cover_image_url;
+                                                                const tracklistImageUrl = imagesData.tracklist_image_url;
                                                                 const caption = captionData.caption;
                                                                 const hashtags = captionData.hashtags || [];
-
-                                                                // Validate URLs are not data URIs (Instagram API requires HTTP/HTTPS URLs)
-                                                                if (coverImageUrl && coverImageUrl.startsWith('data:')) {
-                                                                    alert('Error: Cover image URL is a data URI. Please regenerate the images for this week to get proper Supabase storage URLs.');
-                                                                    setPostMessage('Error: Invalid image URL format. Please regenerate images.');
-                                                                    return;
-                                                                }
-                                                                
-                                                                if (tracklistImageUrl && tracklistImageUrl.startsWith('data:')) {
-                                                                    alert('Error: Tracklist image URL is a data URI. Please regenerate the images for this week to get proper Supabase storage URLs.');
-                                                                    setPostMessage('Error: Invalid image URL format. Please regenerate images.');
-                                                                    return;
-                                                                }
 
                                                                 const result = await instagramPublisher.handleCreatePost(
                                                                     weekStart,
@@ -2290,17 +2263,10 @@ export default function TracksManagement() {
                             <div className="relative">
                                 {/* Determine available images */}
                                 {(() => {
-                                    const hasCustomImage = currentWeekImages.custom_image_url;
                                     const hasSelectedCover = currentWeekImages.selected_cover_track_image;
                                     const hasCover = currentWeekImages.cover_image_url;
                                     const hasTracklist = currentWeekImages.tracklist_image_url;
-                                    
-                                    // Calculate total images based on priority: custom_image_url > cover_image_url > selected_cover_track_image
-                                    let totalImages = 0;
-                                    if (hasCustomImage || hasCover || hasSelectedCover) totalImages++;
-                                    if (hasTracklist) totalImages++;
-                                    // If we have both cover and selected cover (without custom), show both
-                                    if (hasSelectedCover && hasCover && !hasCustomImage) totalImages++;
+                                    const totalImages = (hasSelectedCover ? 1 : 0) + (hasCover ? 1 : 0) + (hasTracklist ? 1 : 0);
                                     
                                     if (totalImages > 1) {
                                         return (
@@ -2341,41 +2307,20 @@ export default function TracksManagement() {
                                         let imageTitle = '';
                                         let imageSubtitle = '';
                                         
-                                        const hasCustomImage = currentWeekImages.custom_image_url;
                                         const hasSelectedCover = currentWeekImages.selected_cover_track_image;
                                         const hasCover = currentWeekImages.cover_image_url;
                                         
-                                        // Priority: custom_image_url (processed with overlay) > cover_image_url > selected_cover_track_image
-                                        if (currentImageIndex === 0) {
-                                            if (hasCustomImage) {
-                                                // First image: Processed cover with text overlay
-                                                imageUrl = currentWeekImages.custom_image_url;
-                                                imageTitle = "Cover Image";
-                                                imageSubtitle = currentWeekImages.preferred_track_name || "Generated Graphic";
-                                            } else if (hasCover) {
-                                                // First image: Generated cover
-                                                imageUrl = currentWeekImages.cover_image_url;
-                                                imageTitle = "Cover Image";
-                                                imageSubtitle = "Generated Graphic";
-                                            } else if (hasSelectedCover) {
-                                                // First image: Selected cover track (original album art)
-                                                imageUrl = currentWeekImages.selected_cover_track_image;
-                                                imageTitle = "Selected Cover Track";
-                                                imageSubtitle = currentWeekImages.selected_cover_track_name || "Cover Track";
-                                            }
-                                        } else if (currentImageIndex === 1) {
-                                            // Second image: Could be cover or tracklist depending on what was first
-                                            if (hasCustomImage || hasCover) {
-                                                // If we showed custom/cover first, show tracklist second
-                                                imageUrl = currentWeekImages.tracklist_image_url;
-                                                imageTitle = "Tracklist Image";
-                                                imageSubtitle = "Generated Tracklist";
-                                            } else if (hasSelectedCover && hasCover) {
-                                                // If we showed selected cover first, show generated cover second
-                                                imageUrl = currentWeekImages.cover_image_url;
-                                                imageTitle = "Cover Image";
-                                                imageSubtitle = "Generated Graphic";
-                                            }
+                                        if (currentImageIndex === 0 && hasSelectedCover) {
+                                            // First image: Selected cover track
+                                            imageUrl = currentWeekImages.selected_cover_track_image;
+                                            imageTitle = "Selected Cover Track";
+                                            imageSubtitle = currentWeekImages.selected_cover_track_name || "Cover Track";
+                                        } else if ((currentImageIndex === 0 && !hasSelectedCover && hasCover) || 
+                                                   (currentImageIndex === 1 && hasSelectedCover && hasCover)) {
+                                            // Second image: Generated cover
+                                            imageUrl = currentWeekImages.cover_image_url;
+                                            imageTitle = "Cover Image";
+                                            imageSubtitle = "Generated Graphic";
                                         } else {
                                             // Third image: Tracklist
                                             imageUrl = currentWeekImages.tracklist_image_url;
@@ -2418,41 +2363,29 @@ export default function TracksManagement() {
                                     <div className="mt-4 text-white">
                                         <h3 className="text-xl font-semibold">
                                             {(() => {
-                                                const hasCustomImage = currentWeekImages.custom_image_url;
                                                 const hasSelectedCover = currentWeekImages.selected_cover_track_image;
                                                 const hasCover = currentWeekImages.cover_image_url;
                                                 
-                                                if (currentImageIndex === 0) {
-                                                    if (hasCustomImage) {
-                                                        return "Cover Image";
-                                                    } else if (hasCover) {
-                                                        return "Cover Image";
-                                                    } else if (hasSelectedCover) {
-                                                        return "Selected Cover Track";
-                                                    }
-                                                } else if (currentImageIndex === 1) {
-                                                    if (hasCustomImage || hasCover) {
-                                                        return "Tracklist Image";
-                                                    } else if (hasSelectedCover && hasCover) {
-                                                        return "Cover Image";
-                                                    }
+                                                if (currentImageIndex === 0 && hasSelectedCover) {
+                                                    return "Selected Cover Track";
+                                                } else if ((currentImageIndex === 0 && !hasSelectedCover && hasCover) || 
+                                                           (currentImageIndex === 1 && hasSelectedCover && hasCover)) {
+                                                    return "Cover Image";
+                                                } else {
+                                                    return "Tracklist Image";
                                                 }
-                                                return "Tracklist Image";
                                             })()}
                                         </h3>
                                         <p className="text-sm opacity-75">
                                             {(() => {
-                                                const hasCustomImage = currentWeekImages.custom_image_url;
                                                 const hasSelectedCover = currentWeekImages.selected_cover_track_image;
+                                                const hasCover = currentWeekImages.cover_image_url;
                                                 
-                                                if (currentImageIndex === 0) {
-                                                    if (hasCustomImage) {
-                                                        return currentWeekImages.preferred_track_name || `Week of ${currentWeekImages?.week_start || selectedWeek}`;
-                                                    } else if (hasSelectedCover) {
-                                                        return currentWeekImages.selected_cover_track_name || "Selected Cover Track";
-                                                    }
+                                                if (currentImageIndex === 0 && hasSelectedCover) {
+                                                    return currentWeekImages.selected_cover_track_name || "Selected Cover Track";
+                                                } else {
+                                                    return `Week of ${currentWeekImages?.week_start || selectedWeek}`;
                                                 }
-                                                return `Week of ${currentWeekImages?.week_start || selectedWeek}`;
                                             })()}
                                         </p>
                                     </div>
@@ -2461,43 +2394,12 @@ export default function TracksManagement() {
                                     {/* Action buttons */}
                                     <div className="mt-6 flex flex-col sm:flex-row justify-center gap-4">
                                         <button
-                                            onClick={() => {
-                                                // Determine which image URL is currently being displayed
-                                                let downloadUrl = null;
-                                                let downloadFilename = '';
-                                                
-                                                const hasCustomImage = currentWeekImages.custom_image_url;
-                                                const hasSelectedCover = currentWeekImages.selected_cover_track_image;
-                                                const hasCover = currentWeekImages.cover_image_url;
-                                                
-                                                if (currentImageIndex === 0) {
-                                                    if (hasCustomImage) {
-                                                        downloadUrl = currentWeekImages.custom_image_url;
-                                                        downloadFilename = `cover_${currentWeekImages?.week_start || selectedWeek}.png`;
-                                                    } else if (hasCover) {
-                                                        downloadUrl = currentWeekImages.cover_image_url;
-                                                        downloadFilename = `cover_${currentWeekImages?.week_start || selectedWeek}.png`;
-                                                    } else if (hasSelectedCover) {
-                                                        downloadUrl = currentWeekImages.selected_cover_track_image;
-                                                        downloadFilename = `cover_track_${currentWeekImages?.week_start || selectedWeek}.png`;
-                                                    }
-                                                } else if (currentImageIndex === 1) {
-                                                    if (hasCustomImage || hasCover) {
-                                                        downloadUrl = currentWeekImages.tracklist_image_url;
-                                                        downloadFilename = `tracklist_${currentWeekImages?.week_start || selectedWeek}.png`;
-                                                    } else if (hasSelectedCover && hasCover) {
-                                                        downloadUrl = currentWeekImages.cover_image_url;
-                                                        downloadFilename = `cover_${currentWeekImages?.week_start || selectedWeek}.png`;
-                                                    }
-                                                } else {
-                                                    downloadUrl = currentWeekImages.tracklist_image_url;
-                                                    downloadFilename = `tracklist_${currentWeekImages?.week_start || selectedWeek}.png`;
-                                                }
-                                                
-                                                if (downloadUrl) {
-                                                    downloadImage(downloadUrl, downloadFilename);
-                                                }
-                                            }}
+                                            onClick={() => downloadImage(
+                                                currentImageIndex === 0 
+                                                    ? currentWeekImages.cover_image_url 
+                                                    : currentWeekImages.tracklist_image_url,
+                                                `${currentImageIndex === 0 ? 'cover' : 'tracklist'}_${currentWeekImages?.week_start || selectedWeek}.png`
+                                            )}
                                             className="bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm text-white px-6 py-2 rounded-full text-sm font-medium transition-all border border-white border-opacity-30"
                                         >
                                             <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2548,47 +2450,28 @@ export default function TracksManagement() {
 
                                     {/* Image indicators */}
                                     {(() => {
-                                        const hasCustomImage = currentWeekImages.custom_image_url;
                                         const hasSelectedCover = currentWeekImages.selected_cover_track_image;
                                         const hasCover = currentWeekImages.cover_image_url;
                                         const hasTracklist = currentWeekImages.tracklist_image_url;
-                                        
-                                        // Calculate total images based on priority: custom_image_url > cover_image_url > selected_cover_track_image
-                                        let totalImages = 0;
-                                        if (hasCustomImage || hasCover || hasSelectedCover) totalImages++;
-                                        if (hasTracklist) totalImages++;
-                                        // If we have both custom/cover and selected cover (without custom), show both
-                                        if (hasSelectedCover && hasCover && !hasCustomImage) totalImages++;
+                                        const totalImages = (hasSelectedCover ? 1 : 0) + (hasCover ? 1 : 0) + (hasTracklist ? 1 : 0);
                                         
                                         if (totalImages > 1) {
                                             return (
                                                 <div className="mt-4 flex justify-center gap-2">
-                                                    {/* First indicator: custom_image_url or cover_image_url or selected_cover_track_image */}
-                                                    {(hasCustomImage || hasCover || hasSelectedCover) && (
+                                                    {hasSelectedCover && (
                                                         <button
                                                             onClick={() => setCurrentImageIndex(0)}
                                                             className={`w-3 h-3 rounded-full transition-all ${
                                                                 currentImageIndex === 0 ? 'bg-white' : 'bg-white bg-opacity-50'
                                                             }`}
-                                                            title={hasCustomImage ? "Cover Image (with overlay)" : hasCover ? "Cover Image" : "Selected Cover Track"}
+                                                            title="Selected Cover Track"
                                                         />
                                                     )}
-                                                    {/* Second indicator: tracklist if custom/cover exists, or cover if selected cover exists */}
-                                                    {((hasCustomImage || hasCover) && hasTracklist) && (
+                                                    {hasCover && (
                                                         <button
-                                                            onClick={() => setCurrentImageIndex(1)}
+                                                            onClick={() => setCurrentImageIndex(hasSelectedCover ? 1 : 0)}
                                                             className={`w-3 h-3 rounded-full transition-all ${
-                                                                currentImageIndex === 1 ? 'bg-white' : 'bg-white bg-opacity-50'
-                                                            }`}
-                                                            title="Tracklist Image"
-                                                        />
-                                                    )}
-                                                    {/* Second indicator: cover if selected cover was first */}
-                                                    {hasSelectedCover && hasCover && !hasCustomImage && (
-                                                        <button
-                                                            onClick={() => setCurrentImageIndex(1)}
-                                                            className={`w-3 h-3 rounded-full transition-all ${
-                                                                currentImageIndex === 1 ? 'bg-white' : 'bg-white bg-opacity-50'
+                                                                (hasSelectedCover ? currentImageIndex === 1 : currentImageIndex === 0) ? 'bg-white' : 'bg-white bg-opacity-50'
                                                             }`}
                                                             title="Cover Image"
                                                         />

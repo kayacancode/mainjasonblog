@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
 import axios from 'axios';
+import { join } from 'path';
+import { existsSync, readdirSync, mkdirSync } from 'fs';
 
 // Lazy initialization of Supabase client - same pattern as other API endpoints
 function getSupabaseClient() {
@@ -45,10 +47,13 @@ function createTextSVG(text, x, y, fontSize, fill, stroke, strokeWidth = 2, text
 
     // Create two text elements: stroke layer first, then fill layer on top
     // This ensures text is readable on dark backgrounds
-    // Use simpler font-family for better Sharp compatibility
-    const fontFamily = 'Arial, sans-serif';
-    const strokeText = `<text x="${x}" y="${y}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="bold" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth * 2}" stroke-opacity="${fillOpacity}" text-anchor="${textAnchor}" dominant-baseline="hanging">${escapedText}</text>`;
-    const fillText = `<text x="${x}" y="${y}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="bold" fill="${fill}" text-anchor="${textAnchor}" dominant-baseline="hanging">${escapedText}</text>`;
+    // Use Liberation Sans which is available in serverless environments via fontconfig
+    // Use font names that fontconfig can resolve, with multiple fallbacks
+    // Try different font name formats that fontconfig might recognize
+    const fontFamily = 'Liberation Sans Bold, LiberationSans-Bold, Liberation Sans, Arial Bold, Arial, DejaVu Sans Bold, DejaVu Sans, sans-serif';
+    // Use 700 for bold weight to ensure it uses the Bold font file
+    const strokeText = `<text x="${x}" y="${y}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="700" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth * 2}" stroke-opacity="${fillOpacity}" text-anchor="${textAnchor}" dominant-baseline="hanging">${escapedText}</text>`;
+    const fillText = `<text x="${x}" y="${y}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="700" fill="${fill}" text-anchor="${textAnchor}" dominant-baseline="hanging">${escapedText}</text>`;
     
     return strokeText + fillText;
 }
@@ -57,9 +62,42 @@ function createTextSVG(text, x, y, fontSize, fill, stroke, strokeWidth = 2, text
  * Process image with branding overlay
  */
 async function processImageWithOverlay(imageUrl, trackName, artistName) {
-    // Suppress Fontconfig warnings in serverless environments
+    // Setup fontconfig for serverless environments (same as regenerate-tracklist.js)
     if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
-        process.env.FONTCONFIG_PATH = '/tmp';
+        // In Vercel, fonts are at /var/task/fonts, but we also check process.cwd() for local dev
+        const localFontsDir = join(process.cwd(), 'fonts');
+        const vercelFontsDir = '/var/task/fonts';
+        
+        // Try Vercel path first, then fall back to local
+        let fontsDir = vercelFontsDir;
+        if (!existsSync(vercelFontsDir) && existsSync(localFontsDir)) {
+            fontsDir = localFontsDir;
+        }
+        
+        // Set FONTCONFIG_PATH to point to directory containing fonts.conf
+        process.env.FONTCONFIG_PATH = fontsDir;
+        
+        // Ensure fonts directory is read (this ensures fonts are included in serverless bundle)
+        try {
+            if (existsSync(fontsDir)) {
+                const fontFiles = readdirSync(fontsDir);
+                console.log(`📁 Fonts directory found at ${fontsDir} with ${fontFiles.length} files:`, fontFiles);
+            } else {
+                console.warn(`⚠️ Fonts directory not found at: ${fontsDir} or ${localFontsDir}`);
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not read fonts directory:', error.message);
+        }
+        
+        // Create cache directory for fontconfig
+        const cacheDir = '/tmp/fonts-cache';
+        try {
+            if (!existsSync(cacheDir)) {
+                mkdirSync(cacheDir, { recursive: true });
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not create fontconfig cache directory:', error.message);
+        }
     }
     
     // Download image
@@ -230,9 +268,26 @@ async function processImageWithOverlay(imageUrl, trackName, artistName) {
     const textBuffer = Buffer.from(textSVG, 'utf-8');
     
     // Composite overlays - ensure text is rendered last so it appears on top
+    // Render text SVG first with proper density settings (like regenerate-tracklist.js)
+    let textImageBuffer;
+    try {
+        // Render text SVG to buffer with proper density for font rendering
+        textImageBuffer = await sharp(textBuffer, {
+            density: 72 // Standard DPI for consistent rendering
+        })
+        .png()
+        .toBuffer();
+        console.log('✅ Text SVG rendered successfully');
+    } catch (textRenderError) {
+        console.error('❌ Error rendering text SVG:', textRenderError);
+        console.error('Text SVG content (first 500 chars):', textSVG.substring(0, 500));
+        // If text rendering fails, we'll skip text but still add other overlays
+        textImageBuffer = null;
+    }
+    
     // Try to composite with text, but if it fails, at least return the image with border and overlay
     try {
-        image = image.composite([
+        const compositeInputs = [
             {
                 input: darkOverlayBuffer,
                 blend: 'over'
@@ -240,14 +295,22 @@ async function processImageWithOverlay(imageUrl, trackName, artistName) {
             {
                 input: borderBuffer,
                 blend: 'over'
-            },
-            {
-                input: textBuffer,
-                blend: 'over'
             }
-        ]);
+        ];
+        
+        // Add text if it rendered successfully
+        if (textImageBuffer) {
+            compositeInputs.push({
+                input: textImageBuffer,
+                blend: 'over'
+            });
+        } else {
+            console.warn('⚠️ Skipping text overlay due to rendering error');
+        }
+        
+        image = image.composite(compositeInputs);
     } catch (compositeError) {
-        console.error('Error compositing text overlay, trying without text:', compositeError);
+        console.error('Error compositing overlays:', compositeError);
         // Fallback: composite without text if text rendering fails
         image = image.composite([
             {
