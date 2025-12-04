@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import BlogContent from "../components/BlogContent";
+import InstagramAutomation from "../components/InstagramAutomation";
 import { supabase } from "../lib/supabaseClient";
 
 const Createpost = () => {
@@ -17,9 +18,22 @@ const Createpost = () => {
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("");
   const [error, setError] = useState(null);
+  
+  // Instagram automation state
+  const [instagramEnabled, setInstagramEnabled] = useState(false);
+  const [instagramStatus, setInstagramStatus] = useState("none");
+  const [instagramAiSummary, setInstagramAiSummary] = useState("");
+  const [instagramCoverOverride, setInstagramCoverOverride] = useState("");
+  const [instagramPostId, setInstagramPostId] = useState(null);
+  const [instagramError, setInstagramError] = useState(null);
+  const [instagramPublishedAt, setInstagramPublishedAt] = useState(null);
+  const [postId, setPostId] = useState(null);
 
   useEffect(() => {
-    if (router.query.postId) fetchPostData();
+    if (router.query.postId) {
+      setPostId(router.query.postId);
+      fetchPostData();
+    }
   }, [router.query.postId]);
 
   // Fetch existing post for edit
@@ -43,6 +57,15 @@ const Createpost = () => {
         setScheduledTime(dateObj.toTimeString().substring(0, 5));
         setIsScheduled(true);
       }
+      
+      // Load Instagram automation data
+      setInstagramEnabled(post.instagram_enabled || false);
+      setInstagramStatus(post.instagram_status || "none");
+      setInstagramAiSummary(post.instagram_ai_summary || "");
+      setInstagramCoverOverride(post.instagram_cover_override || "");
+      setInstagramPostId(post.instagram_post_id || null);
+      setInstagramError(post.instagram_error || null);
+      setInstagramPublishedAt(post.instagram_published_at || null);
     } catch (err) {
       console.error(err);
       setError("Failed to load post data.");
@@ -72,7 +95,7 @@ const handlePost = async (e) => {
   setError(null);
 
   try {
-    // 🔹 Get current signed-in user
+    // Get current signed-in user
     const {
       data: { user },
       error: userError,
@@ -83,11 +106,11 @@ const handlePost = async (e) => {
       return;
     }
 
-    // 🔹 Determine the image URL to use
+    // Determine the image URL to use
     let finalImageUrl = null;
 
     if (imgFile) {
-      // New file selected → upload it
+      // New file selected - upload it
       const fileName = `${user.id}/${Date.now()}-${imgFile.name}`;
       const { error: uploadError } = await supabase.storage
         .from("post-images")
@@ -101,20 +124,20 @@ const handlePost = async (e) => {
 
       finalImageUrl = data.publicUrl;
     } else if (imageUrl) {
-      // Existing image (when editing) → keep URL
+      // Existing image (when editing) - keep URL
       finalImageUrl = imageUrl;
     } else {
-      // No image uploaded → leave null
+      // No image uploaded - leave null
       finalImageUrl = null;
     }
 
-    // 🔹 Prepare scheduled timestamp
+    // Prepare scheduled timestamp
     let scheduledTimestamp = null;
     if (isScheduled && scheduledDate && scheduledTime) {
       scheduledTimestamp = new Date(`${scheduledDate}T${scheduledTime}`);
     }
 
-    // 🔹 Construct post object
+    // Construct post object with Instagram fields
     const postData = {
       title,
       post_text: postText,
@@ -122,10 +145,16 @@ const handlePost = async (e) => {
       scheduled_for: scheduledTimestamp,
       is_published: !scheduledTimestamp,
       user_id: user.id,
+      // Instagram automation fields
+      instagram_enabled: instagramEnabled,
+      instagram_ai_summary: instagramAiSummary || null,
+      instagram_cover_override: instagramCoverOverride || null,
     };
 
+    let savedPostId = router.query.postId;
+
     if (router.query.postId) {
-      // 🔹 UPDATE existing post
+      // UPDATE existing post
       const { error } = await supabase
         .from("posts")
         .update(postData)
@@ -133,7 +162,7 @@ const handlePost = async (e) => {
 
       if (error) throw error;
     } else {
-      // 🔹 INSERT new post
+      // INSERT new post
       const { data: inserted, error } = await supabase
         .from("posts")
         .insert([postData])
@@ -141,6 +170,32 @@ const handlePost = async (e) => {
 
       if (error) throw error;
       console.log("New post created:", inserted[0]);
+      savedPostId = inserted[0].id;
+    }
+
+    // If Instagram automation is enabled and post is published, trigger carousel generation
+    if (instagramEnabled && !scheduledTimestamp && savedPostId) {
+      try {
+        const igResponse = await fetch('/api/blog-instagram', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            postId: savedPostId,
+            mode: 'publish',
+            customCoverUrl: instagramCoverOverride || finalImageUrl,
+            aiSummaryOverride: instagramAiSummary || undefined
+          })
+        });
+        
+        const igData = await igResponse.json();
+        if (!igData.success) {
+          console.error('Instagram publish failed:', igData.error);
+          // Don't fail the whole save, just log the error
+        }
+      } catch (igError) {
+        console.error('Instagram automation error:', igError);
+        // Don't fail the whole save
+      }
     }
 
     setLoading(false);
@@ -154,6 +209,21 @@ const handlePost = async (e) => {
   }
 };
 
+  // Handle Instagram publish success
+  const handleInstagramPublish = (data) => {
+    setInstagramStatus('published');
+    setInstagramPostId(data.instagramPostId);
+    setInstagramPublishedAt(new Date().toISOString());
+    setInstagramError(null);
+  };
+
+  // Handle Instagram retry success
+  const handleInstagramRetry = (data) => {
+    setInstagramStatus('published');
+    setInstagramPostId(data.instagramPostId);
+    setInstagramPublishedAt(new Date().toISOString());
+    setInstagramError(null);
+  };
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] text-white">
@@ -240,6 +310,25 @@ const handlePost = async (e) => {
                 />
               </div>
             )}
+          </div>
+
+          {/* Instagram Automation Section */}
+          <div className="pt-4">
+            <InstagramAutomation
+              postId={postId}
+              initialEnabled={instagramEnabled}
+              initialStatus={instagramStatus}
+              initialAiSummary={instagramAiSummary}
+              initialCoverUrl={instagramCoverOverride}
+              instagramPostId={instagramPostId}
+              instagramError={instagramError}
+              publishedAt={instagramPublishedAt}
+              onEnabledChange={setInstagramEnabled}
+              onCoverChange={setInstagramCoverOverride}
+              onSummaryChange={setInstagramAiSummary}
+              onPublish={handleInstagramPublish}
+              onRetry={handleInstagramRetry}
+            />
           </div>
 
           {error && <div className="text-red-500">{error}</div>}
