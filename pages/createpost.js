@@ -316,6 +316,9 @@ const handlePost = async (e) => {
           <div className="pt-4">
             <InstagramAutomation
               postId={postId}
+              title={title}
+              content={postText}
+              coverImage={previewImage}
               initialEnabled={instagramEnabled}
               initialStatus={instagramStatus}
               initialAiSummary={instagramAiSummary}

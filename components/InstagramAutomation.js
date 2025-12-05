@@ -9,6 +9,9 @@ import CarouselPreview from './CarouselPreview';
 
 export default function InstagramAutomation({
     postId,
+    title = '',
+    content = '',
+    coverImage = '',
     initialEnabled = false,
     initialStatus = 'none',
     initialAiSummary = '',
@@ -35,15 +38,56 @@ export default function InstagramAutomation({
     const [previewData, setPreviewData] = useState(null);
     const [error, setError] = useState(null);
     
+    // Slide preview state
+    const [slidePreview, setSlidePreview] = useState(null);
+    const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+    
     // Update parent when enabled changes
     const handleEnabledChange = useCallback((newValue) => {
         setEnabled(newValue);
         onEnabledChange?.(newValue);
     }, [onEnabledChange]);
     
+    // Generate slide preview with title overlay
+    const handleGenerateSlidePreview = async () => {
+        if (!title) {
+            setError('Please enter a title first');
+            return;
+        }
+        
+        setIsGeneratingPreview(true);
+        setError(null);
+        
+        try {
+            const response = await fetch('/api/preview-slide', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    coverImageUrl: coverUrl || coverImage,
+                    title
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                setSlidePreview(data.preview);
+            } else {
+                setError(data.error || 'Failed to generate preview');
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsGeneratingPreview(false);
+        }
+    };
+    
     // Generate AI summary
     const handleGenerateSummary = async (regenerate = false) => {
-        if (!postId) return;
+        if (!title || !content) {
+            setError('Please enter a title and content first');
+            return;
+        }
         
         setIsGenerating(true);
         setError(null);
@@ -54,6 +98,8 @@ export default function InstagramAutomation({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     postId,
+                    title,
+                    content,
                     regenerate
                 })
             });
@@ -220,7 +266,7 @@ export default function InstagramAutomation({
                     <button
                         onClick={handleRetry}
                         disabled={isPublishing}
-                        className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+                        className="text-xs text-black hover:underline disabled:opacity-50"
                     >
                         Retry
                     </button>
@@ -230,32 +276,35 @@ export default function InstagramAutomation({
     }
     
     return (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-3">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <div className="bg-[#2a2a2a] rounded-xl border border-gray-700 overflow-hidden">
+            {/* Minimal Header */}
+            <div className="px-6 py-4 border-b border-gray-700 flex items-center justify-between bg-[#222]">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#F2EA6D] to-[#FFD800] flex items-center justify-center text-black">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z"/>
                         </svg>
-                        <h3 className="text-white font-semibold">Instagram Automation</h3>
                     </div>
-                    <InstagramStatusBadge 
-                        status={initialStatus} 
-                        error={instagramError}
-                        publishedAt={publishedAt}
-                        instagramPostId={instagramPostId}
-                        showDetails={false}
-                    />
+                    <div>
+                        <h3 className="text-white font-bold text-lg leading-none">Instagram</h3>
+                        <p className="text-xs text-gray-400 mt-1">Automated Carousel Generator</p>
+                    </div>
                 </div>
+                <InstagramStatusBadge 
+                    status={initialStatus} 
+                    error={instagramError}
+                    publishedAt={publishedAt}
+                    instagramPostId={instagramPostId}
+                    showDetails={false}
+                />
             </div>
             
-            <div className="p-4 space-y-4">
-                {/* Enable toggle */}
-                <div className="flex items-center justify-between">
+            <div className="p-6 space-y-8">
+                {/* Main Toggle */}
+                <div className="flex items-center justify-between bg-[#333] p-4 rounded-xl border border-gray-600">
                     <div>
-                        <p className="font-medium text-gray-900">Auto-publish to Instagram</p>
-                        <p className="text-sm text-gray-500">Generate carousel when post is published</p>
+                        <p className="font-bold text-white text-base">Auto-publish to Instagram</p>
+                        <p className="text-sm text-gray-400 mt-1">Generate and publish carousel automatically</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                         <input
@@ -264,134 +313,163 @@ export default function InstagramAutomation({
                             onChange={(e) => handleEnabledChange(e.target.checked)}
                             className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                        <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#F2EA6D]"></div>
                     </label>
                 </div>
                 
-                {/* Custom cover image */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Custom Cover Image (optional)
-                    </label>
-                    <input
-                        type="url"
-                        value={coverUrl}
-                        onChange={(e) => {
-                            setCoverUrl(e.target.value);
-                            onCoverChange?.(e.target.value);
-                        }}
-                        placeholder="https://example.com/image.jpg"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                </div>
-                
-                {/* AI Summary editor */}
-                <div>
-                    <div className="flex items-center justify-between mb-1">
-                        <label className="block text-sm font-medium text-gray-700">
-                            AI Summary (Slide 2)
-                        </label>
-                        <button
-                            onClick={() => handleGenerateSummary(!aiSummary)}
-                            disabled={isGenerating || !postId}
-                            className="text-xs text-purple-600 hover:text-purple-800 disabled:opacity-50"
-                        >
-                            {isGenerating ? 'Generating...' : aiSummary ? 'Regenerate' : 'Generate'}
-                        </button>
-                    </div>
-                    <textarea
-                        value={aiSummary}
-                        onChange={(e) => {
-                            setAiSummary(e.target.value);
-                            onSummaryChange?.(e.target.value);
-                        }}
-                        rows={4}
-                        placeholder="AI-generated summary will appear here..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                        {aiSummary.length}/400 characters
-                    </p>
-                </div>
-                
-                {/* Style rating (only show if summary was generated) */}
-                {aiSummary && initialAiSummary && (
-                    <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-sm font-medium text-gray-700 mb-2">Rate AI Quality</p>
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="range"
-                                min="1"
-                                max="10"
-                                value={styleRating}
-                                onChange={(e) => setStyleRating(parseInt(e.target.value))}
-                                className="flex-1"
-                            />
-                            <span className="text-sm font-medium text-gray-900 w-8">{styleRating}/10</span>
+                {enabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-top-4 duration-300">
+                        {/* Left Column: Visuals */}
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-sm uppercase tracking-wider text-gray-400 font-bold">Visuals</h4>
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateSlidePreview}
+                                    disabled={isGeneratingPreview || !title}
+                                    className="text-xs font-bold text-[#F2EA6D] hover:text-[#FFD800] disabled:opacity-50 uppercase tracking-wide transition-colors"
+                                >
+                                    {isGeneratingPreview ? 'Generating...' : 'Refresh Preview'}
+                                </button>
+                            </div>
+
+                            <div className="bg-[#222] rounded-xl border border-gray-700 p-4 flex flex-col items-center justify-center min-h-[300px] relative group">
+                                {slidePreview ? (
+                                    <div className="relative w-full aspect-square rounded-lg overflow-hidden shadow-2xl">
+                                        <img 
+                                            src={slidePreview} 
+                                            alt="Slide preview" 
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                ) : (coverImage || coverUrl) ? (
+                                    <div className="relative w-full aspect-square rounded-lg overflow-hidden opacity-50 group-hover:opacity-75 transition-opacity">
+                                        <img 
+                                            src={coverUrl || coverImage} 
+                                            alt="Cover raw" 
+                                            className="w-full h-full object-cover grayscale"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <button 
+                                                type="button"
+                                                onClick={handleGenerateSlidePreview}
+                                                className="bg-white/10 backdrop-blur-sm border border-white/20 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors"
+                                            >
+                                                Generate Preview
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center text-gray-500">
+                                        <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <p className="text-sm">Upload a blog cover image first</p>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-2 uppercase tracking-wider font-bold">
+                                    Override Cover URL
+                                </label>
+                                <input
+                                    type="url"
+                                    value={coverUrl}
+                                    onChange={(e) => {
+                                        setCoverUrl(e.target.value);
+                                        onCoverChange?.(e.target.value);
+                                    }}
+                                    placeholder="https://..."
+                                    className="w-full bg-[#222] border border-gray-700 text-white px-3 py-2 rounded-lg text-sm focus:ring-1 focus:ring-[#F2EA6D] focus:border-[#F2EA6D] outline-none transition-all"
+                                />
+                            </div>
                         </div>
-                        <input
-                            type="text"
-                            value={feedbackNotes}
-                            onChange={(e) => setFeedbackNotes(e.target.value)}
-                            placeholder="Optional feedback notes..."
-                            className="mt-2 w-full px-2 py-1 text-xs border border-gray-200 rounded"
-                        />
-                        <button
-                            onClick={handleSubmitFeedback}
-                            className="mt-2 text-xs text-purple-600 hover:text-purple-800"
-                        >
-                            Submit Feedback
-                        </button>
-                    </div>
-                )}
-                
-                {/* Error display */}
-                {(error || instagramError) && (
-                    <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg">
-                        {error || instagramError}
-                    </div>
-                )}
-                
-                {/* Action buttons */}
-                <div className="flex gap-2 pt-2">
-                    <button
-                        onClick={handlePreview}
-                        disabled={isGenerating || isPublishing || !postId}
-                        className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 disabled:opacity-50 transition-colors text-sm"
-                    >
-                        {isGenerating ? 'Generating...' : 'Preview Carousel'}
-                    </button>
-                    
-                    {initialStatus === 'failed' ? (
-                        <button
-                            onClick={handleRetry}
-                            disabled={isPublishing}
-                            className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 disabled:opacity-50 transition-colors text-sm"
-                        >
-                            {isPublishing ? 'Publishing...' : 'Retry Publish'}
-                        </button>
-                    ) : initialStatus !== 'published' && (
-                        <button
-                            onClick={handlePublish}
-                            disabled={isPublishing || initialStatus === 'publishing'}
-                            className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition-colors text-sm"
-                        >
-                            {isPublishing ? 'Publishing...' : 'Publish Now'}
-                        </button>
-                    )}
-                </div>
-                
-                {/* Published link */}
-                {initialStatus === 'published' && instagramPostId && (
-                    <div className="text-center">
-                        <a
-                            href={`https://www.instagram.com/p/${instagramPostId}/`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-purple-600 hover:underline"
-                        >
-                            View on Instagram
-                        </a>
+
+                        {/* Right Column: Content */}
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-sm uppercase tracking-wider text-gray-400 font-bold">Content & AI</h4>
+                                <button
+                                    type="button"
+                                    onClick={() => handleGenerateSummary(true)}
+                                    disabled={isGenerating || !title || !content}
+                                    className="text-xs font-bold text-[#F2EA6D] hover:text-[#FFD800] disabled:opacity-50 uppercase tracking-wide transition-colors"
+                                >
+                                    {isGenerating ? 'Writing...' : 'Auto-Generate Summary'}
+                                </button>
+                            </div>
+
+                            <div className="relative">
+                                <textarea
+                                    value={aiSummary}
+                                    onChange={(e) => {
+                                        setAiSummary(e.target.value);
+                                        onSummaryChange?.(e.target.value);
+                                    }}
+                                    rows={12}
+                                    placeholder="AI summary will appear here..."
+                                    className="w-full bg-[#222] border border-gray-700 text-gray-200 px-4 py-3 rounded-xl text-sm focus:ring-1 focus:ring-[#F2EA6D] focus:border-[#F2EA6D] outline-none resize-none leading-relaxed"
+                                />
+                                <div className="absolute bottom-3 right-3 text-xs text-gray-500 font-mono">
+                                    {aiSummary.length}/400
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="grid grid-cols-2 gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={handlePreview}
+                                    disabled={isGenerating || isPublishing || !postId}
+                                    className="px-4 py-3 bg-[#333] text-white border border-gray-600 rounded-lg font-bold hover:bg-[#444] disabled:opacity-50 transition-colors text-sm"
+                                >
+                                    Open Full Preview
+                                </button>
+                                
+                                {initialStatus === 'failed' ? (
+                                    <button
+                                        type="button"
+                                        onClick={handleRetry}
+                                        disabled={isPublishing}
+                                        className="px-4 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 disabled:opacity-50 transition-colors text-sm"
+                                    >
+                                        Retry Publish
+                                    </button>
+                                ) : initialStatus !== 'published' && (
+                                    <button
+                                        type="button"
+                                        onClick={handlePublish}
+                                        disabled={isPublishing || initialStatus === 'publishing'}
+                                        className="px-4 py-3 bg-[#F2EA6D] text-black rounded-lg font-bold hover:bg-[#FFD800] disabled:opacity-50 transition-colors text-sm shadow-lg shadow-yellow-900/20"
+                                    >
+                                        {isPublishing ? 'Publishing...' : 'Publish Now'}
+                                    </button>
+                                )}
+                            </div>
+                            
+                            {initialStatus === 'published' && instagramPostId && (
+                                <div className="text-center pt-2">
+                                    <a
+                                        href={`https://www.instagram.com/p/${instagramPostId}/`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center text-sm text-[#F2EA6D] hover:text-[#FFD800] font-medium"
+                                    >
+                                        View Live Post
+                                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                    </a>
+                                </div>
+                            )}
+
+                            {/* Error display */}
+                            {(error || instagramError) && (
+                                <div className="bg-red-900/30 border border-red-800 text-red-200 text-sm p-4 rounded-lg flex items-start gap-3">
+                                    <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <span>{error || instagramError}</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
