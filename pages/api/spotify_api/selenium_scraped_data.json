@@ -255,6 +255,15 @@
       "spotify_url": "https://open.spotify.com/track/1IB4HhJF2thvDpEWpGQhga"
     },
     {
+      "id": "7xe8BiG8HHl1EetMA6ygey",
+      "name": "DON'T KILL THE PARTY (feat. Shoreline Mafia, Quavo & Juicy J)",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": "https://open.spotify.com/track/7xe8BiG8HHl1EetMA6ygey"
+    },
+    {
       "id": "6p82E6XWmwC9yGzXPe1HHv",
       "name": "DON'T KILL THE PARTY (feat. Tyga, Shoreline Mafia & Quavo) - Coast 2 Coast",
       "artist": "E",
@@ -271,15 +280,6 @@
       "popularity": 0,
       "album_art_url": null,
       "spotify_url": "https://open.spotify.com/track/1LZSJJXYNvy4MiK13KXcVB"
-    },
-    {
-      "id": "7xe8BiG8HHl1EetMA6ygey",
-      "name": "DON'T KILL THE PARTY (feat. Shoreline Mafia, Quavo & Juicy J)",
-      "artist": "E",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": "https://open.spotify.com/track/7xe8BiG8HHl1EetMA6ygey"
     },
     {
       "id": "6FOoyzZj7sT0JvD7yOT9tk",
@@ -354,6 +354,15 @@
       "spotify_url": "https://open.spotify.com/track/603qywho1S0Wv5F1Uj0Kot"
     },
     {
+      "id": "7LrK2rrV2zvXci06oRLjIr",
+      "name": "Epstein Files",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": "https://open.spotify.com/track/7LrK2rrV2zvXci06oRLjIr"
+    },
+    {
       "id": "5g4iF0EyHKtuduFzbnDqyV",
       "name": "Outside",
       "artist": "E",
@@ -372,15 +381,6 @@
       "spotify_url": "https://open.spotify.com/track/3yrUd6WRBI9SUeNmCY0zXr"
     },
     {
-      "id": "7LrK2rrV2zvXci06oRLjIr",
-      "name": "Epstein Files",
-      "artist": "E",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": "https://open.spotify.com/track/7LrK2rrV2zvXci06oRLjIr"
-    },
-    {
       "id": "5YbDA37CN0YcgZXF6L2cBX",
       "name": "FDO",
       "artist": "E",
@@ -397,15 +397,6 @@
       "popularity": 0,
       "album_art_url": null,
       "spotify_url": "https://open.spotify.com/track/3WrGCvUlj1r2pXJ8VgejXQ"
-    },
-    {
-      "id": "1qe3AAPTg3pI9YI9RQY2m8",
-      "name": "You Got It All",
-      "artist": "E",
-      "album": "",
-      "popularity": 0,
-      "album_art_url": null,
-      "spotify_url": "https://open.spotify.com/track/1qe3AAPTg3pI9YI9RQY2m8"
     },
     {
       "id": "5DHZy2nwvaJyacAfEoNj94",
@@ -480,6 +471,15 @@
       "spotify_url": "https://open.spotify.com/track/3X0TsYYbYgCyxZ5ZdTckeR"
     },
     {
+      "id": "5jgpFfwXSiagckaavmiJj2",
+      "name": "Evil Eye - Tiny Desk version",
+      "artist": "E",
+      "album": "",
+      "popularity": 0,
+      "album_art_url": null,
+      "spotify_url": "https://open.spotify.com/track/5jgpFfwXSiagckaavmiJj2"
+    },
+    {
       "id": "5IM9cVLktTb0RyyPE7xTAT",
       "name": "YUNNNN WEMIX",
       "artist": "E",
@@ -507,6 +507,6 @@
       "spotify_url": "https://open.spotify.com/track/2ouy8vmFQw644Wj2Mbi2iS"
     }
   ],
-  "scraped_at": "2025-12-12 09:08:32",
+  "scraped_at": "2025-12-12 12:10:53",
   "method": "enhanced_scraper"
 }
