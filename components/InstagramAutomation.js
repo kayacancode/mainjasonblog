@@ -40,7 +40,10 @@ export default function InstagramAutomation({
     
     // Slide preview state
     const [slidePreview, setSlidePreview] = useState(null);
+    const [slide2Preview, setSlide2Preview] = useState(null);
     const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+    const [isGeneratingSlide2Preview, setIsGeneratingSlide2Preview] = useState(false);
+    const [selectedSlide, setSelectedSlide] = useState(1);
     
     // Update parent when enabled changes
     const handleEnabledChange = useCallback((newValue) => {
@@ -79,6 +82,76 @@ export default function InstagramAutomation({
             setError(err.message);
         } finally {
             setIsGeneratingPreview(false);
+        }
+    };
+    
+    // Generate slide 2 preview with AI summary
+    const handleGenerateSlide2Preview = async () => {
+        if (!title) {
+            setError('Please enter a title first');
+            return;
+        }
+        
+        setIsGeneratingSlide2Preview(true);
+        setError(null);
+        
+        try {
+            let summaryToUse = aiSummary;
+            
+            // If no summary exists, auto-generate it first
+            if (!summaryToUse) {
+                if (!content) {
+                    setError('Please enter content first to generate summary');
+                    setIsGeneratingSlide2Preview(false);
+                    return;
+                }
+                
+                const summaryResponse = await fetch('/api/ai/generate-style-caption', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        postId,
+                        title,
+                        content,
+                        regenerate: false
+                    })
+                });
+                
+                const summaryData = await summaryResponse.json();
+                
+                if (summaryData.success) {
+                    summaryToUse = summaryData.summary;
+                    setAiSummary(summaryData.summary);
+                    onSummaryChange?.(summaryData.summary);
+                } else {
+                    setError(summaryData.error || 'Failed to generate summary');
+                    setIsGeneratingSlide2Preview(false);
+                    return;
+                }
+            }
+            
+            // Now generate slide 2 preview
+            const response = await fetch('/api/preview-slide2', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title,
+                    summaryText: summaryToUse
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                setSlide2Preview(data.preview);
+                setSelectedSlide(2);
+            } else {
+                setError(data.error || 'Failed to generate slide 2 preview');
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsGeneratingSlide2Preview(false);
         }
     };
     
@@ -323,49 +396,115 @@ export default function InstagramAutomation({
                         <div className="space-y-6">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-sm uppercase tracking-wider text-gray-400 font-bold">Visuals</h4>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => { handleGenerateSlidePreview(); setSelectedSlide(1); }}
+                                        disabled={isGeneratingPreview || !title}
+                                        className="text-xs font-bold text-[#F2EA6D] hover:text-[#FFD800] disabled:opacity-50 uppercase tracking-wide transition-colors"
+                                    >
+                                        {isGeneratingPreview ? 'Generating...' : 'Slide 1'}
+                                    </button>
+                                    <span className="text-gray-600">|</span>
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerateSlide2Preview}
+                                        disabled={isGeneratingSlide2Preview || !title}
+                                        className="text-xs font-bold text-[#F2EA6D] hover:text-[#FFD800] disabled:opacity-50 uppercase tracking-wide transition-colors"
+                                    >
+                                        {isGeneratingSlide2Preview ? 'Generating...' : 'Slide 2'}
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            {/* Slide Tabs */}
+                            <div className="flex gap-1 bg-[#1a1a1a] p-1 rounded-lg">
                                 <button
                                     type="button"
-                                    onClick={handleGenerateSlidePreview}
-                                    disabled={isGeneratingPreview || !title}
-                                    className="text-xs font-bold text-[#F2EA6D] hover:text-[#FFD800] disabled:opacity-50 uppercase tracking-wide transition-colors"
+                                    onClick={() => setSelectedSlide(1)}
+                                    className={`flex-1 py-2 px-3 text-xs font-bold uppercase tracking-wide rounded-md transition-colors ${
+                                        selectedSlide === 1 
+                                            ? 'bg-[#333] text-white' 
+                                            : 'text-gray-500 hover:text-gray-300'
+                                    }`}
                                 >
-                                    {isGeneratingPreview ? 'Generating...' : 'Refresh Preview'}
+                                    Cover Slide
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedSlide(2)}
+                                    className={`flex-1 py-2 px-3 text-xs font-bold uppercase tracking-wide rounded-md transition-colors ${
+                                        selectedSlide === 2 
+                                            ? 'bg-[#333] text-white' 
+                                            : 'text-gray-500 hover:text-gray-300'
+                                    }`}
+                                >
+                                    Summary Slide
                                 </button>
                             </div>
 
                             <div className="bg-[#222] rounded-xl border border-gray-700 p-4 flex flex-col items-center justify-center min-h-[300px] relative group">
-                                {slidePreview ? (
-                                    <div className="relative w-full aspect-square rounded-lg overflow-hidden shadow-2xl">
-                                        <img 
-                                            src={slidePreview} 
-                                            alt="Slide preview" 
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                ) : (coverImage || coverUrl) ? (
-                                    <div className="relative w-full aspect-square rounded-lg overflow-hidden opacity-50 group-hover:opacity-75 transition-opacity">
-                                        <img 
-                                            src={coverUrl || coverImage} 
-                                            alt="Cover raw" 
-                                            className="w-full h-full object-cover grayscale"
-                                        />
-                                        <div className="absolute inset-0 flex items-center justify-center">
+                                {selectedSlide === 1 ? (
+                                    // Slide 1 Preview
+                                    slidePreview ? (
+                                        <div className="relative w-full aspect-square rounded-lg overflow-hidden shadow-2xl">
+                                            <img 
+                                                src={slidePreview} 
+                                                alt="Slide 1 preview" 
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    ) : (coverImage || coverUrl) ? (
+                                        <div className="relative w-full aspect-square rounded-lg overflow-hidden opacity-50 group-hover:opacity-75 transition-opacity">
+                                            <img 
+                                                src={coverUrl || coverImage} 
+                                                alt="Cover raw" 
+                                                className="w-full h-full object-cover grayscale"
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <button 
+                                                    type="button"
+                                                    onClick={handleGenerateSlidePreview}
+                                                    className="bg-white/10 backdrop-blur-sm border border-white/20 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors"
+                                                >
+                                                    Generate Slide 1
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center text-gray-500">
+                                            <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            <p className="text-sm">Upload a blog cover image first</p>
+                                        </div>
+                                    )
+                                ) : (
+                                    // Slide 2 Preview
+                                    slide2Preview ? (
+                                        <div className="relative w-full aspect-square rounded-lg overflow-hidden shadow-2xl">
+                                            <img 
+                                                src={slide2Preview} 
+                                                alt="Slide 2 preview" 
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="text-center text-gray-500">
+                                            <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            <p className="text-sm mb-3">Summary slide not generated yet</p>
                                             <button 
                                                 type="button"
-                                                onClick={handleGenerateSlidePreview}
-                                                className="bg-white/10 backdrop-blur-sm border border-white/20 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors"
+                                                onClick={handleGenerateSlide2Preview}
+                                                disabled={isGeneratingSlide2Preview || !title}
+                                                className="bg-[#F2EA6D] text-black px-4 py-2 rounded-lg text-sm font-bold hover:bg-[#FFD800] disabled:opacity-50 transition-colors"
                                             >
-                                                Generate Preview
+                                                {isGeneratingSlide2Preview ? 'Generating...' : 'Generate Slide 2'}
                                             </button>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center text-gray-500">
-                                        <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        <p className="text-sm">Upload a blog cover image first</p>
-                                    </div>
+                                    )
                                 )}
                             </div>
                             
