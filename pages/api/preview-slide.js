@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         const slideBuffer = await generateSlide1({
             coverImageUrl: coverImageUrl || null,
             title,
-            subtitle: 'postBlog Post'
+            subtitle: 'Albumn Review'
         });
 
         // Convert to base64
