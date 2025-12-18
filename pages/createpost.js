@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
-import BlogContent from "../components/BlogContent";
 import InstagramAutomation from "../components/InstagramAutomation";
 import { supabase } from "../lib/supabaseClient";
 
@@ -245,12 +244,6 @@ const handlePost = async (e) => {
               className="w-full h-64 px-4 py-2 rounded-lg bg-[#2a2a2a] border border-gray-700 focus:border-[#F2EA6D] focus:ring-2 focus:ring-[#F2EA6D]"
               placeholder="Write your blog post content here..."
             />
-            {postText && (
-              <div className="mt-4">
-                <label className="block text-sm text-gray-400 mb-2">Preview:</label>
-                <BlogContent postText={postText} />
-              </div>
-            )}
           </div>
 
           <div>
