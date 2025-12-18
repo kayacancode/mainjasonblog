@@ -669,6 +669,7 @@ export default function InstagramAutomation({
                             )}
                         </div>
                     </div>
+                    </div>
                 )}
             </div>
             
