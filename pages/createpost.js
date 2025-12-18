@@ -208,6 +208,8 @@ const handlePost = async (e) => {
     }
 
     setCurrentStep("Done! Redirecting...");
+    // Small delay so user can see the "Done!" message
+    await new Promise(resolve => setTimeout(resolve, 800));
     setLoading(false);
     router.push("/admindashboard");
   } catch (err) {
