@@ -111,7 +111,9 @@ const handlePost = async (e) => {
 
     if (imgFile) {
       // New file selected - upload it
-      const fileName = `${user.id}/${Date.now()}-${imgFile.name}`;
+      // Sanitize filename: replace spaces and special chars with underscores
+      const sanitizedName = imgFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const fileName = `${user.id}/${Date.now()}-${sanitizedName}`;
       const { error: uploadError } = await supabase.storage
         .from("post-images")
         .upload(fileName, imgFile, { upsert: true });
