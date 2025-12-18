@@ -3,7 +3,7 @@
  * Substack-style editor using TipTap
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -276,6 +276,9 @@ export default function RichTextEditor({
     onSubtitleChange,
     showTitleFields = true
 }) {
+    const [wordCount, setWordCount] = useState(0);
+    const [charCount, setCharCount] = useState(0);
+
     const editor = useEditor({
         immediatelyRender: false,
         extensions: [
@@ -306,6 +309,10 @@ export default function RichTextEditor({
         content,
         onUpdate: ({ editor }) => {
             onChange?.(editor.getHTML());
+            // Update counts
+            const text = editor.state.doc.textContent;
+            setCharCount(text.length);
+            setWordCount(text.trim() ? text.trim().split(/\s+/).length : 0);
         },
         editorProps: {
             attributes: {
@@ -313,6 +320,15 @@ export default function RichTextEditor({
             },
         },
     });
+    
+    // Initialize counts when content is loaded
+    useEffect(() => {
+        if (editor && content) {
+            const text = editor.state.doc.textContent;
+            setCharCount(text.length);
+            setWordCount(text.trim() ? text.trim().split(/\s+/).length : 0);
+        }
+    }, [editor, content]);
 
     return (
         <div className="bg-[#2a2a2a] rounded-xl border border-gray-700 overflow-hidden">
@@ -348,10 +364,10 @@ export default function RichTextEditor({
             {/* Word Count Footer */}
             <div className="px-6 py-3 border-t border-gray-700 bg-[#222] flex justify-between text-sm text-gray-500">
                 <span>
-                    {editor?.storage.characterCount?.words?.() || 0} words
+                    {wordCount} words
                 </span>
                 <span>
-                    {editor?.storage.characterCount?.characters?.() || 0} characters
+                    {charCount} characters
                 </span>
             </div>
         </div>
