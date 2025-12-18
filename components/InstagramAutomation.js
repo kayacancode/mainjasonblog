@@ -22,8 +22,7 @@ export default function InstagramAutomation({
     onEnabledChange,
     onCoverChange,
     onSummaryChange,
-    onPublish,
-    onRetry,
+    onReadyStateChange,
     compact = false
 }) {
     const [enabled, setEnabled] = useState(initialEnabled);
@@ -44,6 +43,12 @@ export default function InstagramAutomation({
     const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
     const [isGeneratingSlide2Preview, setIsGeneratingSlide2Preview] = useState(false);
     const [selectedSlide, setSelectedSlide] = useState(1);
+    
+    // Report ready state to parent (all slides generated + summary exists)
+    useEffect(() => {
+        const isReady = !!(slidePreview && slide2Preview && aiSummary);
+        onReadyStateChange?.(isReady);
+    }, [slidePreview, slide2Preview, aiSummary, onReadyStateChange]);
     
     // Update parent when enabled changes
     const handleEnabledChange = useCallback((newValue) => {

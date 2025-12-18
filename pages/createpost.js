@@ -27,6 +27,7 @@ const Createpost = () => {
   const [instagramPostId, setInstagramPostId] = useState(null);
   const [instagramError, setInstagramError] = useState(null);
   const [instagramPublishedAt, setInstagramPublishedAt] = useState(null);
+  const [instagramReady, setInstagramReady] = useState(false);
   const [postId, setPostId] = useState(null);
 
   useEffect(() => {
@@ -209,22 +210,6 @@ const handlePost = async (e) => {
   }
 };
 
-  // Handle Instagram publish success
-  const handleInstagramPublish = (data) => {
-    setInstagramStatus('published');
-    setInstagramPostId(data.instagramPostId);
-    setInstagramPublishedAt(new Date().toISOString());
-    setInstagramError(null);
-  };
-
-  // Handle Instagram retry success
-  const handleInstagramRetry = (data) => {
-    setInstagramStatus('published');
-    setInstagramPostId(data.instagramPostId);
-    setInstagramPublishedAt(new Date().toISOString());
-    setInstagramError(null);
-  };
-
   return (
     <div className="min-h-screen bg-[#1a1a1a] text-white">
       <div className="max-w-4xl mx-auto px-4 py-12">
@@ -329,8 +314,7 @@ const handlePost = async (e) => {
               onEnabledChange={setInstagramEnabled}
               onCoverChange={setInstagramCoverOverride}
               onSummaryChange={setInstagramAiSummary}
-              onPublish={handleInstagramPublish}
-              onRetry={handleInstagramRetry}
+              onReadyStateChange={setInstagramReady}
             />
           </div>
 
@@ -338,11 +322,16 @@ const handlePost = async (e) => {
 
           <button
             type="submit"
-            disabled={loading}
-            className="px-6 py-2 bg-[#F2EA6D] text-[#1a1a1a] rounded-lg font-bold hover:bg-[#FFD800]"
+            disabled={loading || (instagramEnabled && !instagramReady)}
+            className="px-6 py-2 bg-[#F2EA6D] text-[#1a1a1a] rounded-lg font-bold hover:bg-[#FFD800] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Saving..." : router.query.postId ? "Update Post" : "Create Post"}
           </button>
+          {instagramEnabled && !instagramReady && (
+            <p className="text-sm text-amber-400 mt-2">
+              Please generate both slides and AI summary before creating the post
+            </p>
+          )}
         </form>
       </div>
     </div>
