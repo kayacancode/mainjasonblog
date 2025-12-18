@@ -196,7 +196,26 @@ export default function InstagramAutomation({
     
     // Generate preview
     const handlePreview = async () => {
-        if (!postId) return;
+        // If we already have slide previews generated, just show those
+        if (slidePreview || slide2Preview) {
+            const slides = [];
+            if (slidePreview) slides.push(slidePreview);
+            if (slide2Preview) slides.push(slide2Preview);
+            
+            setPreviewData({
+                slides: slides,
+                caption: null,
+                aiSummary: aiSummary
+            });
+            setShowPreview(true);
+            return;
+        }
+        
+        // Otherwise, call the API to generate full preview
+        if (!postId) {
+            setError('Please save the post first or generate individual slides');
+            return;
+        }
         
         setIsGenerating(true);
         setError(null);
@@ -578,7 +597,7 @@ export default function InstagramAutomation({
                                 <button
                                     type="button"
                                     onClick={handlePreview}
-                                    disabled={isGenerating || isPublishing || !postId}
+                                    disabled={isGenerating || isPublishing || (!slidePreview && !slide2Preview && !postId)}
                                     className="px-4 py-3 bg-[#333] text-white border border-gray-600 rounded-lg font-bold hover:bg-[#444] disabled:opacity-50 transition-colors text-sm"
                                 >
                                     Open Full Preview
