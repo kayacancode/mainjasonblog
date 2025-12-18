@@ -277,6 +277,7 @@ export default function RichTextEditor({
     showTitleFields = true
 }) {
     const editor = useEditor({
+        immediatelyRender: false,
         extensions: [
             StarterKit.configure({
                 heading: {
