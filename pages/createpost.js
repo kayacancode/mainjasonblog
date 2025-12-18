@@ -28,6 +28,7 @@ const Createpost = () => {
   const [instagramPublishedAt, setInstagramPublishedAt] = useState(null);
   const [instagramReady, setInstagramReady] = useState(false);
   const [postId, setPostId] = useState(null);
+  const [currentStep, setCurrentStep] = useState("");
 
   useEffect(() => {
     if (router.query.postId) {
@@ -93,6 +94,7 @@ const handlePost = async (e) => {
 
   setLoading(true);
   setError(null);
+  setCurrentStep("Authenticating...");
 
   try {
     // Get current signed-in user
@@ -103,6 +105,7 @@ const handlePost = async (e) => {
     if (userError || !user) {
       setError("You must be signed in to create or edit a post.");
       setLoading(false);
+      setCurrentStep("");
       return;
     }
 
@@ -110,6 +113,7 @@ const handlePost = async (e) => {
     let finalImageUrl = null;
 
     if (imgFile) {
+      setCurrentStep("Uploading image...");
       // New file selected - upload it
       // Sanitize filename: replace spaces and special chars with underscores
       const sanitizedName = imgFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -138,6 +142,8 @@ const handlePost = async (e) => {
     if (isScheduled && scheduledDate && scheduledTime) {
       scheduledTimestamp = new Date(`${scheduledDate}T${scheduledTime}`);
     }
+
+    setCurrentStep(router.query.postId ? "Updating post..." : "Creating post...");
 
     // Construct post object with Instagram fields
     const postData = {
@@ -177,6 +183,7 @@ const handlePost = async (e) => {
 
     // If Instagram automation is enabled and post is published, trigger carousel generation
     if (instagramEnabled && !scheduledTimestamp && savedPostId) {
+      setCurrentStep("Preparing Instagram carousel...");
       try {
         const igResponse = await fetch('/api/blog-instagram', {
           method: 'POST',
@@ -200,6 +207,7 @@ const handlePost = async (e) => {
       }
     }
 
+    setCurrentStep("Done! Redirecting...");
     setLoading(false);
     router.push("/admindashboard");
   } catch (err) {
@@ -213,6 +221,36 @@ const handlePost = async (e) => {
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] text-white">
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-[#2a2a2a] rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl">
+            <div className="flex flex-col items-center text-center">
+              {/* Spinning loader */}
+              <div className="relative mb-6">
+                <div className="w-16 h-16 border-4 border-gray-600 border-t-[#F2EA6D] rounded-full animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-[#F2EA6D]" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z"/>
+                  </svg>
+                </div>
+              </div>
+              
+              {/* Status text */}
+              <h3 className="text-xl font-bold text-white mb-2">Creating Your Post</h3>
+              <p className="text-[#F2EA6D] font-medium text-lg animate-pulse">
+                {currentStep || "Processing..."}
+              </p>
+              
+              {/* Progress hint */}
+              <p className="text-gray-400 text-sm mt-4">
+                Please wait while we set everything up...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="mb-8">
           <Link href="/admindashboard">
