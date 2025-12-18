@@ -29,6 +29,7 @@ export default function InstagramAutomation({
     const [enabled, setEnabled] = useState(initialEnabled);
     const [aiSummary, setAiSummary] = useState(initialAiSummary);
     const [coverUrl, setCoverUrl] = useState(initialCoverUrl);
+    const [subtitle, setSubtitle] = useState('Album Review');
     const [styleRating, setStyleRating] = useState(7);
     const [feedbackNotes, setFeedbackNotes] = useState('');
     
@@ -67,7 +68,8 @@ export default function InstagramAutomation({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     coverImageUrl: coverUrl || coverImage,
-                    title
+                    title,
+                    subtitle
                 })
             });
             
@@ -207,7 +209,8 @@ export default function InstagramAutomation({
                     postId,
                     mode: 'preview',
                     customCoverUrl: coverUrl || undefined,
-                    aiSummaryOverride: aiSummary || undefined
+                    aiSummaryOverride: aiSummary || undefined,
+                    subtitle: subtitle || undefined
                 })
             });
             
@@ -254,7 +257,8 @@ export default function InstagramAutomation({
                     postId,
                     mode: 'publish',
                     customCoverUrl: coverUrl || undefined,
-                    aiSummaryOverride: aiSummary || undefined
+                    aiSummaryOverride: aiSummary || undefined,
+                    subtitle: subtitle || undefined
                 })
             });
             
@@ -522,6 +526,20 @@ export default function InstagramAutomation({
                                     placeholder="https://..."
                                     className="w-full bg-[#222] border border-gray-700 text-white px-3 py-2 rounded-lg text-sm focus:ring-1 focus:ring-[#F2EA6D] focus:border-[#F2EA6D] outline-none transition-all"
                                 />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-xs text-gray-400 mb-2 uppercase tracking-wider font-bold">
+                                    Subtitle (Post Type)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={subtitle}
+                                    onChange={(e) => setSubtitle(e.target.value)}
+                                    placeholder="Album Review"
+                                    className="w-full bg-[#222] border border-gray-700 text-white px-3 py-2 rounded-lg text-sm focus:ring-1 focus:ring-[#F2EA6D] focus:border-[#F2EA6D] outline-none transition-all"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Appears on cover slide (e.g., Album Review, New Release, Interview)</p>
                             </div>
                         </div>
 

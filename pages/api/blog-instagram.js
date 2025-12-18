@@ -50,7 +50,8 @@ export default async function handler(req, res) {
         pageAccessToken,
         customCaption,
         customCoverUrl,
-        aiSummaryOverride
+        aiSummaryOverride,
+        subtitle
     } = req.body;
     
     if (!postId) {
@@ -153,7 +154,8 @@ export default async function handler(req, res) {
             postId,
             title: post.title,
             coverImageUrl,
-            aiSummary
+            aiSummary,
+            subtitle: subtitle || 'Album Review'
         });
         
         const imageUrls = [slide1Url, slide2Url];
