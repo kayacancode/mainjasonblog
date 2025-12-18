@@ -1,14 +1,26 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import InstagramAutomation from "../components/InstagramAutomation";
 import { supabase } from "../lib/supabaseClient";
+
+// Dynamically import the editor to avoid SSR issues
+const RichTextEditor = dynamic(() => import("../components/RichTextEditor"), {
+  ssr: false,
+  loading: () => (
+    <div className="bg-[#2a2a2a] rounded-xl border border-gray-700 p-8 text-center text-gray-400">
+      Loading editor...
+    </div>
+  ),
+});
 
 const Createpost = () => {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
+  const [subtitle, setSubtitle] = useState("");
   const [postText, setPostText] = useState("");
   const [imgFile, setImgFile] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
@@ -48,6 +60,7 @@ const Createpost = () => {
       if (error) throw error;
 
       setTitle(post.title);
+      setSubtitle(post.subtitle || "");
       setPostText(post.post_text);
       setImageUrl(post.post_img);
       setPreviewImage(post.post_img);
@@ -148,6 +161,7 @@ const handlePost = async (e) => {
     // Construct post object with Instagram fields
     const postData = {
       title,
+      subtitle: subtitle || null,
       post_text: postText,
       post_img: finalImageUrl,
       scheduled_for: scheduledTimestamp,
@@ -263,70 +277,105 @@ const handlePost = async (e) => {
         </div>
 
         <form className="space-y-6" onSubmit={handlePost}>
-          <h1 className="text-4xl font-bold text-[#F2EA6D] border-b-4 border-[#FFD800] pb-2 inline-block">
-            {router.query.postId ? "Edit Blog Post" : "Create a New Blog Post"}
-          </h1>
-
-          <div>
-            <label className="block text-lg mb-2">Title *</label>
-            <input
-              value={title}
-              required
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg bg-[#2a2a2a] border border-gray-700 focus:border-[#F2EA6D] focus:ring-2 focus:ring-[#F2EA6D]"
-            />
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold text-[#F2EA6D]">
+              {router.query.postId ? "Edit Blog Post" : "Create a New Blog Post"}
+            </h1>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => router.push("/admindashboard")}
+                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading || (instagramEnabled && !instagramReady) || !title || !postText}
+                className="px-6 py-2 bg-[#F2EA6D] text-[#1a1a1a] rounded-lg font-bold hover:bg-[#FFD800] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loading ? "Saving..." : router.query.postId ? "Update Post" : "Publish"}
+              </button>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-lg mb-2">Content *</label>
-            <textarea
-              value={postText}
-              required
-              onChange={(e) => setPostText(e.target.value)}
-              className="w-full h-64 px-4 py-2 rounded-lg bg-[#2a2a2a] border border-gray-700 focus:border-[#F2EA6D] focus:ring-2 focus:ring-[#F2EA6D]"
-              placeholder="Write your blog post content here..."
-            />
+          {/* Rich Text Editor */}
+          <RichTextEditor
+            content={postText}
+            onChange={setPostText}
+            title={title}
+            onTitleChange={setTitle}
+            subtitle={subtitle}
+            onSubtitleChange={setSubtitle}
+            placeholder="Start writing your story..."
+          />
+
+          {/* Cover Image Upload */}
+          <div className="bg-[#2a2a2a] rounded-xl border border-gray-700 p-6">
+            <label className="block text-lg font-semibold mb-4 text-white">Cover Image</label>
+            <div className="flex items-center gap-4">
+              <label className="flex-1 cursor-pointer">
+                <div className="flex items-center justify-center px-6 py-4 border-2 border-dashed border-gray-600 rounded-lg hover:border-[#F2EA6D] transition-colors">
+                  <div className="text-center">
+                    <svg className="w-8 h-8 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-gray-400 text-sm">Click to upload or drag and drop</p>
+                    <p className="text-gray-500 text-xs mt-1">PNG, JPG, GIF up to 10MB</p>
+                  </div>
+                </div>
+                <input 
+                  type="file" 
+                  onChange={selectImage}
+                  accept="image/*"
+                  className="hidden"
+                />
+              </label>
+              {previewImage && (
+                <div className="relative">
+                  <img src={previewImage} alt="Preview" className="h-32 w-32 object-cover rounded-lg border border-gray-700" />
+                  <button
+                    type="button"
+                    onClick={() => { setPreviewImage(null); setImgFile(null); setImageUrl(null); }}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div>
-            <label className="block text-lg mb-2">Upload Image</label>
-            <input 
-              type="file" 
-              onChange={selectImage}
-              accept="image/*"
-              className="w-full px-4 py-2 rounded-lg bg-[#2a2a2a] border border-gray-700 focus:border-[#F2EA6D] focus:ring-2 focus:ring-[#F2EA6D] text-white"
-            />
-            {previewImage && (
-              <div className="mt-4">
-                <label className="block text-sm text-gray-400 mb-2">Image Preview:</label>
-                <img src={previewImage} alt="Preview" className="max-h-64 rounded-lg border border-gray-700" />
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label>
+          {/* Scheduling Options */}
+          <div className="bg-[#2a2a2a] rounded-xl border border-gray-700 p-6">
+            <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={isScheduled}
                 onChange={(e) => setIsScheduled(e.target.checked)}
-              />{" "}
-              Schedule for later
+                className="w-5 h-5 rounded border-gray-600 bg-[#1a1a1a] text-[#F2EA6D] focus:ring-[#F2EA6D]"
+              />
+              <div>
+                <span className="text-white font-medium">Schedule for later</span>
+                <p className="text-gray-400 text-sm">Set a specific date and time to publish</p>
+              </div>
             </label>
             {isScheduled && (
-              <div className="flex gap-4 mt-2">
+              <div className="flex gap-4 mt-4 ml-8">
                 <input
                   type="date"
                   value={scheduledDate}
                   onChange={(e) => setScheduledDate(e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
-                  className="px-2 py-1 rounded bg-[#1a1a1a] border border-gray-700"
+                  className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-gray-700 text-white focus:border-[#F2EA6D] focus:ring-1 focus:ring-[#F2EA6D]"
                 />
                 <input
                   type="time"
                   value={scheduledTime}
                   onChange={(e) => setScheduledTime(e.target.value)}
-                  className="px-2 py-1 rounded bg-[#1a1a1a] border border-gray-700"
+                  className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-gray-700 text-white focus:border-[#F2EA6D] focus:ring-1 focus:ring-[#F2EA6D]"
                 />
               </div>
             )}
@@ -353,20 +402,30 @@ const handlePost = async (e) => {
             />
           </div>
 
-          {error && <div className="text-red-500">{error}</div>}
-
-          <button
-            type="submit"
-            disabled={loading || (instagramEnabled && !instagramReady)}
-            className="px-6 py-2 bg-[#F2EA6D] text-[#1a1a1a] rounded-lg font-bold hover:bg-[#FFD800] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Saving..." : router.query.postId ? "Update Post" : "Create Post"}
-          </button>
-          {instagramEnabled && !instagramReady && (
-            <p className="text-sm text-amber-400 mt-2">
-              Please generate both slides and AI summary before creating the post
-            </p>
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
+              {error}
+            </div>
           )}
+
+          {/* Bottom Action Bar */}
+          <div className="flex items-center justify-between py-4 border-t border-gray-700">
+            <div className="text-sm text-gray-400">
+              {instagramEnabled && !instagramReady && (
+                <span className="text-amber-400">
+                  Generate slides and AI summary to publish with Instagram
+                </span>
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={loading || (instagramEnabled && !instagramReady) || !title || !postText}
+              className="px-8 py-3 bg-gradient-to-r from-[#F2EA6D] to-[#FFD800] text-[#1a1a1a] rounded-lg font-bold hover:from-[#FFD800] hover:to-[#F2EA6D] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-yellow-900/20"
+            >
+              {loading ? "Publishing..." : router.query.postId ? "Update Post" : "Publish"}
+            </button>
+          </div>
         </form>
       </div>
     </div>
