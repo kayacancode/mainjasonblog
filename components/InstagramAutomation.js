@@ -34,7 +34,6 @@ export default function InstagramAutomation({
     const [feedbackNotes, setFeedbackNotes] = useState('');
     
     const [isGenerating, setIsGenerating] = useState(false);
-    const [isPublishing, setIsPublishing] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     const [previewData, setPreviewData] = useState(null);
     const [error, setError] = useState(null);
@@ -258,75 +257,6 @@ export default function InstagramAutomation({
         }
     };
     
-    // Publish to Instagram
-    const handlePublish = async () => {
-        if (!postId || isPublishing) return;
-        
-        const confirmed = window.confirm('Publish this post to Instagram?');
-        if (!confirmed) return;
-        
-        setIsPublishing(true);
-        setError(null);
-        
-        try {
-            const response = await fetch('/api/blog-instagram', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    postId,
-                    mode: 'publish',
-                    customCoverUrl: coverUrl || undefined,
-                    aiSummaryOverride: aiSummary || undefined,
-                    subtitle: subtitle || undefined
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                onPublish?.(data);
-                alert('Successfully published to Instagram!');
-            } else {
-                setError(data.error || 'Failed to publish');
-            }
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setIsPublishing(false);
-        }
-    };
-    
-    // Retry failed publish
-    const handleRetry = async () => {
-        if (!postId || isPublishing) return;
-        
-        setIsPublishing(true);
-        setError(null);
-        
-        try {
-            const response = await fetch('/api/blog-instagram', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    postId,
-                    mode: 'retry'
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                onRetry?.(data);
-                alert('Successfully published to Instagram!');
-            } else {
-                setError(data.error || 'Retry failed');
-            }
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setIsPublishing(false);
-        }
-    };
     
     // Submit feedback
     const handleSubmitFeedback = async () => {
@@ -358,15 +288,6 @@ export default function InstagramAutomation({
                     error={instagramError}
                     size="sm"
                 />
-                {initialStatus === 'failed' && (
-                    <button
-                        onClick={handleRetry}
-                        disabled={isPublishing}
-                        className="text-xs text-black hover:underline disabled:opacity-50"
-                    >
-                        Retry
-                    </button>
-                )}
             </div>
         );
     }
@@ -593,35 +514,15 @@ export default function InstagramAutomation({
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="grid grid-cols-2 gap-3 pt-4">
+                            <div className="pt-4">
                                 <button
                                     type="button"
                                     onClick={handlePreview}
-                                    disabled={isGenerating || isPublishing || (!slidePreview && !slide2Preview && !postId)}
-                                    className="px-4 py-3 bg-[#333] text-white border border-gray-600 rounded-lg font-bold hover:bg-[#444] disabled:opacity-50 transition-colors text-sm"
+                                    disabled={isGenerating || (!slidePreview && !slide2Preview && !postId)}
+                                    className="w-full px-4 py-3 bg-[#333] text-white border border-gray-600 rounded-lg font-bold hover:bg-[#444] disabled:opacity-50 transition-colors text-sm"
                                 >
                                     Open Full Preview
                                 </button>
-                                
-                                {initialStatus === 'failed' ? (
-                                    <button
-                                        type="button"
-                                        onClick={handleRetry}
-                                        disabled={isPublishing}
-                                        className="px-4 py-3 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 disabled:opacity-50 transition-colors text-sm"
-                                    >
-                                        Retry Publish
-                                    </button>
-                                ) : initialStatus !== 'published' && (
-                                    <button
-                                        type="button"
-                                        onClick={handlePublish}
-                                        disabled={isPublishing || initialStatus === 'publishing'}
-                                        className="px-4 py-3 bg-[#F2EA6D] text-black rounded-lg font-bold hover:bg-[#FFD800] disabled:opacity-50 transition-colors text-sm shadow-lg shadow-yellow-900/20"
-                                    >
-                                        {isPublishing ? 'Publishing...' : 'Publish Now'}
-                                    </button>
-                                )}
                             </div>
                             
                             {initialStatus === 'published' && instagramPostId && (
