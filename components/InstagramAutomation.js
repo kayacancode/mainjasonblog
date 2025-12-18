@@ -188,13 +188,103 @@ export default function InstagramAutomation({
             if (data.success) {
                 setAiSummary(data.summary);
                 onSummaryChange?.(data.summary);
+                return data.summary; // Return for use in generateAll
             } else {
                 setError(data.error || 'Failed to generate summary');
+                return null;
             }
         } catch (err) {
             setError(err.message);
+            return null;
         } finally {
             setIsGenerating(false);
+        }
+    };
+    
+    // State for generate all
+    const [isGeneratingAll, setIsGeneratingAll] = useState(false);
+    
+    // Generate all components at once (AI summary, Slide 1, Slide 2)
+    const handleGenerateAll = async () => {
+        if (!title || !content) {
+            setError('Please enter a title and content first');
+            return;
+        }
+        
+        if (!coverImage && !coverUrl) {
+            setError('Please upload a cover image first');
+            return;
+        }
+        
+        setIsGeneratingAll(true);
+        setError(null);
+        
+        try {
+            // Step 1: Generate AI Summary
+            const summaryResponse = await fetch('/api/ai/generate-style-caption', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    postId,
+                    title,
+                    content,
+                    regenerate: false
+                })
+            });
+            
+            const summaryData = await summaryResponse.json();
+            let generatedSummary = aiSummary;
+            
+            if (summaryData.success) {
+                generatedSummary = summaryData.summary;
+                setAiSummary(summaryData.summary);
+                onSummaryChange?.(summaryData.summary);
+            } else {
+                throw new Error(summaryData.error || 'Failed to generate summary');
+            }
+            
+            // Step 2: Generate Slide 1
+            const slide1Response = await fetch('/api/preview-slide', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    coverImageUrl: coverUrl || coverImage,
+                    title,
+                    subtitle
+                })
+            });
+            
+            const slide1Data = await slide1Response.json();
+            
+            if (slide1Data.success) {
+                setSlidePreview(slide1Data.preview);
+            } else {
+                throw new Error(slide1Data.error || 'Failed to generate slide 1');
+            }
+            
+            // Step 3: Generate Slide 2
+            const slide2Response = await fetch('/api/preview-slide2', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title,
+                    summaryText: generatedSummary
+                })
+            });
+            
+            const slide2Data = await slide2Response.json();
+            
+            if (slide2Data.success) {
+                setSlide2Preview(slide2Data.preview);
+                setSelectedSlide(1); // Show slide 1 first
+            } else {
+                throw new Error(slide2Data.error || 'Failed to generate slide 2');
+            }
+            
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsGeneratingAll(false);
         }
     };
     
@@ -340,7 +430,33 @@ export default function InstagramAutomation({
                 </div>
                 
                 {enabled && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="animate-in fade-in slide-in-from-top-4 duration-300 space-y-6">
+                        {/* Generate All Button */}
+                        <button
+                            type="button"
+                            onClick={handleGenerateAll}
+                            disabled={isGeneratingAll || !title || !content || (!coverImage && !coverUrl)}
+                            className="w-full px-6 py-4 bg-gradient-to-r from-[#F2EA6D] to-[#FFD800] text-black rounded-xl font-bold text-lg hover:from-[#FFD800] hover:to-[#F2EA6D] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-yellow-900/20 flex items-center justify-center gap-3"
+                        >
+                            {isGeneratingAll ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Generating Everything...
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                    Generate All (Summary + Both Slides)
+                                </>
+                            )}
+                        </button>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {/* Left Column: Visuals */}
                         <div className="space-y-6">
                             <div className="flex items-center justify-between">
