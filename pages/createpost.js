@@ -368,6 +368,7 @@ const handlePost = async (e) => {
                   type="date"
                   value={scheduledDate}
                   onChange={(e) => setScheduledDate(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                   min={new Date().toISOString().split("T")[0]}
                   className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-gray-700 text-white focus:border-[#F2EA6D] focus:ring-1 focus:ring-[#F2EA6D]"
                 />
@@ -375,6 +376,7 @@ const handlePost = async (e) => {
                   type="time"
                   value={scheduledTime}
                   onChange={(e) => setScheduledTime(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                   className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-gray-700 text-white focus:border-[#F2EA6D] focus:ring-1 focus:ring-[#F2EA6D]"
                 />
               </div>

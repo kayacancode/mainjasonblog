@@ -339,6 +339,7 @@ export default function RichTextEditor({
                         type="text"
                         value={title}
                         onChange={(e) => onTitleChange?.(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                         placeholder="Title"
                         className="w-full bg-transparent text-4xl font-bold text-white placeholder-gray-500 focus:outline-none"
                     />
@@ -346,6 +347,7 @@ export default function RichTextEditor({
                         type="text"
                         value={subtitle}
                         onChange={(e) => onSubtitleChange?.(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                         placeholder="Add a subtitle..."
                         className="w-full bg-transparent text-xl text-gray-400 placeholder-gray-600 focus:outline-none"
                     />
