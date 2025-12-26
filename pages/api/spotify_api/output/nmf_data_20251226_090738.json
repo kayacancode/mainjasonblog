@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-12-26T09:07:40.225136",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "7cjoZVmWe2xsGR4wcXiV2v",
+      "name": "What You Saying",
+      "artist": "Lil Uzi Vert",
+      "album": "What You Saying",
+      "popularity": 63,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27338b6341d4c2a56836a650165",
+      "spotify_url": "https://open.spotify.com/track/7cjoZVmWe2xsGR4wcXiV2v",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5gcSixCZPqOiHzlP6KftW5",
+      "name": "P. Family",
+      "artist": "Tory Lanez",
+      "album": "P. Family",
+      "popularity": 45,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2738c975632d50c71ce3b203668",
+      "spotify_url": "https://open.spotify.com/track/5gcSixCZPqOiHzlP6KftW5",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "0rgYR052e72ts19CQkRJUv",
+      "name": "4 SEASONS",
+      "artist": "XG",
+      "album": "4 SEASONS",
+      "popularity": 34,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2731e248d50495d5d631f206df2",
+      "spotify_url": "https://open.spotify.com/track/0rgYR052e72ts19CQkRJUv",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "1p8ekMOVjF4IZHcOr56P0u",
+      "name": "Leave Em Alone",
+      "artist": "Loe Shimmy",
+      "album": "Rockstar Junkie: after the party",
+      "popularity": 33,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273fe77b62d5e2dcca4639ad57e",
+      "spotify_url": "https://open.spotify.com/track/1p8ekMOVjF4IZHcOr56P0u",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5Qnq1GhCBSsAkipZtjsVkF",
+      "name": "EN TU MIRADAaaaa",
+      "artist": "Alleh, Yorghaki",
+      "album": "LA FORMULA",
+      "popularity": 14,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273c6767d6df25581bab6059bb3",
+      "spotify_url": "https://open.spotify.com/track/5Qnq1GhCBSsAkipZtjsVkF",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5BYDUYlBD8tXz9mecUPruc",
+      "name": "Fiyah",
+      "artist": "Max B, Lola Brooke",
+      "album": "Public Domain 7: the Purge (Patient Zero Deluxe)",
+      "popularity": 22,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273f0a72f6f554c497f4ed7b952",
+      "spotify_url": "https://open.spotify.com/track/5BYDUYlBD8tXz9mecUPruc",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "3ZjSNhazWZS4LWDFsql1Jy",
+      "name": "Chase a Check",
+      "artist": "Max B, A$AP Rocky",
+      "album": "Public Domain 7: the Purge (Patient Zero Deluxe)",
+      "popularity": 21,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273f0a72f6f554c497f4ed7b952",
+      "spotify_url": "https://open.spotify.com/track/3ZjSNhazWZS4LWDFsql1Jy",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "27N2bd3ait2QOnprc4seCK",
+      "name": "RIVER",
+      "artist": "¥$, Kanye West, Ty Dolla $ign",
+      "album": "VULTURES 2",
+      "popularity": 3,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273445e7de7cb6abdaafd6ffb76",
+      "spotify_url": "https://open.spotify.com/track/27N2bd3ait2QOnprc4seCK",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "0NV2KZOCbc6YdrUmB0QYeO",
+      "name": "Let Me - Bonus",
+      "artist": "Tory Lanez",
+      "album": "Chixtapes (Trilogy)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2734bcf03a94384725cb1ff2438",
+      "spotify_url": "https://open.spotify.com/track/0NV2KZOCbc6YdrUmB0QYeO",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "5YwHFgUbvXQfiJKQRCYXq6",
+      "name": "Gimmie The Bag",
+      "artist": "SL",
+      "album": "Gimmie The Bag",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273e9ccd724e388bb3a28d535e8",
+      "spotify_url": "https://open.spotify.com/track/5YwHFgUbvXQfiJKQRCYXq6",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}
