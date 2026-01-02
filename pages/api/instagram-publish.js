@@ -5,10 +5,19 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Lazy Supabase client to avoid module-level errors
+let supabaseInstance = null;
+function getSupabase() {
+    if (!supabaseInstance) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (!supabaseUrl || !supabaseKey) {
+            throw new Error('Missing Supabase environment variables');
+        }
+        supabaseInstance = createClient(supabaseUrl, supabaseKey);
+    }
+    return supabaseInstance;
+}
 
 // Instagram API configuration
 const INSTAGRAM_API_BASE = 'https://graph.facebook.com/v18.0';

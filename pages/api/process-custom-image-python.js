@@ -6,12 +6,23 @@ import { writeFileSync, unlinkSync } from 'fs';
 import { tmpdir } from 'os';
 
 const execAsync = promisify(exec);
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
-);
+
+// Lazy Supabase client to avoid module-level errors
+let supabaseInstance = null;
+function getSupabase() {
+    if (!supabaseInstance) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+        if (!supabaseUrl || !supabaseKey) {
+            throw new Error('Missing Supabase environment variables');
+        }
+        supabaseInstance = createClient(supabaseUrl, supabaseKey);
+    }
+    return supabaseInstance;
+}
 
 export default async function handler(req, res) {
+    const supabase = getSupabase();
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }

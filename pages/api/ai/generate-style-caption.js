@@ -6,13 +6,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { buildSystemPrompt, buildSummaryPrompt, hashPrompt } from '../../../lib/ai/prompts';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
-
-// Lazy Supabase client
+// Lazy Supabase client to avoid module-level errors
 let supabaseClient = null;
 function getSupabase() {
     if (!supabaseClient) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
         if (!supabaseUrl || !supabaseKey) {
             throw new Error('Missing Supabase environment variables');
         }
