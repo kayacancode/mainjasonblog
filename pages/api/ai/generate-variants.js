@@ -164,8 +164,8 @@ export default async function handler(req, res) {
 async function generateVariant(type, params, title, content, exampleCaptions) {
     const maxLength = 400;
 
-    // Build prompts with style parameters
-    const systemPrompt = buildSystemPrompt({}, params);
+    // Build prompts with style parameters (buildSystemPrompt is async)
+    const systemPrompt = await buildSystemPrompt({}, params);
     const userPrompt = buildSummaryPrompt({
         title,
         content,
