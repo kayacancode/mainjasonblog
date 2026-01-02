@@ -91,6 +91,7 @@ export default function VariantCard({
                 <div className="flex items-center gap-2">
                     {/* Quick Feedback */}
                     <button
+                        type="button"
                         onClick={() => onThumbsUp(id)}
                         className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                         title="Like this variant"
@@ -100,6 +101,7 @@ export default function VariantCard({
                     </button>
 
                     <button
+                        type="button"
                         onClick={() => onThumbsDown(id)}
                         className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                         title="Dislike this variant"
@@ -112,6 +114,7 @@ export default function VariantCard({
                 <div className="flex items-center gap-2 mt-2">
                     {/* Select Button */}
                     <button
+                        type="button"
                         onClick={() => onSelect(variant)}
                         className={`
                             flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors
@@ -127,6 +130,7 @@ export default function VariantCard({
 
                     {/* Detailed Feedback Button */}
                     <button
+                        type="button"
                         onClick={() => onDetailedFeedback(variant)}
                         className="flex-1 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                     >

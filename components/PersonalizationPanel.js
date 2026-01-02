@@ -211,6 +211,7 @@ export default function PersonalizationPanel({
 
                 {/* Generate Button */}
                 <button
+                    type="button"
                     onClick={handleGenerateVariants}
                     disabled={isGenerating || !title || !content}
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-4 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
