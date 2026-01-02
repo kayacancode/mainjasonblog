@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
+import InstagramStatusBadge from "../components/InstagramStatusBadge";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -676,7 +677,7 @@ export default function AdminDashboard() {
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2 mb-1">
+                            <div className="flex items-center space-x-2 mb-1 flex-wrap gap-1">
                               <h3 className="font-medium text-gray-900 truncate text-sm sm:text-base">{post.title}</h3>
                               {postFilter === 'all' && (
                                 <span className={`text-xs font-medium px-2 py-1 rounded-full ${
@@ -687,9 +688,21 @@ export default function AdminDashboard() {
                                   {post.is_published ? 'Published' : 'Unpublished'}
                                 </span>
                               )}
+                              {post.instagram_enabled && (
+                                <InstagramStatusBadge 
+                                  status={post.instagram_status || 'none'} 
+                                  error={post.instagram_error}
+                                  size="sm"
+                                />
+                              )}
                             </div>
                             <p className="text-xs sm:text-sm text-gray-500 mt-1">
                               {safeFormatDate(post.created_at)}
+                              {post.instagram_published_at && (
+                                <span className="ml-2 text-purple-600">
+                                  IG: {safeFormatDate(post.instagram_published_at)}
+                                </span>
+                              )}
                             </p>
                           </div>
                         </div>

@@ -70,9 +70,10 @@ const ViewPost = () => {
       )}
 
       <div className="px-6 md:px-20 lg:px-40 py-10">
-        <p className="text-white text-2xl leading-relaxed whitespace-pre-line">
-          {data?.post_text}
-        </p>
+        <article 
+          className="prose prose-lg prose-invert max-w-none prose-headings:text-white prose-p:text-gray-200 prose-p:text-xl prose-p:leading-relaxed prose-strong:text-white prose-a:text-[#F2EA6D] prose-a:no-underline hover:prose-a:underline prose-blockquote:border-l-[#F2EA6D] prose-blockquote:text-gray-400 prose-code:text-[#F2EA6D] prose-pre:bg-[#1a1a1a] prose-img:rounded-lg prose-img:mx-auto"
+          dangerouslySetInnerHTML={{ __html: data?.post_text || '' }}
+        />
       </div>
     </div>
   );
