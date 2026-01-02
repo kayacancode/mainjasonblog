@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-12-19T09:08:07.009138",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "0XJMI2EKsHpaV4kMxz50fD",
+      "name": "War",
+      "artist": "ILLENIUM, Lø Spirit",
+      "album": "War",
+      "popularity": 50,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27320471551c9cf165527ac2dfb",
+      "spotify_url": "https://open.spotify.com/track/0XJMI2EKsHpaV4kMxz50fD",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "3SKyzZJvKDSabul0KwvMzn",
+      "name": "Top Cobain",
+      "artist": "YoungBoy Never Broke Again",
+      "album": "Top Cobain",
+      "popularity": 47,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2735d6aba7fa35253d6e24006d8",
+      "spotify_url": "https://open.spotify.com/track/3SKyzZJvKDSabul0KwvMzn",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "6psC5fIFB5JXTOdw01ghOj",
+      "name": "winter's excuse",
+      "artist": "Rin, Esha Tewari",
+      "album": "winter's excuse",
+      "popularity": 40,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273ab6f70ae29654d750f44a331",
+      "spotify_url": "https://open.spotify.com/track/6psC5fIFB5JXTOdw01ghOj",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "6ITAd4qAw09I14eSFbbQdV",
+      "name": "Own It (feat. Jordana)",
+      "artist": "Monster Rally, Jordana",
+      "album": "Own It (feat. Jordana)",
+      "popularity": 23,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2732494a44aa6568e1a3fbb39eb",
+      "spotify_url": "https://open.spotify.com/track/6ITAd4qAw09I14eSFbbQdV",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "0eJHzodSFJVXC1HD4O3AEq",
+      "name": "Deep",
+      "artist": "Girlfriend",
+      "album": "Deep",
+      "popularity": 10,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273cad7ad31a5e78217d3533305",
+      "spotify_url": "https://open.spotify.com/track/0eJHzodSFJVXC1HD4O3AEq",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "28DObS2DKp873VEg15mXqs",
+      "name": "KIA BOYZ",
+      "artist": "Doe Boy",
+      "album": "KIA BOYZ",
+      "popularity": 1,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273f52a32dbc9a0ab9e3b880274",
+      "spotify_url": "https://open.spotify.com/track/28DObS2DKp873VEg15mXqs",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "3xZT6OEmmI8bpMKkmGIlwt",
+      "name": "Paper Low",
+      "artist": "DaBaby",
+      "album": "Paper Low",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27383befaf0858f99cea043a834",
+      "spotify_url": "https://open.spotify.com/track/3xZT6OEmmI8bpMKkmGIlwt",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "007REOMMTHhzCr6w1WT2ER",
+      "name": "Hoes Be Mad - 2.0",
+      "artist": "Cash Cobain, BunnaB, YKNIECE, Loe Shimmy, ZEDDY WILL",
+      "album": "Hoes Be Mad (2.0)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273f0edfb6631c1afeda5dd08f5",
+      "spotify_url": "https://open.spotify.com/track/007REOMMTHhzCr6w1WT2ER",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "4aUh8bdOVGTWsruzjsWOzi",
+      "name": "6k Followers - Bonus",
+      "artist": "Damzz",
+      "album": "Recency Bias V5",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2738eaea27b4a8b0285791c9290",
+      "spotify_url": "https://open.spotify.com/track/4aUh8bdOVGTWsruzjsWOzi",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "7INPzuYjAXGeb7p7kHeieu",
+      "name": "Red Rose White Ceiling_BLUE",
+      "artist": "REASON, Jayson Cash",
+      "album": "Everything In My Soul_BLUE (Extended)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27399c0d8753c32a67914733c7f",
+      "spotify_url": "https://open.spotify.com/track/7INPzuYjAXGeb7p7kHeieu",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}

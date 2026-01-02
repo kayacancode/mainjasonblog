@@ -1,0 +1,106 @@
+{
+  "generated_at": "2025-12-05T09:06:58.628734",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "4T5bTjkZ5Ig3SPJnovf5GN",
+      "name": "silent treatment",
+      "artist": "Freya Skye",
+      "album": "silent treatment",
+      "popularity": 58,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2734df48159d03af3c7832cf3a6",
+      "spotify_url": "https://open.spotify.com/track/4T5bTjkZ5Ig3SPJnovf5GN",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "3NZ3oBrDN9D2Bi1hykwXHb",
+      "name": "Regular",
+      "artist": "Lil Uzi Vert",
+      "album": "Regular",
+      "popularity": 58,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273f50385c970b3e493777ddc73",
+      "spotify_url": "https://open.spotify.com/track/3NZ3oBrDN9D2Bi1hykwXHb",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "4uincenPTAa44KUmUQXbQC",
+      "name": "Pikito",
+      "artist": "Ozuna, Beéle",
+      "album": "Pikito",
+      "popularity": 52,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273f45275de586f83fa283f5d51",
+      "spotify_url": "https://open.spotify.com/track/4uincenPTAa44KUmUQXbQC",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5yz9WYVGhteTugXMM1WmGG",
+      "name": "risky",
+      "artist": "Karri",
+      "album": "risky",
+      "popularity": 35,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2737d892b908333a35eebe18a8c",
+      "spotify_url": "https://open.spotify.com/track/5yz9WYVGhteTugXMM1WmGG",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "5lIW37wg5kwRWcbUYlTpuP",
+      "name": "Got Away (feat. Royal & the Serpent)",
+      "artist": "Subtronics, ILLENIUM, Royal & the Serpent",
+      "album": "Got Away (feat. Royal & the Serpent)",
+      "popularity": 21,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273d316c48ce34e40b0591d70fc",
+      "spotify_url": "https://open.spotify.com/track/5lIW37wg5kwRWcbUYlTpuP",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "62VlQK6p6fQhkF8PHkFT9a",
+      "name": "24hrs",
+      "artist": "DDG",
+      "album": "don't overthink it",
+      "popularity": 45,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2736e9043096db1b6e819d84583",
+      "spotify_url": "https://open.spotify.com/track/62VlQK6p6fQhkF8PHkFT9a",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "6YVep7w7MrmDG5AxToDFex",
+      "name": "Buratino",
+      "artist": "6ix9ine, MARGO",
+      "album": "Buratino",
+      "popularity": 18,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273f057f84f529ed6257d0a4b37",
+      "spotify_url": "https://open.spotify.com/track/6YVep7w7MrmDG5AxToDFex",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "2J3Ek3iS0CdVSsW5tGIjyU",
+      "name": "Variables - Lost Tapes 2022",
+      "artist": "Tory Lanez",
+      "album": "Variables (Lost Tapes 2022)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2739cf845085cc082b0c658c8c7",
+      "spotify_url": "https://open.spotify.com/track/2J3Ek3iS0CdVSsW5tGIjyU",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "7qZTej3fwKIQkPYZV3FYZw",
+      "name": "Whispering (Club Vibe)",
+      "artist": "Blanco",
+      "album": "Whispering (Club Vibe)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273e341948d5d32c9199fe5777e",
+      "spotify_url": "https://open.spotify.com/track/7qZTej3fwKIQkPYZV3FYZw",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "5S5vhjCKLGxNWiFtFwEqKB",
+      "name": "Heatwave (feat. SSG Splurge)",
+      "artist": "BashfortheWorld, SSG Splurge",
+      "album": "Migo In America (Deluxe)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273a1c355cf49ac1770217ac8ca",
+      "spotify_url": "https://open.spotify.com/track/5S5vhjCKLGxNWiFtFwEqKB",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}

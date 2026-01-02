@@ -1,0 +1,106 @@
+{
+  "generated_at": "2026-01-02T09:08:49.296134",
+  "track_count": 10,
+  "tracks": [
+    {
+      "id": "2igNvPf7RLTZG688Mx8GtU",
+      "name": "girl, get up. (feat. SZA)",
+      "artist": "Doechii, SZA",
+      "album": "girl, get up. (feat. SZA)",
+      "popularity": 48,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2738e7dc1d5e276c92b8ce551b6",
+      "spotify_url": "https://open.spotify.com/track/2igNvPf7RLTZG688Mx8GtU",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "3XwNVpJCF4d2yLtXSffnds",
+      "name": "Going To London",
+      "artist": "Robbie Doherty",
+      "album": "2025 Archive",
+      "popularity": 25,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273b8b9447922deb42aae64c9dd",
+      "spotify_url": "https://open.spotify.com/track/3XwNVpJCF4d2yLtXSffnds",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "3Y1xjjepdqMP141ipYCAqA",
+      "name": "Inglés En Miami",
+      "artist": "Rawayana, Manuel Turizo",
+      "album": "¿Dónde Es El After?",
+      "popularity": 16,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273932fe6d260177091a0e115ba",
+      "spotify_url": "https://open.spotify.com/track/3Y1xjjepdqMP141ipYCAqA",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "3fPXv60Pp9jLGYrjd1RoNd",
+      "name": "Listen To Me",
+      "artist": "Lost Frequencies, CIEL., Radio Cargo",
+      "album": "Listen To Me",
+      "popularity": 13,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273747180238bc7efb12ace02be",
+      "spotify_url": "https://open.spotify.com/track/3fPXv60Pp9jLGYrjd1RoNd",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "1z6KDSVHP7QnNVCk2ZWcFQ",
+      "name": "Dreams",
+      "artist": "Anyma, HILLS",
+      "album": "The End Of Genesys (Deluxe)",
+      "popularity": 9,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2730a128379309c5c4a1725cca9",
+      "spotify_url": "https://open.spotify.com/track/1z6KDSVHP7QnNVCk2ZWcFQ",
+      "playlist_source": "New Music Friday"
+    },
+    {
+      "id": "028tAauG6Q2awh1vaOnBKl",
+      "name": "I'm Fr This Time",
+      "artist": "Sam Pain",
+      "album": "God's Favorite",
+      "popularity": 2,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2737a617635f2ad23d0d7e47982",
+      "spotify_url": "https://open.spotify.com/track/028tAauG6Q2awh1vaOnBKl",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "67cAlA3kDjijRAQQ4WD4eh",
+      "name": "Killa Cam",
+      "artist": "Sam Pain, Babyface Ray, Samuel Shabazz",
+      "album": "God's Favorite",
+      "popularity": 1,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b2737a617635f2ad23d0d7e47982",
+      "spotify_url": "https://open.spotify.com/track/67cAlA3kDjijRAQQ4WD4eh",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "7xSHMDxxllvvh0ZNotHI0q",
+      "name": "Don't Insult Me (Ft. Twin)",
+      "artist": "DaBaby",
+      "album": "Don't Insult Me (Ft. Twin)",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273e402da7b0a31fdf15551eda6",
+      "spotify_url": "https://open.spotify.com/track/7xSHMDxxllvvh0ZNotHI0q",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "2RsXDEF05f7Ji6p5cbYaqT",
+      "name": "BACK WHEN YOU WERE MINE",
+      "artist": "The Kid LAROI",
+      "album": "BACK WHEN YOU WERE MINE",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b27391928f6018da803dda58ae50",
+      "spotify_url": "https://open.spotify.com/track/2RsXDEF05f7Ji6p5cbYaqT",
+      "playlist_source": "Release Radar"
+    },
+    {
+      "id": "05SN9rQQ3i9nHXhFgTFcto",
+      "name": "I Spy",
+      "artist": "Calboy",
+      "album": "Wildboy 2",
+      "popularity": 0,
+      "album_art_url": "https://i.scdn.co/image/ab67616d0000b273e3215a985272ca55596b2457",
+      "spotify_url": "https://open.spotify.com/track/05SN9rQQ3i9nHXhFgTFcto",
+      "playlist_source": "Release Radar"
+    }
+  ]
+}
