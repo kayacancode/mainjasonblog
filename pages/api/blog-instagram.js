@@ -4,15 +4,20 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { getSupabaseUrl, getSupabaseServiceKey } from '../../lib/env';
 import { generateCarouselSlides, generateCarouselPreview } from '../../lib/graphics/instagramCarousel';
 import { publishBlogCarousel, recordStatus, createRun, updateRun } from '../../lib/instagram';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY
 
 // Lazy Supabase client with service key
 let supabaseClient = null;
 function getSupabase() {
     if (!supabaseClient) {
-        supabaseClient = createClient(getSupabaseUrl(), getSupabaseServiceKey());
+        if (!supabaseUrl || !supabaseKey) {
+            throw new Error('Missing Supabase environment variables');
+        }
+        supabaseClient = createClient(supabaseUrl, supabaseKey);
     }
     return supabaseClient;
 }
