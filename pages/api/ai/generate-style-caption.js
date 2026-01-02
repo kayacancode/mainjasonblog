@@ -34,15 +34,16 @@ export default async function handler(req, res) {
         title,
         content,
         regenerate = false,
-        maxLength = 400
+        maxLength = 400,
+        styleParams = null  // NEW: Accept style parameters
     } = req.body;
-    
+
     if (!title || !content) {
         return res.status(400).json({ error: 'title and content are required' });
     }
-    
+
     const supabase = getSupabase();
-    
+
     try {
         // Check for existing summary if not regenerating
         if (postId && !regenerate) {
@@ -51,7 +52,7 @@ export default async function handler(req, res) {
                 .select('instagram_ai_summary')
                 .eq('id', postId)
                 .single();
-            
+
             if (post?.instagram_ai_summary) {
                 return res.status(200).json({
                     success: true,
@@ -61,25 +62,92 @@ export default async function handler(req, res) {
                 });
             }
         }
-        
-        // Fetch training corpus for style reference
-        const { data: corpus } = await supabase
-            .from('ai_caption_corpus')
-            .select('caption_text')
-            .eq('use_for_training', true)
-            .eq('is_approved', true)
-            .order('created_at', { ascending: false })
-            .limit(5);
-        
-        const exampleCaptions = corpus?.map(c => c.caption_text) || [];
-        
-        // Build prompts
-        const systemPrompt = buildSystemPrompt();
+
+        // Detect topic for topic-aware generation
+        let detectedTopic = null;
+        if (postId) {
+            // Try to get topic from existing analysis
+            const { data: analysis } = await supabase
+                .from('blog_content_analysis')
+                .select('primary_topic')
+                .eq('post_id', postId)
+                .single();
+
+            detectedTopic = analysis?.primary_topic || null;
+
+            if (detectedTopic) {
+                console.log(`[Topic Detection] Using analyzed topic: ${detectedTopic}`);
+            }
+        }
+
+        // If no topic found from analysis, try quick classification
+        if (!detectedTopic && content) {
+            const { classifyTopic } = await import('../../../lib/ai/content-analyzer');
+            const topics = classifyTopic(content, title);
+            detectedTopic = topics.length > 0 ? topics[0].name : null;
+
+            if (detectedTopic) {
+                console.log(`[Topic Detection] Classified as: ${detectedTopic}`);
+            }
+        }
+
+        // Fetch training corpus with topic-specific prioritization
+        let exampleCaptions = [];
+
+        if (detectedTopic) {
+            // Get topic-specific examples (limit 3)
+            const { data: topicCorpus } = await supabase
+                .from('ai_caption_corpus')
+                .select('caption_text')
+                .eq('use_for_training', true)
+                .eq('is_approved', true)
+                .eq('topic', detectedTopic)
+                .order('created_at', { ascending: false })
+                .limit(3);
+
+            exampleCaptions = topicCorpus?.map(c => c.caption_text) || [];
+
+            console.log(`[Corpus] Found ${exampleCaptions.length} topic-specific examples for ${detectedTopic}`);
+
+            // Supplement with general examples if needed
+            if (exampleCaptions.length < 3) {
+                const { data: generalCorpus } = await supabase
+                    .from('ai_caption_corpus')
+                    .select('caption_text')
+                    .eq('use_for_training', true)
+                    .eq('is_approved', true)
+                    .or(`topic.is.null,topic.neq.${detectedTopic}`)
+                    .order('created_at', { ascending: false })
+                    .limit(5 - exampleCaptions.length);
+
+                const generalCaptions = generalCorpus?.map(c => c.caption_text) || [];
+                exampleCaptions.push(...generalCaptions);
+
+                console.log(`[Corpus] Added ${generalCaptions.length} general examples`);
+            }
+        } else {
+            // No topic - use general corpus
+            const { data: corpus } = await supabase
+                .from('ai_caption_corpus')
+                .select('caption_text')
+                .eq('use_for_training', true)
+                .eq('is_approved', true)
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            exampleCaptions = corpus?.map(c => c.caption_text) || [];
+
+            console.log(`[Corpus] Using ${exampleCaptions.length} general examples (no topic)`);
+        }
+
+        // Build prompts with style parameters and topic
+        const systemPrompt = await buildSystemPrompt({}, styleParams, detectedTopic);
         const userPrompt = buildSummaryPrompt({
             title,
             content,
             maxLength,
-            exampleCaptions
+            exampleCaptions,
+            topic: detectedTopic
         });
         
         const promptHash = hashPrompt(userPrompt);
@@ -109,8 +177,46 @@ export default async function handler(req, res) {
                 .from('posts')
                 .update({ instagram_ai_summary: summary })
                 .eq('id', postId);
+
+            // Auto-populate corpus with this summary (topic-aware)
+            try {
+                // Fetch blog content analysis for topic information
+                const { data: analysis } = await supabase
+                    .from('blog_content_analysis')
+                    .select('primary_topic, detected_topics')
+                    .eq('post_id', postId)
+                    .single();
+
+                // Analyze style markers of the generated summary
+                const styleMarkers = analyzeStyleMarkersForCorpus(summary);
+
+                // Insert into corpus (pending approval via feedback)
+                await supabase
+                    .from('ai_caption_corpus')
+                    .insert({
+                        caption_text: summary,
+                        source_type: 'ai_generated',
+                        source_id: postId,
+                        post_title: title,
+                        topic: analysis?.primary_topic || null,
+                        topics: analysis?.detected_topics || [],
+                        style_markers: styleMarkers,
+                        is_approved: false,      // Pending user feedback
+                        use_for_training: false  // Will be enabled after positive feedback
+                    })
+                    .select()
+                    .single();
+
+                console.log('[Auto-Corpus] Added summary to corpus (pending approval)');
+            } catch (corpusError) {
+                // Don't fail the request if corpus population fails
+                // Check if it's a duplicate error (constraint violation)
+                if (corpusError.code !== '23505') {
+                    console.error('[Auto-Corpus] Failed to add to corpus:', corpusError);
+                }
+            }
         }
-        
+
         // Store in feedback table for tracking
         if (postId) {
             await supabase
@@ -130,6 +236,9 @@ export default async function handler(req, res) {
             model,
             tokensUsed,
             promptHash,
+            appliedParams: styleParams || null,
+            detectedTopic: detectedTopic || null,
+            exampleCount: exampleCaptions.length,
             message: regenerate ? 'Summary regenerated' : 'Summary generated'
         });
         
@@ -283,5 +392,52 @@ function generateFallbackSummary(title, content, maxLength) {
     }
     
     return `${intro}${summary}\n\nRead more at insuavewetrust.com`;
+}
+
+/**
+ * Analyze style markers for corpus entry
+ * Simplified version for caption analysis
+ * @param {string} text - Caption text to analyze
+ * @returns {object} Style markers
+ */
+function analyzeStyleMarkersForCorpus(text) {
+    if (!text || typeof text !== 'string') {
+        return {};
+    }
+
+    // Split into sentences and words
+    const sentences = text.split(/[.!?]+\s+/).filter(s => s.trim().length > 0);
+    const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+
+    // Count emojis
+    const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu;
+    const emojis = text.match(emojiRegex) || [];
+    const emojiCount = emojis.length;
+
+    // Calculate metrics
+    const avgWordsPerSentence = sentences.length > 0
+        ? (words.length / sentences.length).toFixed(1)
+        : 0;
+
+    // Check for questions and ellipsis
+    const hasQuestion = /\?/.test(text);
+    const hasEllipsis = /\.{3,}/.test(text);
+
+    // Check if starts/ends with emoji
+    const startsWithEmoji = emojiRegex.test(text.charAt(0));
+    const endsWithEmoji = emojiRegex.test(text.charAt(text.length - 1));
+
+    return {
+        wordCount: words.length,
+        sentenceCount: sentences.length,
+        avgWordsPerSentence: parseFloat(avgWordsPerSentence),
+        emojiCount,
+        emojisUsed: [...new Set(emojis)],
+        hasQuestion,
+        hasEllipsis,
+        startsWithEmoji,
+        endsWithEmoji,
+        characterCount: text.length
+    };
 }
 

@@ -23,19 +23,36 @@ export default async function handler(req, res) {
     const {
         postId,
         runId,
+        variantId,           // NEW: Link to specific variant
         aiGeneratedText,
         humanEditedText,
         styleRating,
-        feedbackNotes
+        feedbackNotes,
+        aspectRatings,       // NEW: Detailed aspect ratings
+        whatLiked,           // NEW: What user liked
+        whatImprove,         // NEW: What should improve
+        usedParams           // NEW: Parameters used for generation
     } = req.body;
-    
+
     // Validate required fields
     if (!aiGeneratedText) {
         return res.status(400).json({ error: 'aiGeneratedText is required' });
     }
-    
+
     if (styleRating !== undefined && (styleRating < 1 || styleRating > 10)) {
         return res.status(400).json({ error: 'styleRating must be between 1 and 10' });
+    }
+
+    // Validate aspect ratings if provided
+    if (aspectRatings) {
+        const aspects = ['toneMatch', 'lengthAppropriate', 'emojiUsage', 'authenticity'];
+        for (const aspect of aspects) {
+            if (aspectRatings[aspect] !== undefined) {
+                if (aspectRatings[aspect] < 1 || aspectRatings[aspect] > 10) {
+                    return res.status(400).json({ error: `${aspect} must be between 1 and 10` });
+                }
+            }
+        }
     }
     
     const supabase = getSupabase();
@@ -59,11 +76,16 @@ export default async function handler(req, res) {
         const feedbackData = {
             post_id: postId || null,
             carousel_run_id: runId || null,
+            variant_id: variantId || null,                          // NEW
             ai_generated_text: aiGeneratedText,
             human_edited_text: humanEditedText || null,
             was_edited: wasEdited,
             style_rating: styleRating || null,
             feedback_notes: feedbackNotes || null,
+            aspect_ratings: aspectRatings || {},                    // NEW
+            what_liked: whatLiked || null,                          // NEW
+            what_improve: whatImprove || null,                      // NEW
+            used_params: usedParams || {},                          // NEW
             edit_diff: editDiff,
             edited_at: wasEdited ? new Date().toISOString() : null
         };
@@ -129,6 +151,18 @@ export default async function handler(req, res) {
             });
         }
         
+        // Mark variant as selected if variantId provided
+        if (variantId) {
+            await supabase
+                .from('ai_generation_variants')
+                .update({
+                    was_selected: true,
+                    was_edited: wasEdited,
+                    feedback_id: result.id
+                })
+                .eq('id', variantId);
+        }
+
         // Update post with edited summary if applicable
         if (postId && humanEditedText) {
             await supabase
@@ -136,12 +170,24 @@ export default async function handler(req, res) {
                 .update({ instagram_ai_summary: humanEditedText })
                 .eq('id', postId);
         }
-        
+
+        // Trigger preference recalculation for high-rated feedback (async, don't await)
+        if (styleRating >= 8 && usedParams) {
+            // Import and call preference calculator in background
+            import('../../../lib/ai/preference-calculator.js')
+                .then(({ calculatePreferences }) => {
+                    const { data: { user } } = supabase.auth.getUser();
+                    return user ? calculatePreferences(user.id) : null;
+                })
+                .catch(err => console.error('Preference calculation error:', err));
+        }
+
         return res.status(200).json({
             success: true,
             feedbackId: result.id,
             wasEdited,
             addedToCorpus: (styleRating >= 8 && !wasEdited) || (wasEdited && styleRating >= 7),
+            preferencesUpdated: styleRating >= 8 && usedParams,
             message: 'Feedback recorded successfully'
         });
         

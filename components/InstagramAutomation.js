@@ -31,12 +31,13 @@ export default function InstagramAutomation({
     const [subtitle, setSubtitle] = useState('Album Review');
     const [styleRating, setStyleRating] = useState(7);
     const [feedbackNotes, setFeedbackNotes] = useState('');
-    
+
     const [isGenerating, setIsGenerating] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     const [previewData, setPreviewData] = useState(null);
     const [error, setError] = useState(null);
-    
+    const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
     // Slide preview state
     const [slidePreview, setSlidePreview] = useState(null);
     const [slide2Preview, setSlide2Preview] = useState(null);
@@ -356,7 +357,7 @@ export default function InstagramAutomation({
     // Submit feedback
     const handleSubmitFeedback = async () => {
         if (!postId || !aiSummary) return;
-        
+
         try {
             await fetch('/api/ai/feedback', {
                 method: 'POST',
@@ -371,6 +372,35 @@ export default function InstagramAutomation({
             });
         } catch (err) {
             console.error('Feedback submission failed:', err);
+        }
+    };
+
+    // Quick feedback handler (thumbs up/down)
+    const handleQuickFeedback = async (isPositive) => {
+        if (!aiSummary) return;
+
+        try {
+            const feedbackData = {
+                postId: postId || null,
+                aiGeneratedText: aiSummary,
+                styleRating: isPositive ? 8 : 4, // Quick rating: 8 for thumbs up, 4 for thumbs down
+                usedParams: {} // No specific params for quick generate
+            };
+
+            const response = await fetch('/api/ai/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(feedbackData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                setFeedbackSubmitted(true);
+                setTimeout(() => setFeedbackSubmitted(false), 2000); // Reset after 2 seconds
+            }
+        } catch (err) {
+            console.error('Quick feedback error:', err);
         }
     };
     
@@ -614,24 +644,59 @@ export default function InstagramAutomation({
                                     disabled={isGenerating || !title || !content}
                                     className="text-xs font-bold text-[#F2EA6D] hover:text-[#FFD800] disabled:opacity-50 uppercase tracking-wide transition-colors"
                                 >
-                                    {isGenerating ? 'Writing...' : 'Auto-Generate Summary'}
+                                    {isGenerating ? 'Writing...' : 'Quick Generate'}
                                 </button>
                             </div>
 
-                            <div className="relative">
-                                <textarea
-                                    value={aiSummary}
-                                    onChange={(e) => {
-                                        setAiSummary(e.target.value);
-                                        onSummaryChange?.(e.target.value);
-                                    }}
-                                    rows={12}
-                                    placeholder="AI summary will appear here..."
-                                    className="w-full bg-[#222] border border-gray-700 text-gray-200 px-4 py-3 rounded-xl text-sm focus:ring-1 focus:ring-[#F2EA6D] focus:border-[#F2EA6D] outline-none resize-none leading-relaxed"
-                                />
-                                <div className="absolute bottom-3 right-3 text-xs text-gray-500 font-mono">
-                                    {aiSummary.length}/400
+                            <div className="space-y-3">
+                                <div className="relative">
+                                    <textarea
+                                        value={aiSummary}
+                                        onChange={(e) => {
+                                            setAiSummary(e.target.value);
+                                            onSummaryChange?.(e.target.value);
+                                        }}
+                                        rows={12}
+                                        placeholder="AI summary will appear here..."
+                                        className="w-full bg-[#222] border border-gray-700 text-gray-200 px-4 py-3 rounded-xl text-sm focus:ring-1 focus:ring-[#F2EA6D] focus:border-[#F2EA6D] outline-none resize-none leading-relaxed"
+                                    />
+                                    <div className="absolute bottom-3 right-3 text-xs text-gray-500 font-mono">
+                                        {aiSummary.length}/400
+                                    </div>
                                 </div>
+
+                                {/* Quick Feedback */}
+                                {aiSummary && (
+                                    <div className="flex items-center justify-center gap-4 pt-2">
+                                        {feedbackSubmitted ? (
+                                            <div className="text-sm text-green-400 flex items-center gap-2">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                Thanks for the feedback!
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleQuickFeedback(true)}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-green-600/20 hover:bg-green-600/30 text-green-400 rounded-lg text-sm font-medium transition-colors border border-green-600/30"
+                                                >
+                                                    <span className="text-base">👍</span>
+                                                    <span>Like</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleQuickFeedback(false)}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg text-sm font-medium transition-colors border border-red-600/30"
+                                                >
+                                                    <span className="text-base">👎</span>
+                                                    <span>Dislike</span>
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Action Buttons */}
