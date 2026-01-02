@@ -4,8 +4,17 @@
  * Can update global markers, topic-specific markers, or all markers
  */
 
+import { createClient } from '@supabase/supabase-js';
 import { computeGlobalStyleMarkers, computeTopicStyleMarkers } from '../../../lib/ai/style-marker-generator';
-import { supabase } from '../../../lib/supabaseClient';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase environment variables');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {

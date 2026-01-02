@@ -4,14 +4,19 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { getSupabaseUrl, getSupabaseServiceKey, getAIApiKey, getAIProvider, getAIModel } from '../../../lib/env';
 import { buildSystemPrompt, buildSummaryPrompt, hashPrompt } from '../../../lib/ai/prompts';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
 // Lazy Supabase client
 let supabaseClient = null;
 function getSupabase() {
     if (!supabaseClient) {
-        supabaseClient = createClient(getSupabaseUrl(), getSupabaseServiceKey());
+        if (!supabaseUrl || !supabaseKey) {
+            throw new Error('Missing Supabase environment variables');
+        }
+        supabaseClient = createClient(supabaseUrl, supabaseKey);
     }
     return supabaseClient;
 }
@@ -153,9 +158,9 @@ export default async function handler(req, res) {
         const promptHash = hashPrompt(userPrompt);
         
         // Call AI provider
-        const provider = getAIProvider();
+        const provider = process.env.AI_PROVIDER || 'openai';
         let summary, model, tokensUsed;
-        
+
         if (provider === 'anthropic') {
             const result = await callAnthropic(systemPrompt, userPrompt);
             summary = result.summary;
@@ -262,8 +267,11 @@ export default async function handler(req, res) {
  * Call OpenAI API
  */
 async function callOpenAI(systemPrompt, userPrompt) {
-    const apiKey = getAIApiKey('openai');
-    const model = getAIModel();
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+        throw new Error('Missing OPENAI_API_KEY environment variable');
+    }
+    const model = process.env.AI_MODEL || 'gpt-4o-mini';
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -300,8 +308,11 @@ async function callOpenAI(systemPrompt, userPrompt) {
  * Call Anthropic API
  */
 async function callAnthropic(systemPrompt, userPrompt) {
-    const apiKey = getAIApiKey('anthropic');
-    const model = getAIModel();
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+        throw new Error('Missing ANTHROPIC_API_KEY environment variable');
+    }
+    const model = process.env.AI_MODEL || 'claude-3-sonnet-20240229';
     
     const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
